@@ -18,15 +18,24 @@ public class Account{
     }
 
     public void incBalance(final int amount, final Date date){
-        atomic(new Runnable(){
-            public void run(){
-                balance.increment(amount);
-                lastUpdate.set(date);
+        atomic(() -> {
+            balance.increment(amount);
+            lastUpdate.set(date);
 
-                if(balance.get()<0){
-                    throw new IllegalStateException("Not enough money");
-                }
+            if(balance.get()<0){
+                throw new IllegalStateException("Not enough money");
             }
         });
+    }
+
+    @Override public String toString() {
+        final String[] result = {null};
+        atomic(() -> {
+            result[0] = "Account{" +
+                    "lastUpdate=" + lastUpdate +
+                    ", balance=" + balance +
+                    '}';
+        });
+        return result[0];
     }
 }

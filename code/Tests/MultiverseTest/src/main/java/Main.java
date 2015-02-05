@@ -2,29 +2,33 @@
  * Created by Kasper on 03-02-2015.
  */
 
-import org.multiverse.api.references.*;
-
 import java.util.Date;
 
-import static org.multiverse.api.StmUtils.*;
+import static org.multiverse.api.StmUtils.atomic;
 
 public class Main {
 
     public static void main(String [] args){
-        System.out.print("Hej");
         Account a1 = new Account(1000);
         Account a2 = new Account(500);
-        transfer(a1,a2,250);
+        printAccounts(a1, a2);
+        transfer(a1, a2, 250);
+        a1.incBalance(100, new Date());
+        printAccounts(a1, a2);
+    }
+
+    private static void printAccounts(Account... accounts){
+            for (Account account : accounts) {
+                System.out.println(account);
+            }
     }
 
     public static void transfer(final Account from, final Account to, final int amount){
-        atomic(new Runnable(){
-            public void run(){
-                Date date = new Date();
+        atomic(() -> {
+            Date date = new Date();
 
-                from.incBalance(-amount, date);
-                to.incBalance(amount, date);
-            }
+            from.incBalance(-amount, date);
+            to.incBalance(amount, date);
         });
     }
 }
