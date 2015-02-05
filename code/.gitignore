@@ -1,0 +1,51 @@
+*.fuse_hidden*
+*.DS_STORE
+*.orig
+*~
+
+*.class
+*.testdata
+*.td
+
+# Temp Files
+*~
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# Local Visual Studio Files
+*.suo
+*.userprefs
+TestResults
+
+# Compiled dirs
+bin
+obj
+Executable/*
+Executable
+
+# Scala
+.idea/scopes/
+.idea/dictionaries/
+.idea/inspectionProfiles/
+.idea/workspace.xml
+.idea/codeStyleSettings.xml
+.idea/scala_compiler.xml
+*.idea
+/classes
+/dist
+/out
+/SDK/*SDK
+/*.bat
+.idea/workspace.xml
+.idea/highlighting.xml
+*.class
+out
+*target
+build
+.DS_Store
+*~
+*.iml
+
