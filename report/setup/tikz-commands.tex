@@ -1,0 +1,36 @@
+% Draws a tikz camera
+% #1 is the coordinate to the top left corner
+% #2 is a label for the righthand center position
+% #3 is the text shown in the center of the camera
+\newcommand{\camera}[3]{
+\coordinate (anchor) at #1;
+\draw (anchor) -- ($ (anchor) + (0em,-20pt) $) -- ($ (anchor) + (10pt, -15pt) $) -- ($ (anchor) + (10pt,-5pt)$) -- cycle;
+\draw ($ (anchor) + (10pt,-5pt) $) -- ($ (anchor) + (10pt,0pt) $) -- ($ (anchor) + (50pt,0pt) $) -- ($ (anchor) + (50pt,-20pt) $) -- node[yshift=10pt] {\tiny #3} ($ (anchor) + (10pt,-20pt) $)-- cycle;
+\coordinate (#2) at ($ (anchor) + (50pt,-10pt) $);
+}
+
+\newcounter{frameNumber}
+\newcommand{\frameWithSize}[3][false]{
+	\stepcounter{frameNumber}
+	\coordinate (anchor) at #2;
+	\ifthenelse{\equal{#1}{false}}{
+		\def\frameNumber{\arabic{frameNumber}}
+	}{
+		\def\frameNumber{#1}
+	}
+	\pgfmathtruncatemacro\randomnumber{random(0,4)}
+	\node[yshift=20pt] at (anchor) {\frameNumber};
+	\ifthenelse{\equal{#3}{I}}{
+		\node[draw, minimum size=20pt, fill=green!60] at (anchor) {I};
+		\filldraw[fill=gray] ($(anchor) + (-10pt,-40pt)$) rectangle ($(anchor) + (10pt,-20pt) + (0pt,\randomnumber pt)$);
+	}{
+		\ifthenelse{\equal{#3}{P}}{
+			\node[draw, minimum size=20pt, fill=yellow!60] at (anchor) {P};
+			\filldraw[fill=gray] ($(anchor) + (-10pt,-40pt)$) rectangle ($(anchor) + (10pt,-30pt) + (0pt,\randomnumber pt)$);
+		}{
+			\node[draw, minimum size=20pt, fill=blue!40!yellow!60!black] at (anchor) {\color{white}B};
+			\filldraw[fill=gray] ($(anchor) + (-10pt,-40pt)$) rectangle ($(anchor) + (10pt,-37pt) + (0pt,\randomnumber pt)$);
+		}
+	}
+	\draw[thick] ($(anchor) + (-10pt,-40pt)$) -- +(20pt,0pt);
+}

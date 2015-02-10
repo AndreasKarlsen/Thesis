@@ -1,0 +1,28 @@
+\chapter[]{Appendix example}
+\begin{lstlisting}[label=Sourcecode, caption=Fabulous sourcecode,language=java]
+    [TestClass]
+    public class RecommendarTests
+    {
+        private User _troels;
+        private Movie _theMatrix;
+        private Movie _waterWorld;
+        private Movie _blackHawkDown;
+
+        [TestInitialize]
+        public void Setup()
+        {
+            _troels = new User("Troels");
+            _theMatrix = new Movie("The Matrix");
+            _waterWorld = new Movie("Water World");
+            _blackHawkDown = new Movie("Black hawk down");
+            _troels.Recommend(_theMatrix, 5);
+            _troels.Recommend(_waterWorld, 1);
+        }
+
+        [TestMethod]
+        public void TestCalculateAverageMovieRating()
+        {
+            Assert.AreEqual(3, _troels.AverageVote());
+        }
+    }
+\end{lstlisting}
