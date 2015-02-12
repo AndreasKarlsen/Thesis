@@ -12,7 +12,7 @@ namespace STM.Implementation.Lockbased
 {
     public class WriteSet
     {
-        private readonly Dictionary<BaseLockObject, object> _map; 
+        public readonly Dictionary<BaseLockObject, object> Map; 
 
         private static readonly ThreadLocal<WriteSet> Locals
             = new ThreadLocal<WriteSet>(() => new WriteSet());
@@ -20,7 +20,7 @@ namespace STM.Implementation.Lockbased
 
         public WriteSet()
         {
-            _map = new Dictionary<BaseLockObject, object>();
+            Map = new Dictionary<BaseLockObject, object>();
         }
 
         public static WriteSet GetLocal()
@@ -30,28 +30,28 @@ namespace STM.Implementation.Lockbased
 
         public bool Contains(BaseLockObject stmObject)
         {
-            return _map.ContainsKey(stmObject);
+            return Map.ContainsKey(stmObject);
         }
 
         public object Get(BaseLockObject stmObject)
         {
-            return _map[stmObject];
+            return Map[stmObject];
         }
 
         public void Put(BaseLockObject stmObject, object value)
         {
-            _map[stmObject] = value;
+            Map[stmObject] = value;
         }
 
         public void Clear()
         {
-            _map.Clear();
+            Map.Clear();
         }
 
         public bool TryLock(int milisecs)
         {
-            var objects = new List<BaseLockObject>(_map.Count);
-            foreach (var lo in _map.Keys)
+            var objects = new List<BaseLockObject>(Map.Count);
+            foreach (var lo in Map.Keys)
             {
                 if (!lo.TryLock(milisecs))
                 {
@@ -70,7 +70,7 @@ namespace STM.Implementation.Lockbased
 
         public void Unlock()
         {
-            foreach (var lo in _map.Keys)
+            foreach (var lo in Map.Keys)
             {
                 lo.Unlock();
             }

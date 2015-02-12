@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using STM;
 using STM.Interfaces;
 using STM.Implementation.Obstructionfree;
+using STM.Implementation.Lockbased;
+using System.Diagnostics;
 
 namespace STMTester
 {
@@ -16,7 +18,48 @@ namespace STMTester
         {
             //Test1();
             //Test2();
-            Test3();
+            //Test3();
+            Test4();
+        }
+
+        private static void Test4()
+        {
+            for (int i = 0  ; i < 10000; i++)
+            {
+                var result = Test4Internal();
+                Console.WriteLine("Result: " + result);
+                Debug.Assert(result != 120);
+            }
+        }
+
+        private static int Test4Internal()
+        {
+            RefLockObject<ValueHolder> result = new RefLockObject<ValueHolder>(new ValueHolder(10));
+            var system = LockSTMSystem.GetInstance();
+
+            var t1 = new Thread(() =>
+            {
+                var r1 = system.Atomic(() =>
+                {
+                    if (result.GetValue().Value == 10)
+                    {
+                        result.SetValue(new ValueHolder(result.GetValue().Value * 10));
+                    }
+
+                    return result.GetValue();
+                });
+                Debug.Assert(r1.Value != 120, "String value: "+r1.Value);
+            });
+
+            var t2 = new Thread(() => system.Atomic(() => result.SetValue(new ValueHolder(12))));
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t2.Join();
+
+            return result.GetValue().Value;
         }
 
         private static void Test3()

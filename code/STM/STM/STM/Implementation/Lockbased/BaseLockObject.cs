@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace STM.Implementation.Lockbased
 {
-    public class BaseLockObject
+    public abstract class BaseLockObject
     {
         protected readonly object StampLock  = new object();
         protected readonly ReentrantLock ReentrantLock = new ReentrantLock();
@@ -33,6 +33,9 @@ namespace STM.Implementation.Lockbased
                 _stamp = newStamp;
             }
         }
+
+
+        public abstract void SetValueCommit(object o);
 
         public void Lock()
         {

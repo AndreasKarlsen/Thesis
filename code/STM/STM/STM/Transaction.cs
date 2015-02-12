@@ -62,6 +62,9 @@ namespace STM
                 if (_transactionStatus == Status.Active)
                 {
                     _transactionStatus = Status.Committed;
+#if DEBUG
+                    Console.WriteLine("Transaction: " + ID + " commited");
+#endif
                     commited = true;
                 }
             }
@@ -69,19 +72,15 @@ namespace STM
             return commited;
         }
 
-        public bool Abort()
+        public void Abort()
         {
-            bool aborted = false;
             lock (LockObject)
             {
-                if (_transactionStatus == Status.Active)
-                {
-                    _transactionStatus = Status.Aborted;
-                    aborted = true;
-                }
+                _transactionStatus = Status.Aborted;
+#if DEBUG
+                Console.WriteLine("Transaction: " + ID + " aborted");
+#endif
             }
-            //Interlocked.CompareExchange(ref _transactionStatus, Status.Committed, Status.Active);
-            return aborted;
         }
 
     }

@@ -6,8 +6,8 @@ namespace STM.Interfaces
     {
         protected abstract bool OnValidate();
 
-        protected virtual void OnCommit() { }
-        protected virtual void OnAbort() { }
+        protected virtual void OnCommit() {  }
+        protected virtual void OnAbort() {  }
 
         public abstract T Atomic<T>(Func<T> stmAction);
         public abstract void Atomic(Action stmAction);
