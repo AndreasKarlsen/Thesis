@@ -2,7 +2,16 @@
 \worksheetstart{Introduction}{0}{Februar 10, 2015}{}{../../}
 
 \section{Related Work}
-This section describes related work within the area of \ac{STM}. 
+This section describes related work within the areas of \ac{STM} and the Roslyn compiler. In order learn from the approaches taken by other as well as building a greater understanding of the subjects a number of papers, articles, and other research material of relevance have been read. 
+
+In \cite{harris2005composable} Harris et al. describe their work with integration \ac{STM} into Haskell. Haskell is extend with support for a \bscode{atomic} function with takes a \ac{STM} action as input and produces a \ac{IO} action as output\cite[p. 51]{harris2005composable}. Evaluating the IO action executes the transaction defined by the atomic function. The Haskell setting allowed the authors to divide the world into \ac{STM} actions and \ac{IO} actions\cite{p. 51}, effectively disallowing \ac{IO} actions within transactions as well as only allowing \ac{STM} actions to be performed inside memory transactions. The \ac{STM} system is implemented as a C library integrated into the Haskell runtime system. The Haskell constructs utilize this library to execute transactions\cite[p. 56]{harris2005composable}. Furthermore, the authors contribute with a description and implementation of \ac{STM} constructs for conditional synchronization. The \bscode{retry} statement allows a transaction to block until some condition is met at which point the transaction is aborted and retried\cite[p. 52]{harris2005composable}. The \bscode{orElse} can be used to in combination with the retry statement to specify transactional alternatives to be executed in case the previous alternatives encounter a retry\cite[p. 52]{harris2005composable}.
+
+\kasper[inline]{May reference last project for more detailed explanation of constructs.}
+
+In \cite{harris2003language} the authors describe how they integrated \ac{STM} into the Java programming language by modifying both the compiler\cite[p. 4]{harris2003language} and virtual machine\cite[p. 9]{harris2003language}.
+
+
+
 %Composable memory transactions
 %Language support forlightweight transaction
 %Usability study
