@@ -28,7 +28,14 @@ namespace STM.Implementation.Lockbased
 
         public bool IsLocked()
         {
-            return !Monitor.TryEnter(LockOjbect, 0);
+            bool result = Monitor.TryEnter(LockOjbect, 0);
+            if (result)
+            {
+                Monitor.Exit(LockOjbect);
+                return false;
+            }
+
+            return true;
         }
 
         public bool IsLockedByCurrentThread()

@@ -46,11 +46,15 @@
     <Compile Include="Collections\ISkipList.cs" />
     <Compile Include="Collections\LockFreeSkipList.cs" />
     <Compile Include="Collections\SkipList.cs" />
+    <Compile Include="Exceptions\STMAbortException.cs" />
     <Compile Include="Exceptions\STMAccessViolationException.cs" />
     <Compile Include="Exceptions\STMException.cs" />
+    <Compile Include="Implementation\Lockbased\LockObject.cs" />
+    <Compile Include="Implementation\Lockbased\LockSTMSystemcs.cs" />
     <Compile Include="Implementation\Lockbased\ReadSet.cs" />
     <Compile Include="Implementation\Lockbased\ReentrantLock.cs" />
     <Compile Include="Implementation\Lockbased\BaseLockObject.cs" />
+    <Compile Include="Implementation\Lockbased\RefLockObject.cs" />
     <Compile Include="Implementation\Lockbased\WriteSet.cs" />
     <Compile Include="Implementation\Obstructionfree\FreeObject.cs" />
     <Compile Include="Implementation\Lockbased\VersionClock.cs" />
