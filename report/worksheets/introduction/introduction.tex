@@ -1,14 +1,20 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Introduction}{0}{Februar 10, 2015}{}{../../}
+%
 \section{Motivation}
+Utilizing tomorrows increasingly faster \acp{CPU} requires changes to the sequential programming paradigm which is popularized in languages such as C, C++, Java, and C\#. As the increase of speed comes in additional cores, and not faster clock speed\cite{sutter2005free}, these changes demands a shift to concurrent programming. In \cite{dpt907e14trending}, a recent study made by us, analyzed the difficulty of concurrent programming in three different approaches: \ac{TL}, \ac{STM}, and the Actor model. The study concluded that \ac{STM} eliminates many of the risks related to programming in shared-memory concurrency, notably deadlocks, leading into simpler reasoning and thereby easier to use. Additionally, \ac{STM} fits with the thread model used by sequential languages, and can thereby be applied to existing implementations, without requiring major rewrites.
+\andreas[inline]{Should we mention the cavaets of STM? Sideeffects}
+
+Despite of the apparent fit and advantages \ac{STM} could provide to sequential languages\andreas{Should be named something else}, no \ac{STM} implementation has made it into such a language. Only in Clojure\footnote{\url{http://clojuredocs.org/}} and Haskell\footnote{\url{https://wiki.haskell.org/Haskell}} has \ac{STM} been introduced as a built-in language feature. \ac{STM} has been implemented as a library based solution. In order to enable first class support, such as static code analysis, language integration is required. With the recent event of open sourcing of the new C\# compiler\footnote{\url{https://github.com/dotnet/roslyn}} and the \ac{CLR}\footnote{\url{https://github.com/dotnet/coreclr}}, Microsoft facilitates an opportunity to extend the C\# language and compiler, and thereby opening up for integrating \ac{STM} into the language.
 
 
-%Resent studies done by \cite{dpt907e14trending} shows 
-% The increase of CPU speed is in additional cores
-% Requires concurrent programming to utilize
-% Programming for shared-memory concurrency is difficoult
-% STM eases this
-% Not integrated in C#
+% The increase of CPU speed is in additional cores - \cite{sutter2005free}
+% Requires concurrent programming to utilize - \cite{sutter2005software}
+% Programming for shared-memory concurrency is difficoult - 
+% Resent studies done by \cite{dpt907e14trending} compares different techniques
+% STM eases shared memory concurrency
+% No breakthrough in major language. (Folk vil ikke skifte sprog eller paradigme for at få en anden concurrency tilgang)
+% Not integrated in C#, only implemented as library
 % Roslyn is open source
 
 
