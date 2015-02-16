@@ -6,6 +6,7 @@ Utilizing tomorrows increasingly faster \acp{CPU} requires changes to the sequen
 
 Despite of the apparent fit and advantages \ac{STM} could provide to sequential languages\andreas{Should be named something else}\toby{Måske noget med mainstream},\ac{STM} has seen no official language integration. Only in Clojure\footnote{\url{http://clojuredocs.org/}} and Haskell\footnote{\url{https://wiki.haskell.org/Haskell}} has \ac{STM} been introduced as a official built-in language feature. \ac{STM} has been introduced as a library based solution in sequential languages, however in order to enable first class support, such as static code analysis and syntax support, language integration is required. With the recent event of open sourcing of the new C\# compiler\footnote{\url{https://github.com/dotnet/roslyn}} and the \ac{CLR}\footnote{\url{https://github.com/dotnet/coreclr}}, Microsoft facilitates an opportunity to extend the C\# language and compiler, and thereby opening up for integrating \ac{STM} into the language.
 
+\andreas{Programmer might not want to switch to an entire different language, in order to gain a single feature. Due to this, it makes sense to bring the feature to the language.}
 \section{Related Work}
 This section describes related work within the areas of \ac{STM} and the Roslyn compiler. In order learn from the approaches taken by other as well as building a greater understanding of the subjects a number of papers, articles, and other research material of relevance have been read. 
 
@@ -20,4 +21,15 @@ Transaction are committed  using \ac{CAS} in order to ensure atomicity\cite[p. 7
 
 \cite{dice2006transactional} describes the TL2 \ac{STM} system designed at Sun Microsystems Laboratories by Dice et al. While many of the other \ac{STM} systems described here adopt a obstruction-free approach to \ac{STM} implementation, TL2 uses commit time logging\cite{dice2006transactional}[p. 199]. A transaction explicitly records its read and write operations in a associated read and write set\cite{dice2006transactional}[p. 198]. Instead of writing directly to memory all writes are written to the write set. When at transaction is about to commit it acquires the lock on each object in the write set and writes the values contained in the write set to the actual memory locations before releasing the locks\cite{dice2006transactional}[p. 200].
 A global version clock is used to verify that transactions executed in isolation\cite{dice2006transactional}[p. 201]. As a transaction starts it reads the current value of the global version clock, storing it locally so it can be used for validation. As a transaction is about to commit it validates its read set by for every object in the read set comparing the locally stored read stamp with the objects associated write stamps\cite{dice2006transactional}[p. 200]. If any writes stamps are higher than the locally stored read stamp a conflict has occurred and the transaction must abort and restart.  
+
+\section{Scope}
+\andreas{We are not solving the side-effect problem}
+\andreas{Bringing the concurrency construct STM into a C\#}
+
+\section{Problem Statement}
+
+\section{Preliminary Risk Assessment}
+\andreas{How did we tackle Roslyn?}
+\andreas{How did we tackle the insecurity in STM? (Known not solved problem areas)}
+
 \worksheetend
