@@ -6,6 +6,7 @@ Utilizing tomorrows increasingly faster \acp{CPU} requires changes to the sequen
 
 Despite of the apparent fit and advantages \ac{STM} could provide to sequential languages\andreas{Should be named something else}\toby{Måske noget med mainstream},\ac{STM} has seen no official language integration. Only in Clojure\footnote{\url{http://clojuredocs.org/}} and Haskell\footnote{\url{https://wiki.haskell.org/Haskell}} has \ac{STM} been introduced as a official built-in language feature. \ac{STM} has been introduced as a library based solution in sequential languages, however in order to enable first class support, such as static code analysis and syntax support, language integration is required. With the recent event of open sourcing of the new C\# compiler\footnote{\url{https://github.com/dotnet/roslyn}} and the \ac{CLR}\footnote{\url{https://github.com/dotnet/coreclr}}, Microsoft facilitates an opportunity to extend the C\# language and compiler, and thereby opening up for integrating \ac{STM} into the language.
 
+\andreas{Programmer might not want to switch to an entire different language, in order to gain a single feature. Due to this, it makes sense to bring the feature to the language.}
 \section{Related Work}
 This section describes related work within the areas of \ac{STM} and the Roslyn compiler. In order learn from the approaches taken by other as well as building a greater understanding of the subjects a number of papers, articles, and other research material of relevance have been read. 
 
@@ -17,5 +18,15 @@ In \cite{harris2003language} the authors describe how they integrated \ac{STM} i
 Transaction are committed  using \ac{CAS} in order to ensure atomicity\cite[p. 7]{harris2003language}.
 
 \cite{herlihy2003software} describes the DSTM system developed my Herlihy et al. DSTM is a obstruction-free\cite{herlihy2003obstruction} \ac{STM} system using compare and swap to secure atomicity\cite{herlihy2003software}[p. 93]. Obstruction freedom guarantees that any thread which runs for long enough without encountering a synchronization conflict makes progress\cite{herlihy2003obstruction}[p. 1]. Unlike stronger progress guarantees such as lock-freedom and wait-freedom obstruction freedom does prevent livelocks. As a result DSTM employees a contention manager to ensure progress in practice\cite{herlihy2003software}[p. 93].
+
+\section{Scope}
+\andreas{We are not solving the side-effect problem}
+\andreas{Bringing the concurrency construct STM into a C\#}
+
+\section{Problem Statement}
+
+\section{Preliminary Risk Assessment}
+\andreas{How did we tackle Roslyn?}
+\andreas{How did we tackle the insecurity in STM? (Known not solved problem areas)}
 
 \worksheetend
