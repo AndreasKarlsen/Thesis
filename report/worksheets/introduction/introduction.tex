@@ -13,6 +13,8 @@ In \cite{harris2005composable} Harris et al. describe their work with integratio
 
 \kasper[inline]{May reference last project for more detailed explanation of constructs.}
 
-In \cite{harris2003language} the authors describe how they integrated \ac{STM} into the Java programming language by modifying both the compiler\cite[p. 4]{harris2003language} and virtual machine\cite[p. 9]{harris2003language}.
+In \cite{harris2003language} the authors describe how they integrated \ac{STM} into the Java programming language by modifying both the compiler\cite[p. 4]{harris2003language} and virtual machine\cite[p. 9]{harris2003language}. The authors design, implement and Performance test a obstruction free \ac{STM} system. The \ac{STM} system uses per object ownership records to track the objects the objects version number as well as which transaction currently owns the object\cite[p. 6]{harris2003language}. Transaction descriptors are employed in order to keep track of the read and write operations performed by a transaction.
+Transaction are committed  using \ac{CAS} in order to ensure atomicity\cite[p. 7]{harris2003language}.
+
 
 \worksheetend
