@@ -450,4 +450,6 @@ with-meta,with-open,with-out-str,with-precision,xml-seq,zero?,zipmap
 
 
 %roman numerals
-\newcommand*{\rom}[1]{\expandafter\@slowromancap\romannumeral #1@}
+%\newcommand*{\rom}[1]{\expandafter\@slowromancap\romannumeral #1@}
+\newcommand{\rom}[1]{\uppercase\expandafter{\romannumeral #1\relax}}
+
