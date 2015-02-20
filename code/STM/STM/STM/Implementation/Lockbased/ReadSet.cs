@@ -39,5 +39,10 @@ namespace STM.Implementation.Lockbased
             LockObjects.Clear();
         }
 
+        public int Count()
+        {
+            return LockObjects.Count;
+        }
+
     }
 }

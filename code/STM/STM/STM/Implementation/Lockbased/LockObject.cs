@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace STM.Implementation.Lockbased
 {
@@ -54,6 +55,8 @@ namespace STM.Implementation.Lockbased
             Console.WriteLine("Transaction: " + me.ID + " commited:" + o);
 #endif
             this.version = (T)o;
+            WaitHandle.Set();
+            WaitHandle.Reset();
         }
     }
 }

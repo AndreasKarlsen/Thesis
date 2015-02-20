@@ -102,6 +102,10 @@ namespace STM.Implementation.Lockbased
                 }
                 catch (ThreadAbortException) { }
                 catch (STMAbortException) { me.Abort();  }
+                catch (STMRetryException)
+                {
+                    WaitOnReadset(me);
+                }
                 catch (STMException) { }
                 catch (Exception ex)
                 {
@@ -128,6 +132,31 @@ namespace STM.Implementation.Lockbased
                 stmAction();
                 return true;
             });
+        }
+
+        private void WaitOnReadset(Transaction me)
+        {
+            
+            ReadSet readset = ReadSet.GetLocal();
+            if (readset.Count() != 0)
+            {
+                WaitHandle[] waiton = new WaitHandle[readset.Count()];
+
+                int i = 0;
+                foreach (var item in readset.LockObjects)
+                {
+                    waiton[i] = item.WaitHandle;
+                    i++;
+                }
+#if DEBUG
+                Console.WriteLine("Transaction: " + me.ID + " waiting for retry.");
+#endif
+                WaitHandle.WaitAny(waiton);
+#if DEBUG
+                Console.WriteLine("Transaction: " + me.ID + " awoken from retry.");
+#endif
+            }
+            me.Abort();
         }
     }
 }

@@ -19,7 +19,37 @@ namespace STMTester
             //Test1();
             //Test2();
             //Test3();
-            Test4();
+            //Test4();
+            TestRetry();
+            Console.ReadKey();
+        }
+
+        private static void TestRetry()
+        {
+            RefLockObject<ValueHolder> result = new RefLockObject<ValueHolder>(new ValueHolder(10));
+            var system = LockSTMSystem.GetInstance();
+            var t1 = new Thread(() =>
+            {
+                var r1 = system.Atomic(() =>
+                {
+                    var tmp = result.GetValue().Value;
+                    if (tmp != 12)
+                    {
+                        system.Retry();
+                    }
+                    result.SetValue(new ValueHolder(tmp * 10));
+                    return result.GetValue();
+                });
+            });
+
+            var t2 = new Thread(() => system.Atomic(() => {
+                Thread.Sleep(100); 
+                result.SetValue(new ValueHolder(12));
+            }));
+
+            t1.Start();
+            t2.Start();
+
         }
 
         private static void Test4()

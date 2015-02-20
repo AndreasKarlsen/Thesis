@@ -12,6 +12,7 @@ namespace STM.Implementation.Lockbased
     {
         protected readonly object StampLock  = new object();
         protected readonly ReentrantLock ReentrantLock = new ReentrantLock();
+        public readonly ManualResetEvent WaitHandle = new ManualResetEvent(false);
 
         private long _stamp;
 
@@ -62,5 +63,14 @@ namespace STM.Implementation.Lockbased
             return ReentrantLock.IsLockedByCurrentThread();
         }
 
+        public void Signal()
+        {
+            WaitHandle.Set();
+        }
+
+        public void Reset()
+        {
+            WaitHandle.Reset();
+        }
     }
 }
