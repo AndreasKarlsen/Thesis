@@ -4,6 +4,8 @@ This chapter describes the process of designing an \ac{STM} system for C\#. \bsr
 \label{chap:stm_design}
 \section{Requirements}
 \label{sec:stm_requirements}
+\kasper[inline]{General stuff. Atomic block. Language support}
+\kasper[inline]{Purpose}
 In this section we analyze what properties the design of an \ac{STM} system requires in order to integrate with C\#.
 \kasper[inline]{Refer to work last semester}
 \andreas[inline]{Should we have an analysis of C\# to see how we should design the STM system?}
@@ -66,6 +68,10 @@ In this section we analyze what properties the design of an \ac{STM} system requ
 %\end{lstlisting}
 
 \subsection{Conditional Synchronization}
+To be a valid alternative for existing C\# synchronization mechanism a \ac{STM} system must be broadly applicable. This requires support for conditional synchronization so that \ac{STM} can be employed in well know scenarios such as shared buffers and other producer consumer setups\cite[p. 128]{tanenbaum2008modern}. \bsref{chap:stm_key_concepts} discusses the \bscode{retry} and \bscode{orElse} constructs proposed in \cite{harris2005composable} for conditional synchronization and composition of alternatives. Supporting such constructs in C\# will increase the applicability of the \ac{STM} system.
+
+Our previous work in \cite{dpt907e14trending} included a implementation of $k$-means clustering algorithm\cite[p. 451]{dataminingconceptsandtechniques} in the functional programming language Clojure. Clojures contains a language integrated \ac{STM} implementation which does not support constructs such as \bscode{retry} and \bscode{orElse}. As a result the implementation requires the use of condition variables and busy waiting in scenarios where the \bscode{retry} construct could have been employed\cite{duffy2010stmnet}.  As such, supplying \bscode{retry} and \bscode{orElse} constructs in C\# will allow for simpler conditional synchronization without the need for busy waiting.
+
 \subsection{Nesting}
 The traditional \ac{TL} approach to concurrency has issues with composability due to the threat of deadlocks\cite[p. 58]{sutter2005software} when composing lock based code. \ac{STM} attempts to mitigate this issues by removing the threat of deadlock, and allowing transactions to nest. Nesting can occur both lexically and dynamically\cite[p. 1]{kumar2011hparstm}\cite[p. 42]{harris2010transactional}\cite[p. 2081]{herlihy2011tm}. \bsref{lst:stm_nested_transactions} shows a example a lexically nested transaction while \bsref{lst:stm_nested_transactions_real} shows a example of dynamically nested transactions. Here the withdraw and deposit methods on the accounts are themselves defined using transactions.
 
@@ -120,7 +126,6 @@ An \ac{STM} system for C\# must support nesting of transaction as this will miti
 \section{Design}
 \label{sec:stm_design}
 Something with\cite[p. 1]{harris2003language}
-
 
 %\section{Lock or Obstruction Free}
 %\section{Handling Side-effects}
