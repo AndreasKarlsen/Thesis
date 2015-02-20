@@ -1,6 +1,7 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{STM Design}{0}{Februar 10, 2015}{}{../../}
 This chapter will
+\label{chap:stm_design}
 \section{Strong or Weak Atomicity}
 Something with\cite[p. 1]{harris2003language}
 \section{Lock or Obstruction Free}
@@ -12,6 +13,50 @@ Flat, open, closed.
 \section{Log or In Place Update}
 \section{Lazy or Eager Update}
 \section{Conditional Synchronization}
+\section{Syntax design}
 
+%atomic {
+%  if ( booleanexpression ) {
+%  ...
+%}
+%
+%vs
+%
+%atomic( booleanexpression) {
+%  ...
+%}
+%
+%    atomic {
+%      if(_queue.IsEmpty())
+%        retry;
+%      return _queue.Dequeue();
+%    } orElse {
+%      if(_queue2.IsEmpty())
+%        retry;
+%      return _queue2.Dequeue();
+%    } orElse {
+%      if(_queue3.IsEmpty())
+%        retry;
+%      return _queue3.Dequeue();
+%    }
+%    
+%vs
+%
+%    atomic (_queue.IsEmpty()){
+%      return _queue.Dequeue();
+%    } orElse (_queue2.IsEmpty()){
+%      return _queue2.Dequeue();
+%    } orElse (_queue3.IsEmpty()){
+%      return _queue3.Dequeue();
+%    }
+%    
+%vs
+%    atomic {
+%      match (_queue.size()) with
+%      | 3 -> _queue.dequeue();
+%      | 2 -> _queue.peek();
+%      | >1 -> retry;
+%      }
+         
 
 \worksheetend
