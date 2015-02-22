@@ -9,23 +9,23 @@ namespace STM.Implementation.Lockbased
 {
     public class LockObject<T> : BaseLockObject
     {
-        private T version;
+        private T _version;
 
         public LockObject(T value)
         {
-            version = value;
+            _version = value;
         }
 
         public virtual void SetValue(T value)
         {
-            version = value;
+            _version = value;
         }
 
         public virtual T GetValue()
         {
             T tmp;
             Lock();
-            tmp = version;
+            tmp = _version;
             Unlock();
             
             return tmp;
@@ -54,9 +54,15 @@ namespace STM.Implementation.Lockbased
             Transaction me = Transaction.GetLocal();
             Console.WriteLine("Transaction: " + me.ID + " commited:" + o);
 #endif
-            this.version = (T)o;
-            WaitHandle.Set();
-            WaitHandle.Reset();
+            _version = (T)o;
+            lock (WaitHandlesLock)
+            {
+                foreach (var waitHandle in WaitHandles)
+                {
+                    waitHandle.Set();
+                }
+                ClearWaitHandles();
+            }
         }
     }
 }

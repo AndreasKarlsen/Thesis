@@ -12,7 +12,10 @@ namespace STM.Implementation.Lockbased
     {
         protected readonly object StampLock  = new object();
         protected readonly ReentrantLock ReentrantLock = new ReentrantLock();
-        public readonly ManualResetEvent WaitHandle = new ManualResetEvent(false);
+        internal readonly IList<ManualResetEvent> WaitHandles = new List<ManualResetEvent>();
+        protected readonly object WaitHandlesLock = new object();
+        internal readonly Semaphore WaitHandle = new Semaphore(0, 99);
+        protected int WaitCount = 0;
 
         private long _stamp;
 
@@ -63,14 +66,24 @@ namespace STM.Implementation.Lockbased
             return ReentrantLock.IsLockedByCurrentThread();
         }
 
-        public void Signal()
+        internal WaitHandle RegisterWaitHandle()
         {
-            WaitHandle.Set();
+            ManualResetEvent wh;
+            lock (WaitHandlesLock)
+            {
+                wh = new ManualResetEvent(false);
+                WaitHandles.Add(wh);
+            }
+
+            return wh;
         }
 
-        public void Reset()
+        protected void ClearWaitHandles()
         {
-            WaitHandle.Reset();
+            lock (WaitHandlesLock)
+            {
+                WaitHandles.Clear();
+            }
         }
     }
 }

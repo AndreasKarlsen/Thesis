@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using STM;
+using STM.Collections;
 using STM.Interfaces;
 using STM.Implementation.Obstructionfree;
 using STM.Implementation.Lockbased;
@@ -21,34 +22,110 @@ namespace STMTester
             //Test3();
             //Test4();
             TestRetry();
+            TestRetry2();
+            SingleItemBufferTest();
+            //QueueTest();
             Console.ReadKey();
+        }
+
+        private static void QueueTest()
+        {
+            Console.WriteLine("QueueTest:");
+            var buffer = new STM.Collections.Queue<int>();
+            var t1 = new Thread(() =>
+            {
+                for (var i = 0; i < 100000; i++)
+                {
+                    Console.WriteLine(buffer.DeQueue());
+                }
+            });
+
+            var t2 = new Thread(() => LockSTMSystem.Atomic(() =>
+            {
+                for (var i = 0; i < 100000; i++)
+                {
+                    buffer.EnQueue(i);
+                }
+            }));
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t1.Join();
+        }
+
+        private static void SingleItemBufferTest()
+        {
+            Console.WriteLine("SingleItemBufferTest:");
+            var buffer = new SingleItemBuffer<int>();
+            var t1 = new Thread(() =>
+            {
+                for (var i = 0; i < 100000; i++)
+                {
+                    Console.WriteLine(buffer.GetValue());
+                }
+            });
+
+            var t2 = new Thread(() => LockSTMSystem.Atomic(() =>
+            {
+                for (var i = 0; i < 100000; i++)
+                {
+                    buffer.SetValue(i);
+                }
+            }));
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t1.Join();
+        }
+
+        private static void TestRetry2()
+        {
+            Console.WriteLine("Retry as only operation:");
+            var t1 = new Thread(() =>
+            {
+                LockSTMSystem.Atomic(() =>
+                {
+                    LockSTMSystem.Retry();
+                });
+            });
+
+            t1.Start();
+            t1.Join();
         }
 
         private static void TestRetry()
         {
-            RefLockObject<ValueHolder> result = new RefLockObject<ValueHolder>(new ValueHolder(10));
-            var system = LockSTMSystem.GetInstance();
+            Console.WriteLine("Retry block:");
+            var result = new RefLockObject<ValueHolder>(new ValueHolder(10));
             var t1 = new Thread(() =>
             {
-                var r1 = system.Atomic(() =>
+                var r1 = LockSTMSystem.Atomic(() =>
                 {
                     var tmp = result.GetValue().Value;
                     if (tmp != 12)
                     {
-                        system.Retry();
+                        LockSTMSystem.Retry();
                     }
                     result.SetValue(new ValueHolder(tmp * 10));
                     return result.GetValue();
                 });
             });
 
-            var t2 = new Thread(() => system.Atomic(() => {
+            var t2 = new Thread(() => LockSTMSystem.Atomic(() =>
+            {
                 Thread.Sleep(100); 
                 result.SetValue(new ValueHolder(12));
             }));
 
             t1.Start();
             t2.Start();
+
+            t1.Join();
+            t1.Join();
 
         }
 
@@ -64,15 +141,15 @@ namespace STMTester
 
         private static int Test4Internal()
         {
-            RefLockObject<ValueHolder> result = new RefLockObject<ValueHolder>(new ValueHolder(10));
-            var system = LockSTMSystem.GetInstance();
+            var result = new RefLockObject<ValueHolder>(new ValueHolder(10));
 
             var t1 = new Thread(() =>
             {
-                var r1 = system.Atomic(() =>
+                var r1 = LockSTMSystem.Atomic(() =>
                 {
                     if (result.GetValue().Value == 10)
                     {
+                        Thread.Yield();
                         result.SetValue(new ValueHolder(result.GetValue().Value * 10));
                     }
 
@@ -81,7 +158,7 @@ namespace STMTester
                 Debug.Assert(r1.Value != 120, "String value: "+r1.Value);
             });
 
-            var t2 = new Thread(() => system.Atomic(() => result.SetValue(new ValueHolder(12))));
+            var t2 = new Thread(() => LockSTMSystem.Atomic(() => result.SetValue(new ValueHolder(12))));
 
             t1.Start();
             t2.Start();

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using STM.Exceptions;
 
 namespace STM.Implementation.Lockbased
 {
@@ -44,5 +45,32 @@ namespace STM.Implementation.Lockbased
             return LockObjects.Count;
         }
 
+        public bool TryLock(int milisecs)
+        {
+            var objects = new List<BaseLockObject>(LockObjects.Count);
+            foreach (var lo in LockObjects)
+            {
+                if (!lo.TryLock(milisecs))
+                {
+                    foreach (var baseLockObject in objects)
+                    {
+                        baseLockObject.Unlock();
+                    }
+                    throw new STMAbortException("Abort due to being unable to aquire locks on all objects");
+                }
+
+                objects.Add(lo);
+            }
+
+            return true;
+        }
+
+        public void Unlock()
+        {
+            foreach (var lo in LockObjects)
+            {
+                lo.Unlock();
+            }
+        }
     }
 }

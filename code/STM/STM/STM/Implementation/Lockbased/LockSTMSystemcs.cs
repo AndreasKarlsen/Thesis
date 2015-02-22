@@ -10,34 +10,29 @@ using System.Diagnostics;
 
 namespace STM.Implementation.Lockbased
 {
-    public class LockSTMSystem : STMSystem
+    public abstract class LockSTMSystem
     {
-        public int TIME_OUT = 100;
+        internal static readonly int TIME_OUT = 100;
 
-        private static readonly Lazy<LockSTMSystem> LazySystem = new Lazy<LockSTMSystem>(true);
 
-        public LockSTMSystem()
+        public static void Retry()
         {
-
+            throw new STMRetryException();
         }
 
-        public static STMSystem GetInstance()
-        {
-            return LazySystem.Value;
-        }
 
-        protected override void OnAbort()
+        private static void OnAbort()
         {
-            WriteSet writeset = WriteSet.GetLocal();
-            ReadSet readset = ReadSet.GetLocal();
+            var writeset = WriteSet.GetLocal();
+            var readset = ReadSet.GetLocal();
             writeset.Clear();
             readset.Clear();
         }
 
-        protected override void OnCommit()
+        private static void OnCommit()
         {
-            WriteSet writeset = WriteSet.GetLocal();
-            ReadSet readset = ReadSet.GetLocal();
+            var writeset = WriteSet.GetLocal();
+            var readset = ReadSet.GetLocal();
             VersionClock.SetWriteStamp();
             long writeStamp = VersionClock.GetWriteStamp();
             foreach (var entry in writeset.Map)
@@ -52,35 +47,45 @@ namespace STM.Implementation.Lockbased
             readset.Clear();
         }
 
-        protected override bool OnValidate()
+        private static bool OnValidate()
         {
-            Transaction me = Transaction.GetLocal();
+            var me = Transaction.GetLocal();
             if (me.GetStatus() == Transaction.Status.Aborted)
             {
                 return false;
             } 
 
 
-            WriteSet writeset = WriteSet.GetLocal();
-            ReadSet readset = ReadSet.GetLocal();
+            var writeset = WriteSet.GetLocal();
+            var readset = ReadSet.GetLocal();
             if (!writeset.TryLock(TIME_OUT))
             {
                 return false;
             }
 
+            if (ValidateReadset(readset))
+            {
+                return true;
+            }
+
+            writeset.Unlock();
+            return false;
+        }
+
+
+        private static bool ValidateReadset(ReadSet readset)
+        {
             foreach (var lo in readset.LockObjects)
             {
                 if (lo.IsLocked() && !lo.IsLockedByCurrentThread())
                 {
-                    writeset.Unlock();
-                    return false;   
+                    return false;
                 }
 
-                long loStamp = lo.GetStamp();
-                long readStamp = VersionClock.GetReadStamp();
+                var loStamp = lo.GetStamp();
+                var readStamp = VersionClock.GetReadStamp();
                 if (loStamp > readStamp)
                 {
-                    writeset.Unlock();
                     return false;
                 }
             }
@@ -88,9 +93,9 @@ namespace STM.Implementation.Lockbased
             return true;
         }
 
-        public override T Atomic<T>(Func<T> stmAction)
+        public static T Atomic<T>(Func<T> stmAction)
         {
-            T result = default(T);
+            var result = default(T);
             while (true)
             {
                 var me = new Transaction();
@@ -100,32 +105,44 @@ namespace STM.Implementation.Lockbased
                 {
                     result = stmAction();
                 }
-                catch (ThreadAbortException) { }
-                catch (STMAbortException) { me.Abort();  }
+                catch (ThreadAbortException)
+                {
+                }
+                catch (STMAbortException)
+                {
+                    me.Abort();
+                    OnAbort();
+                }
                 catch (STMRetryException)
                 {
-                    WaitOnReadset(me);
+                    if (WaitOnReadset(me))
+                    {
+                        me.Abort();
+                        OnAbort();
+                    }
                 }
                 catch (STMException) { }
+                    /*
                 catch (Exception ex)
                 {
                     Debug.Assert(false, "STM fail: " + ex.Message);
-                }
+                }*/
 
-                if (OnValidate())
+
+                if (OnValidate() && me.Commit())
                 {
-                    if (me.Commit())
-                    {
-                        OnCommit();
-                        return result;
-                    }
+                    OnCommit();
+                    return result;
                 }
+                
                 me.Abort();
                 OnAbort();
+                
+
             }
         }
 
-        public override void Atomic(Action stmAction)
+        public static void Atomic(Action stmAction)
         {
             Atomic(() =>
             {
@@ -134,20 +151,26 @@ namespace STM.Implementation.Lockbased
             });
         }
 
-        private void WaitOnReadset(Transaction me)
+        private static bool WaitOnReadset(Transaction me)
         {
             
-            ReadSet readset = ReadSet.GetLocal();
+            var readset = ReadSet.GetLocal();
             if (readset.Count() != 0)
             {
-                WaitHandle[] waiton = new WaitHandle[readset.Count()];
+                var waiton = new WaitHandle[readset.Count()];
 
-                int i = 0;
+                var i = 0;
                 foreach (var item in readset.LockObjects)
                 {
-                    waiton[i] = item.WaitHandle;
+                    waiton[i] = item.RegisterWaitHandle();
                     i++;
                 }
+
+                if (!ValidateReadset(readset))
+                {
+                    return true;
+                }
+
 #if DEBUG
                 Console.WriteLine("Transaction: " + me.ID + " waiting for retry.");
 #endif
@@ -155,8 +178,40 @@ namespace STM.Implementation.Lockbased
 #if DEBUG
                 Console.WriteLine("Transaction: " + me.ID + " awoken from retry.");
 #endif
+                /*
+                //Attempt to block the transaction waiting for some value to change
+                //If unable simply return and rerun the transaction from the start
+                if (readset.TryLock(TIME_OUT))
+                {
+                    if (!ValidateReadset(readset))
+                    {
+                        readset.Unlock();
+                        return true;
+                    }
+
+                    var waiton = new WaitHandle[readset.Count()];
+
+                    var i = 0;
+                    foreach (var item in readset.LockObjects)
+                    {
+                        waiton[i] = item.RegisterWaitHandle();
+                        i++;
+                    }
+                    readset.Unlock();
+#if DEBUG
+                    Console.WriteLine("Transaction: " + me.ID + " waiting for retry.");
+#endif
+                    WaitHandle.WaitAny(waiton);               
+#if DEBUG
+                    Console.WriteLine("Transaction: " + me.ID + " awoken from retry.");
+#endif
+                }*/
+                
+                return true;
             }
-            me.Abort();
+
+            return false;
+
         }
     }
 }

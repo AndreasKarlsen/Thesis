@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,7 +9,7 @@ using STM.Exceptions;
 
 namespace STM.Implementation.Lockbased
 {
-    public class RefLockObject<T> : LockObject<T> where T : class, ICopyable<T>, new()
+    public class RefLockObject<T> : LockObject<T>
     {
 
         public RefLockObject(T value)
@@ -19,14 +20,14 @@ namespace STM.Implementation.Lockbased
 
         public override T GetValue()
         {
-            T tmp = GetValueInternal();
+            var tmp = GetValueInternal();
             return tmp;
         }
 
         private T GetValueInternal()
         {
-            Transaction me = Transaction.GetLocal();
-            ReadSet readset = ReadSet.GetLocal();
+            var me = Transaction.GetLocal();
+            var readset = ReadSet.GetLocal();
             switch (me.GetStatus())
             {
                 case Transaction.Status.Committed:
@@ -39,16 +40,12 @@ namespace STM.Implementation.Lockbased
 #if DEBUG
                         Console.WriteLine("Transaction: " + me.ID + " read:" + value);
 #endif
-                        /*
-                        if (GetStamp() <= VersionClock.GetReadStamp())
-                        {
-                            throw new STMAbortException("Abort");
-                        }*/
                         
-                        if (IsLocked())
+                        if (IsLocked() || VersionClock.GetReadStamp() < GetStamp())
                         {
                             throw new STMAbortException("Aborted due to read from locked object");
                         }
+
                         ReadSet.GetLocal().Add(this);
                         return value;
                     }
@@ -79,14 +76,14 @@ namespace STM.Implementation.Lockbased
         }
         private void SetValueInternal(T value)
         {
-            Transaction me = Transaction.GetLocal();
+            var me = Transaction.GetLocal();
             switch (me.GetStatus())
             {
                 case Transaction.Status.Committed:
                     base.SetValue(value);
                     break;
                 case Transaction.Status.Active:
-                    WriteSet writeset = WriteSet.GetLocal();
+                    var writeset = WriteSet.GetLocal();
                     if (!writeset.Contains(this))
                     {
 
