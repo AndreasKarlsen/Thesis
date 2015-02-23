@@ -44,7 +44,17 @@ The Roslyn compiler project contains compilers for both Visual Basic and the C\#
 As of February 2015 Microsoft released the source code for an independent version of its .NET runtime environment \acl{CLR}, called \ac{CLR} Core on Github\cite{coreclr}. While this undoubtedly present many exiting research opportunities for the area of \ac{STM} as well as other computer science areas, we consider the \ac{CLR} to be out of scope for this thesis. The \ac{CLR} Core is mainly written in C++\cite{coreclr}, a language with which we have only limited experience. Furthermore, the \ac{CLR} Core consists of roughly 2.6 million lines of code\cite{coreclrBlog} making it a complex and time demanding task to gain a understanding of its structure.
 
 \section{Problem Statement}
-The goals of this master thesis is to investigate the possibility of supplying language integrated support for \ac{STM} in the C\# programming language. In order to structure our investigation we have extracted a number of problem statement questions. The questions are based on findings from the theory investigated in our previous study, investigation of related work, exploratory investigations into \ac{STM} implementations, and the Roslyn compiler. These questions will serve as a guideline for integrating \ac{STM} into the C\# language, as well as being used to conclude upon the project in \bsref{chap:conclusion}.
+The goals of this master thesis is to investigate the possibility of supplying language integrated support for \ac{STM} in the C\# programming language. The hypothesis we seek to prove or falsify is:
+
+\newtheorem{hypo}{Hypothesis}
+\begin{hypo}
+Language integrated \ac{STM} provides a valid alternative to locking when solving known concurrent problems by using C\#
+\end{hypo}
+
+In order to validate the hypothesis a language integrated \ac{STM} system for C\# will be developed. Using this implementation a number of representative concurrent problems will be implemented. These implementations will be compared to equivalent lock based implementations by quantifying their characteristics.% in order to prove or falsify the hypothesis.
+
+\subsection{Method}
+In order to structure our investigation we have extracted a number of problem statement questions. The questions are based on findings from the theory investigated in our previous study, investigation of related work, exploratory investigations into \ac{STM} implementations, and the Roslyn compiler. These questions will serve as a guideline for investigating the integration of \ac{STM} into the C\# language, as well as being used to conclude upon the project in \bsref{chap:conclusion}.
 
 \begin{enumerate}
 \item How is the Roslyn compiler structured?
@@ -54,7 +64,7 @@ The goals of this master thesis is to investigate the possibility of supplying l
 \item What different implementation strategies exist for \ac{STM}?
 \end{enumerate}
 
-Answering these questions along with supplying a prototype implementation will build the foundation for evaluating how \ac{STM} fits into the C\# programming language and what benefits it brings.
+Answering these questions along with supplying a prototype implementation will build the foundation for evaluating the hypothesis.
  
 \section{Preliminary Investigation}
 In order to further our understand of implementing an \ac{STM} system and the Roslyn compiler, a preliminary investigation was conduced. As these areas are new to us, they initially present some uncertainty in the project. A preliminary investigation will further our understanding of the selected as well as mitigate some of the uncertainty.
