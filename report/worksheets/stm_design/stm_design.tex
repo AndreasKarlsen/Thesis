@@ -9,7 +9,23 @@ This chapter describes the process of designing an \ac{STM} system for C\#. \bsr
 In this section we analyze what properties the design of an \ac{STM} system requires in order to integrate with C\#.
 \kasper[inline]{Refer to work last semester}
 \andreas[inline]{Should we have an analysis of C\# to see how we should design the STM system?}
+
 \subsection{Strong or Weak Atomicity}
+The atomicity guarantee provided by \ac{STM} systems varies, depending on the semantics provided. In \cite{blundell2006subtleties} Blundell et al. defines two levels of atomicity:
+%
+\begin{defn}\label{def:strong_atomicity}
+\emph{[...] strong atomicity to be a semantics in which transactions execute atomically
+with respect to both other transactions and non-transactional code.}
+\end{defn}
+%
+\begin{defn}\label{def:weak_atomicity}
+\emph{[...] weak atomicity to be a semantics in which transactions are atomic only with respect to other transactions.}
+\end{defn}
+
+Strong atomicity provides non-interference and containment between transactional and non-transactional code, where as weak atomicity does not. As an example, using the \bscode{Car} class defined in \bsref{lst:atomicity}, having the \bscode{KmDriven} setter called from one thread, while another thread is calling the \bscode{Drive} method strong and weak atomicity yields different results. Under strong atomicity, everything inside the \bscode{atomic} block at line 12, is not visible to non-transactional code nor is changes made from the setter visible inside the atomic block. The result is, that if the setter is called in the middle of the \bscode{Drive} method, there will be a conflict which must be resolved. 
+
+If only weak atomicity is guaranteed, given the same scenario, the change made through the setter, would be visible inside the atomic block. Thus shared memory between transaction and non-transactional code can lead to race conditions.
+%
 
 \begin{lstlisting}[label=lst:atomicity,
   caption={Level of Atomicity},
@@ -24,7 +40,7 @@ In this section we analyze what properties the design of an \ac{STM} system requ
   stringstyle=\color{redstrings},
   morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
 
-  class car {
+  class Car {
     private int _kmDriven;
     public int KmDriven {
       get {
