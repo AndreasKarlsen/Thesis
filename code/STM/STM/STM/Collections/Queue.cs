@@ -11,15 +11,27 @@ namespace STM.Collections
     {
         private readonly RefLockObject<Node> _head = new RefLockObject<Node>(null);
         private readonly RefLockObject<Node> _tail = new RefLockObject<Node>(null);
+        private RefLockObject<int> _size = new RefLockObject<int>(0);
 
-        public void EnQueue(T value)
+        public int Count
+        {
+            get
+            {
+                return LockSTMSystem.Atomic(() =>
+                {
+                    return _size.GetValue();
+                });
+            }
+        }
+
+        public void Enqueue(T value)
         {
             LockSTMSystem.Atomic(() =>
             {
                 var node = new Node(value);
                 if (_tail.GetValue() == null)
                 {
-                   
+
                     _head.SetValue(node);
                     _tail.SetValue(node);
                 }
@@ -28,10 +40,11 @@ namespace STM.Collections
                     _tail.GetValue().Next.SetValue(node);
                     _tail.SetValue(node);
                 }
+                _size.SetValue(_size.GetValue() + 1);
             });
         }
 
-        public T DeQueue()
+        public T Dequeue()
         {
             return LockSTMSystem.Atomic(() =>
             {
@@ -49,6 +62,7 @@ namespace STM.Collections
                 {
                     _tail.SetValue(null);
                 }
+                _size.SetValue(_size.GetValue() - 1);
 
                 return value;
             });
@@ -63,6 +77,7 @@ namespace STM.Collections
             {
                 Value = value;
             }
+
         }
     }
 }
