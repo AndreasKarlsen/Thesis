@@ -1,16 +1,38 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
-\worksheetstart{Roslyn and .NET}{0}{Februar 10, 2015}{}{../../}
+\worksheetstart{Roslyn}{0}{Februar 10, 2015}{}{../../}
+This chapter presents a conceptual overview of the Roslyn compiler project. In BLA we describe BLA\toby{Ændre dette når vi ved hvad der skal være i kapitlet}
+
+\section{Introduction}
+Project Roslyn is Microsoft's initiative of completely rewriting the C\# and Visual Basic compilers, using their own managed code language. Thus the C\# compiler is written in C\# and the Visual Basic compiler in Visual Basic. Roslyn was released open source at the Microsoft Build Conference 2014\cite{csharpBuild}.
+
+Beyond changing the languages the compilers are written in, Roslyn provides a new approach to compiler interaction and usage. Traditionally a compiler is treated as a black box where it is given some source files as input, magic happens in the middle, and out comes objects files or assemblies\cite[p. 3]{ng2012roslyn}. During compilation the compiler builds a deep knowledge about the code, unavailable to the programmer, which is discarded once the compilation is done. This is where Roslyn differs, as it exposes the code analysis of the compiler by providing an API layer, which allows the programmer to obtain information about the different compilation phases: parsing, semantic analysis, binding and emitting\cite[p. 3]{ng2012roslyn}.\toby{Refer evt. derhen, hvis ikke at det er næste sektion. Eller undlad at nævne det det enkelte kompilerings faser og bare vent med at introducerer til senere.}
+
+\toby[i]{Kort om hvad det giver af muligheder og fordele}
+%se stackoverflow link og whitepaper
+
+%forklar hvorfor det er godt og hvad det kan bruges til
+
+
+
+%Special compiler
+
+%Known Limitations and Unimplemented Language Features
+	%https://social.msdn.microsoft.com/Forums/vstudio/en-US/f5adeaf0-49d0-42dc-861b-0f6ffd731825/known-limitations-and-unimplemented-language-features?forum=roslyn
+
 %Liste over mulige emner:
 	% Beskrivelse af kompileren, og hvad de muliggøre med deres API.
 	% De enkelte faser i kompileren og generelt om dens opbygning
 	% Hvilke ting de har gjort i forhold til at forbedre performance
 	% Fortælle om deres røde og grønne syntaks træ
 	% De anvender traditionel compiler teori, med lexer og parser + syntaxtræ og visitor til at traverserer træet.
+	%Evt. også nævn syntax visualizer (nok ikke så vigtig, men er et værdifuldt værktøj)
+	%Hvilke muligheder man har for at implementere STM direkte i Roslyn
+		%Ved hjælp af API, hvor vi gør det først og derefter fodrer output til csc.exe
+		%Direkte i compileren.
 
-\section{Compile Phases}
+\section{Compile Phases}\toby{Evt. ryk den ned under core concepter}
+%Forklar de forskellige kompilerigns faser
 
-\section{.NET}
-\subsection{Garbage Collector}
-\subsection{Debugger}
-\subsection{JIT}
+\section{Core Concepts}
+%syntax tree, syntax tokens, symbols osv.
 \worksheetend
