@@ -22,6 +22,11 @@ namespace STM.Implementation.Lockbased
             set { SetValue(value); }
         }
 
+        public static implicit operator T(LockObject<T> tmObject)
+        {
+            return tmObject.Value;
+        }
+
         public virtual void SetValue(T value)
         {
             _version = value;

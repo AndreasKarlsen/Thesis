@@ -23,11 +23,11 @@ namespace STMTester
             //Test2();
             //Test3();
             //Test4();
-            TestRetry();
+            //TestRetry();
             //TestRetry2();
             //SingleItemBufferTest();
             //QueueTest();
-            //DinningPhilosophersTest();
+            DinningPhilosophersTest();
             Console.ReadKey();
         }
 
@@ -97,7 +97,7 @@ namespace STMTester
                 {
                     LockSTMSystem.Atomic(() =>
                     {
-                        if (!left.Value || !right.Value)
+                        if (!left|| !right)
                         {
                             LockSTMSystem.Retry();
                         }
