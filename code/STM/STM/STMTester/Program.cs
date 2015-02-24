@@ -134,7 +134,7 @@ namespace STMTester
             {
                 for (var i = 0; i < 100000; i++)
                 {
-                    Console.WriteLine(buffer.DeQueue());
+                    Console.WriteLine(buffer.Dequeue());
                 }
             });
 
@@ -142,7 +142,7 @@ namespace STMTester
             {
                 for (var i = 0; i < 100000; i++)
                 {
-                    buffer.EnQueue(i);
+                    buffer.Enqueue(i);
                 }
             }));
 
