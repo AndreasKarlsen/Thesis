@@ -16,6 +16,12 @@ namespace STM.Implementation.Lockbased
             _version = value;
         }
 
+        public virtual T Value
+        {
+            get { return GetValue(); }
+            set { SetValue(value); }
+        }
+
         public virtual void SetValue(T value)
         {
             _version = value;
