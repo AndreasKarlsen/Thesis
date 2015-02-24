@@ -23,11 +23,11 @@ namespace STMTester
             //Test2();
             //Test3();
             //Test4();
-            //TestRetry();
+            TestRetry();
             //TestRetry2();
             //SingleItemBufferTest();
             //QueueTest();
-            DinningPhilosophersTest();
+            //DinningPhilosophersTest();
             Console.ReadKey();
         }
 
@@ -97,13 +97,13 @@ namespace STMTester
                 {
                     LockSTMSystem.Atomic(() =>
                     {
-                        if (!left.GetValue() || !right.GetValue())
+                        if (!left.Value || !right.Value)
                         {
                             LockSTMSystem.Retry();
                         }
 
-                        left.SetValue(false);
-                        right.SetValue(false);
+                        left.Value = false;
+                        right.Value = false;
                     });
 
                     Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
@@ -113,8 +113,8 @@ namespace STMTester
 
                     LockSTMSystem.Atomic(() =>
                     {
-                        left.SetValue(true);
-                        right.SetValue(true);
+                        left.Value = true;
+                        right.Value = true;
                     });
 
                     Thread.Sleep(100);
@@ -198,25 +198,25 @@ namespace STMTester
         private static void TestRetry()
         {
             Console.WriteLine("Retry block:");
-            var result = new RefLockObject<ValueHolder>(new ValueHolder(10));
+            var result = new RefLockObject<int>(10);
             var t1 = new Thread(() =>
             {
                 var r1 = LockSTMSystem.Atomic(() =>
                 {
-                    var tmp = result.GetValue().Value;
+                    var tmp = result.Value;
                     if (tmp != 12)
                     {
                         LockSTMSystem.Retry();
                     }
-                    result.SetValue(new ValueHolder(tmp * 10));
-                    return result.GetValue();
+                    result.Value = tmp*10;
+                    return result.Value;
                 });
             });
 
             var t2 = new Thread(() => LockSTMSystem.Atomic(() =>
             {
-                Thread.Sleep(100); 
-                result.SetValue(new ValueHolder(12));
+                Thread.Sleep(100);
+                result.Value = 12;
             }));
 
             t1.Start();

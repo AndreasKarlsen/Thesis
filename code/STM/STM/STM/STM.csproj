@@ -51,6 +51,7 @@
     <Compile Include="Exceptions\STMAbortException.cs" />
     <Compile Include="Exceptions\STMAccessViolationException.cs" />
     <Compile Include="Exceptions\STMException.cs" />
+    <Compile Include="Exceptions\STMInvalidRetryException.cs" />
     <Compile Include="Exceptions\STMRetryException.cs" />
     <Compile Include="Implementation\Lockbased\LockObject.cs" />
     <Compile Include="Implementation\Lockbased\LockSTMSystemcs.cs" />

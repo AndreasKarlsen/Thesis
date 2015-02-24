@@ -104,9 +104,15 @@ namespace STM.Implementation.Lockbased
                 try
                 {
                     result = stmAction();
-                }
-                catch (ThreadAbortException)
-                {
+
+                    if (OnValidate() && me.Commit())
+                    {
+                        OnCommit();
+                        return result;
+                    }
+
+                    me.Abort();
+                    OnAbort();
                 }
                 catch (STMAbortException)
                 {
@@ -115,11 +121,9 @@ namespace STM.Implementation.Lockbased
                 }
                 catch (STMRetryException)
                 {
-                    if (WaitOnReadset(me))
-                    {
-                        me.Abort();
-                        OnAbort();
-                    }
+                    WaitOnReadset(me);
+                    me.Abort();
+                    OnAbort();
                 }
                 catch (STMException) { }
                     /*
@@ -127,16 +131,6 @@ namespace STM.Implementation.Lockbased
                 {
                     Debug.Assert(false, "STM fail: " + ex.Message);
                 }*/
-
-
-                if (OnValidate() && me.Commit())
-                {
-                    OnCommit();
-                    return result;
-                }
-                
-                me.Abort();
-                OnAbort();
                 
 
             }
@@ -151,7 +145,7 @@ namespace STM.Implementation.Lockbased
             });
         }
 
-        private static bool WaitOnReadset(Transaction me)
+        private static void WaitOnReadset(Transaction me)
         {
             
             var readset = ReadSet.GetLocal();
@@ -168,7 +162,7 @@ namespace STM.Implementation.Lockbased
 
                 if (!ValidateReadset(readset))
                 {
-                    return true;
+                    return;
                 }
 
 #if DEBUG
@@ -207,11 +201,12 @@ namespace STM.Implementation.Lockbased
 #endif
                 }*/
                 
-                return true;
+                return;
             }
-
-            return false;
-
+            else
+            {
+                throw new STMInvalidRetryException();
+            }
         }
     }
 }
