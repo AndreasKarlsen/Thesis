@@ -9,8 +9,21 @@ This chapter describes the process of designing an \ac{STM} system for C\#. \bsr
 In this section we analyze what properties the design of an \ac{STM} system requires in order to integrate with C\#.
 \kasper[inline]{Refer to work last semester}
 \andreas[inline]{Should we have an analysis of C\# to see how we should design the STM system?}
+\subsection{Transactions \& Variables}
+%Trans keyword
+%Atomic block
+%Read outside transactions
+%No write outside transactions
+As described in \bsref{sec:stm_keyconcepts_example} a \ac{STM} system must offer some way of defining a transaction scope. As \stmnamesp is to be a language integrated \ac{STM} system, C\# must be extended with syntax for specifying a transaction scope.
+
+A \ac{STM} system abstracts away many of the details of how synchronization is achieved. Simply applying transactions over a number of C\# variables provides a high level of abstraction but also hides the impact of synchronization. Having the programmer specify what variables should be tracked by the \ac{STM} system ensures that she is aware of what variables the \ac{STM} is managing. Explicitly reasoning about what variables are to be synchronized can assist the programmer in gauging the performance of a transaction as well as better understanding the execution of transactions. Both areas which usability studies\cite{rossbach2010transactional}\cite{pankratius2009does} has found to be problematic for some. As with defining transaction scopes C\# must be extended with syntax for marking variables for synchronization inside transactions. We call a variable marked for use in transactions a transactional variable.
+
+\stmnamesp must not be overly restrictive as this will limit its applicability. To that end the \ac{STM} system must allow reads from transactional variables to occur both inside and outside transactions. 
+
+For writes to transactional variables a choice exists between allowing and disallowing writes from outside transactions. Disallowing writes from outside transaction will ensure that non-transactional access can not interfere with transactional access but will hamper the usability of the \ac{STM} system. Allowing writes from outside transactions increases the complexity of the implementation as any conflicts such writes create must be detected and resolved by the \ac{STM} system. As allowing writes from outside transactions provides the best usability \stmnamesp must provides support for such writes in addition to writes from inside transactions. This requirement is closely related to the choice between strong and weak atomicity discussed in \bsref{sec:design_strong_weak_atomicity}.
 
 \subsection{Strong or Weak Atomicity}
+\label{sec:design_strong_weak_atomicity}
 The atomicity guarantee provided by \ac{STM} systems varies, depending on the semantics provided. In \cite{blundell2006subtleties} Blundell et al. defines two levels of atomicity:
 %
 \begin{defn}\label{def:strong_atomicity}
