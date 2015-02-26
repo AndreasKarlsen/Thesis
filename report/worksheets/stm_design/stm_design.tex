@@ -16,12 +16,13 @@ In this section we analyze what properties the design of an \ac{STM} system requ
 %No write outside transactions
 As described in \bsref{sec:stm_keyconcepts_example} a \ac{STM} system must offer some way of defining a transaction scope. As \stmnamesp is to be a language integrated \ac{STM} system, C\# must be extended with syntax for specifying a transaction scope.
 
-A \ac{STM} system abstracts away many of the details of how synchronization is achieved. Simply applying transactions over a number of C\# variables provides a high level of abstraction but also hides the impact of synchronization. Having the programmer specify what variables should be tracked by the \ac{STM} system ensures that she is aware of what variables the \ac{STM} is managing. Explicitly reasoning about what variables are to be synchronized can assist the programmer in gauging the performance of a transaction as well as better understanding the execution of transactions. Both areas which usability studies\cite{rossbach2010transactional}\cite{pankratius2009does} has found to be problematic for some. As with defining transaction scopes C\# must be extended with syntax for marking variables for synchronization inside transactions. We call a variable marked for use in transactions a transactional variable.
+An \ac{STM} system abstracts away many of the details of how synchronization is achieved. Simply applying transactions over a number of C\# variables provides a high level of abstraction but also hides the impact of synchronization. Having the programmer specify what variables should be tracked by the \ac{STM} system ensures that she is aware of what variables the \ac{STM} is managing. Explicitly reasoning about what variables are to be synchronized can assist the programmer in gauging the performance of a transaction as well as better understanding the execution of transactions. Both areas which usability studies\cite{rossbach2010transactional}\cite{pankratius2009does} has found to be problematic for some. As with defining transaction scopes C\# must be extended with syntax for marking variables for synchronization inside transactions. We call a variable marked for use in transactions a transactional variable.
 
 \stmnamesp must not be overly restrictive as this will limit its applicability. To that end the \ac{STM} system must allow reads from transactional variables to occur both inside and outside transactions. 
 
 For writes to transactional variables a choice exists between allowing and disallowing writes from outside transactions. Disallowing writes from outside transaction will ensure that non-transactional access can not interfere with transactional access but will hamper the usability of the \ac{STM} system. Allowing writes from outside transactions increases the complexity of the implementation as any conflicts such writes create must be detected and resolved by the \ac{STM} system. As allowing writes from outside transactions provides the best usability \stmnamesp must provides support for such writes in addition to writes from inside transactions. This requirement is closely related to the choice between strong and weak atomicity discussed in \bsref{sec:design_strong_weak_atomicity}.
 
+\andreas{We only track changes to references. Thus using immutability is advised}
 \subsection{Strong or Weak Atomicity}
 \label{sec:design_strong_weak_atomicity}
 The atomicity guarantee provided by \ac{STM} systems varies, depending on the semantics provided. In \cite{blundell2006subtleties} Blundell et al. define two levels of atomicity:
@@ -71,55 +72,61 @@ If only weak atomicity is guaranteed, given the same scenario, the change made t
   }
 \end{lstlisting}
 
-% TODO: Decide if we want the manual written properties or the auto-implemented ones.
-%
-%\begin{lstlisting}[label=lst:atomicity,
-%  caption={Level of Atomicity},
-%  language=Java,  
-%  showspaces=false,
-%  showtabs=false,
-%  breaklines=true,
-%  showstringspaces=false,
-%  breakatwhitespace=true,
-%  commentstyle=\color{greencomments},
-%  keywordstyle=\color{bluekeywords},
-%  stringstyle=\color{redstrings},
-%  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
-%
-%  class car {
-%    public int KmDriven { get; set; }
-%    public void Drive (int km) {
-%      atomic {
-%        KmDriven += km;
-%      }
-%    }
-%  }
-%\end{lstlisting}
+\subsubsection{Issues with Atomicity Levels}
+In \cite[p. 30-35]{harris2010transactional} Harris et al. summarizes collection of issues related to the different levels of atomicity. The collection is non-exhaustive, but based on a wide selection of research. The consequence of race conditions can be either:
+\begin{itemize}
+	\item Non-repeatable read - if a transaction cannot repeat reading the value of a variable due to changes from non-transactional code in between the readings.
+	\item Intermediate lost update - if a write occurs in the middle of a read-modify-write series done by a transaction, the non-transactional write will be lost, as it comes after the transaction has read the value.
+	\item Intermediate dirty read - if eager updating\cite[p. 53]{dpt907e14trending} is used, a non-transactional read can see an intermediate value written by a transaction. This transaction might be aborted, leaving the non-transaction with a dirty read.
+\end{itemize}
+The second case is exactly the case described above in \bsref{lst:atomicity}, where weak atomicity led to the risk of race conditions between transactional and non-transactional code. 
 
+Another issue of using weak atomicity, is known as privatization. If only one thread can access a variable, the need for tracking it through the \ac{STM} system ceases, and so does the overhead. It is therefore desirable, to privatize a previously shared variable when doing intensive work, that does not need to be shared across threads. A technique used for privatizing a variable, \bscode{x}, is to use another variable as a shared marker \bscode{priv_x}, which indicates whether or not the \bscode{x} is private. This is demonstrated in \bsref{lst:privatization}. Intuitively one would believe, that if \bscode{Thread1} wants to privatize \bscode{x}, it can mark \bscode{priv_x} in a transaction, and after the transaction ends assume that \bscode{x} is now private. This however is false, since \bscode{Thread2} could read \bscode{priv_x} before \bscode{Thread1}, and then be aborted and thus roll \bscode{x} back to the value before. This will cause the write to \bscode{x}, on line 5, outside of the transaction to be overwritten, and lost. This example is under the assumption of weak atomicity, commit-time conflict detection, and eager version management, but also exists under lazy version management\cite[p. 34]{harris2010transactional}. 
 
-\subsubsection{Problems with Weak-atomicity}
-There exists many issues, harris et al have composed a list here, but there exists many more.
+\begin{lstlisting}[label=lst:privatization,
+  caption={Privatization issue},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
 
-\paragraph{Unambiguous data races between transactional and non-transactional code}
-Anomalies Common with Lock-Based Synchronization
+  // Thread 1
+  atomic {
+    x_priv = 1;
+    }
+  x = 100;
+  
+  // Thread 2
+  atomic {
+    if (x_priv == 0) {
+      x = 200;
+    }
+  }
+\end{lstlisting}
 
-\paragraph{Granularity problems that occur when the data managed by the TM implementation is coarser than the program variables being accessed}
-Anomalies Due to Coarse Write Granularity
+\andreas[inline]{Strong atomicity is more attractive from the point of view of defining the \ac{STM} semantics. It does however not solve all problems.}
 
-\paragraph{Accesses by zombie transactions in TMs that do not provide opacity}
-Anomalies Due to Zombie Transactions
+\subsubsection{Choice of Atomicity Level}
+All the issues listed above, is related to weak atomicity, and is not present under strong atomicity. The reason that strong atomicity is not chosen without an analysis, is that the overhead of guaranteeing atomicity between transactional and non-transactional code can be huge\cite{spear2007privatization}. In \cite{spear2007privatization} Spear et al. proposes four contracts, under which privatization can be guaranteed under some conditions. Strong atomicity is ranked as the least restrictive, but comes with a considerable cost. Although the performance is not optimal, Hindman and Grossman shows in \cite{hindman2006atomicity} that strong atomicity with good performance is achievable by source-to-source compiling with optimizations through static analysis.
 
-\paragraph{privatization and publication idioms}
-Anomalies Due to Privatization and Publication
+As we seek to validate whether \ac{STM} is a valid alternative to locks by characteristics, and not by performance, we choose to use strong atomicity in our \ac{STM} system.
+\andreas[inline]{Should we reference our method? Or our characteristics} 
 
-\subsubsection{Problems with Strong-atomicity}
-It is more attractive from the point of view of defining the \ac{STM} semantics. It does however not solve all problems.
-
-\subsubsection{Discussion}
-We chose Strong atomicity due to...
+\subsection{Side-effects}
+% Reference to old report
+% We only track on the reference
+% Consequence is, that side effects are not tracked.
+% We advice for use of immutability
+% 
  
 \subsection{Conditional Synchronization}
-To be a valid alternative for existing C\# synchronization mechanism a \ac{STM} system must be broadly applicable. This requires support for conditional synchronization so that \ac{STM} can be employed in well know scenarios such as shared buffers and other producer consumer setups\cite[p. 128]{tanenbaum2008modern}. \bsref{chap:stm_key_concepts} discusses the \bscode{retry} and \bscode{orElse} constructs proposed in \cite{harris2005composable} for conditional synchronization and composition of alternatives. Supporting such constructs in C\# will increase the applicability of the \ac{STM} system.
+To be a valid alternative for existing C\# synchronization mechanism an \ac{STM} system must be broadly applicable. This requires support for conditional synchronization so that \ac{STM} can be employed in well know scenarios such as shared buffers and other producer consumer setups\cite[p. 128]{tanenbaum2008modern}. \bsref{chap:stm_key_concepts} discusses the \bscode{retry} and \bscode{orElse} constructs proposed in \cite{harris2005composable} for conditional synchronization and composition of alternatives. Supporting such constructs in C\# will increase the applicability of the \ac{STM} system.
 
 Our previous work in \cite{dpt907e14trending} included a implementation of $k$-means clustering algorithm\cite[p. 451]{dataminingconceptsandtechniques} in the functional programming language Clojure. Clojures contains a language integrated \ac{STM} implementation which does not support constructs such as \bscode{retry} and \bscode{orElse}. As a result the implementation requires the use of condition variables and busy waiting in scenarios where the \bscode{retry} construct could have been employed\cite{duffy2010stmnet}.  As such, supplying \bscode{retry} and \bscode{orElse} constructs in C\# will allow for simpler conditional synchronization without the need for busy waiting.
 \andreas{A disadvantage is that the complexity of using STM is increased. Albiet the retry and orelse constructs are optional}
@@ -174,6 +181,8 @@ An \ac{STM} system for C\# must support nesting of transaction as this will miti
 
 %Flat, open, closed.
 
+\section{We will encourage to use immutable objects in combination with our STM in our to avoid side effects}
+
 \section{Design}
 \label{sec:stm_design}
 Something with\cite[p. 1]{harris2003language}
@@ -184,6 +193,8 @@ Something with\cite[p. 1]{harris2003language}
 %\section{Contention Manager}
 %\section{Log or In Place Update}
 %\section{Lazy or Eager Update}
+
+
 
 \section{Syntax design}
 
