@@ -3,18 +3,51 @@
 This chapter presents a conceptual overview of the Roslyn compiler project. In BLA we describe BLA\toby{Ændre dette når vi ved hvad der skal være i kapitlet}
 
 \section{Introduction}
-Project Roslyn is Microsoft's initiative of completely rewriting the C\# and Visual Basic compilers, using their own managed code language. Thus the C\# compiler is written in C\# and the Visual Basic compiler in Visual Basic. Roslyn was released open source at the Microsoft Build Conference 2014\cite{csharpBuild}.
+Project Roslyn is Microsoft's initiative of completely rewriting the C\# and \ac{VB} compilers, using their own managed code language. That is, the C\# compiler is written in C\# and the \ac{VB} compiler in \ac{VB}. Roslyn was released open source at the Microsoft Build Conference 2014\cite{csharpBuild}.
 
-Beyond changing the languages the compilers are written in, Roslyn provides a new approach to compiler interaction and usage. Traditionally a compiler is treated as a black box where it is given some source files as input, magic happens in the middle, and out comes objects files or assemblies\cite[p. 3]{ng2012roslyn}. During compilation the compiler builds a deep knowledge about the code, unavailable to the programmer, which is discarded once the compilation is done. This is where Roslyn differs, as it exposes the code analysis of the compiler by providing an API layer, which allows the programmer to obtain information about the different compilation phases: parsing, semantic analysis, binding and emitting\cite[p. 3]{ng2012roslyn}.\toby{Refer evt. derhen, hvis ikke at det er næste sektion. Eller undlad at nævne det det enkelte kompilerings faser og bare vent med at introducerer til senere.}
+Beyond changing the languages the compilers are written in, Roslyn provides a new approach to compiler interaction and usage. Traditionally a compiler is treated as a black box where it is given some source files as input, magic happens in the middle, and out comes objects files or assemblies\cite[p. 3]{ng2012roslyn}. During compilation the compiler builds a deep knowledge about the code, unavailable to the programmer, which is discarded once the compilation is done. This is where Roslyn differs, as it exposes the code analysis of the compiler by providing an API layer, which allows the programmer to obtain information about the different compilation phases\cite[p. 3]{ng2012roslyn}. 
 
-\toby[i]{Kort om hvad det giver af muligheder og fordele}
-%se stackoverflow link og whitepaper
+The compiler APIs available are illustrated in \bsref{fig:api_vs_compiler_pipeline} where each API corresponds to a phase in the compiler pipeline. In the first phase the source code is turned into tokens and parsed according to the language grammar. This phase is exposed through an API as a syntax tree. In the second phase declarations i.e. namespaces and types from code and imported metadata are analyzed to form named symbols. This phase is exposed as a hierarchical symbol table. In the third phase identifiers in the code are matched to symbols.\toby{Det inkluderer type check og scope check også?} This phase is exposed as a model which exposes the result of the semantic analysis. In the last phase, information gathered throughout compilation is used to emit an assembly. This phase is exposed as an API that produces IL byte code\cite[p. 3-4]{ng2012roslyn}.
+%second phase:  a kind of an index to the sources that tells where namespaces and types are declared
 
-%forklar hvorfor det er godt og hvad det kan bruges til
+\begin{figure}[htbp]
+\centering
+ \includegraphics[width=1\textwidth]{\rootpath/worksheets/roslyn/figures/compiler_pipeline_vs_api} 
+ \caption{Compiler pipeline in contrast to compiler API\cite[p. 4]{ng2012roslyn}.}
+\label{fig:api_vs_compiler_pipeline}
+\end{figure}
 
+Knowledge obtained through the APIs can be valuable in order to create tools that analyze and transform C\# or \ac{VB} code. Furthermore Roslyn allows interactive use of the languages using a \acs{REPL}\footnote{http://blogs.msdn.com/b/csharpfaq/archive/2012/01/30/roslyn-ctp-introduces-interactive-code-for-c.aspx} and embedding of  C\# and \ac{VB} in a \ac{DSL}\cite[p. 3]{ng2012roslyn}.
 
+\section{Inside Roslyn}
+In this section we will describe the inner architecture of Roslyn's source code and further elaborate on the compiler phases from \bsref{fig:api_vs_compiler_pipeline}.
 
-%Special compiler
+The Roslyn solution available on github\footnote{https://github.com/dotnet/roslyn}, forked on the 9th February 2015, consists of 118 projects which include projects for Visual Studio development, interactive usage of the languages etc. as illustrated on \bsref{fig:roslyn_solution_overview}. We will focus on the \bscode{Compilers} folder which contains the source code for the C\# and \ac{VB} compiler, which are located in separate folders. They share common code and functionality within the \bscode{Core} folder which is also responsible for invoking both compilers.
+
+%fortæl at CSharp og VB indeholder stort set det samme kode, men er forskellig i det sprogene er forskelllige (men at det overordnede er det samme) 
+
+\begin{figure}[htbp]
+\centering
+ \includegraphics[width=0.4\textwidth]{\rootpath/worksheets/roslyn/figures/roslyn_solution_overview} 
+ \caption{Overview of projects in Roslyn solution.}
+\label{fig:roslyn_solution_overview}
+\end{figure}
+
+\section{Compile Phases}\toby{tror den her titel skal slettes nu (bliver fortalt i intro og inside roslyn istedet}
+%Earlier in intro we looked at the phases of the compiler in contrast to the compiler API, howerver This does not include all phases. In this section we will explain in more detail what phases the compiler consits of and how it is build on in the code
+	%Omformuler så det lyder bedere (men noget i den stil)
+
+%Forklar de forskellige kompilerigns faser
+
+%overordnet beskrivelse af faserne og evt. hvis api i forhold til også
+	%ved ikke om jeg skal bruges deres tegning eller lave en ny selv (eller begge dele)
+
+%snak ikke om det under white paper underskriften: API Layers
+
+\section{Core Concepts}
+%syntax tree, syntax tokens, symbols osv.
+
+%MORE:
 
 %Known Limitations and Unimplemented Language Features
 	%https://social.msdn.microsoft.com/Forums/vstudio/en-US/f5adeaf0-49d0-42dc-861b-0f6ffd731825/known-limitations-and-unimplemented-language-features?forum=roslyn
@@ -24,15 +57,15 @@ Beyond changing the languages the compilers are written in, Roslyn provides a ne
 	% De enkelte faser i kompileren og generelt om dens opbygning
 	% Hvilke ting de har gjort i forhold til at forbedre performance
 	% Fortælle om deres røde og grønne syntaks træ
-	% De anvender traditionel compiler teori, med lexer og parser + syntaxtræ og visitor til at traverserer træet.
+	% De anvender traditionel compiler teori, med lexer og parser + syntaxtræ og visitor til at traverserer træet. og emit fase.
+	%Evt. fortæl om faserne i forhold til mapperne i projektet. Med Core, VB og C# projekternere og til sidst fortæl udfra C#'s mapper (og de forskellige faser).
 	%Evt. også nævn syntax visualizer (nok ikke så vigtig, men er et værdifuldt værktøj)
+	%Immutable data struktuerer!
 	%Hvilke muligheder man har for at implementere STM direkte i Roslyn
 		%Ved hjælp af API, hvor vi gør det først og derefter fodrer output til csc.exe
 		%Direkte i compileren.
 
-\section{Compile Phases}\toby{Evt. ryk den ned under core concepter}
-%Forklar de forskellige kompilerigns faser
 
-\section{Core Concepts}
-%syntax tree, syntax tokens, symbols osv.
+%Den primære brug der er tiltænkt at programmøren skal få adgang er gennem API laget, hvor en del kompleksitet stadig er gemt væk.
+	%Vi vil gå direkte ind og ændre i selve compileren, hvilket ikke er tiltænk som hovedtanken fra Microsoft's side.
 \worksheetend
