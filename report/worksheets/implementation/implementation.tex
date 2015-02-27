@@ -12,6 +12,7 @@ Various implementations strategies have been proposed for \ac{STM} of which a fe
 \kasper{pending commit, permissiveness}
 \andreas[inline]{Analysis of privatization techniques is done by \cite{spear2007privatization}. Strong atomicity is the technique with less restrictions, but worst performance}
 \andreas[inline]{Strong atomicity can be optimized via compile time optimizations and obtain good performance. Key is removing barriers cite \cite{hindman2006atomicity}}
+\andreas[inline]{In some cases, the order of reading values must be enforced. The compiler will reorder the value readings, and the volatile keyword must be used to enforce no optimizations from the compiler. Example \cite[p. 35]{harris2010transactional}.
 \section{Compiler and Library}
 \section{Static Analysis}
 Side-effects, change of Atomic fields outside of TM scope.
