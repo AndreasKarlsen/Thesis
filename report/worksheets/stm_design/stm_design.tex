@@ -83,7 +83,7 @@ In \cite[p. 30-35]{harris2010transactional} Harris et al. summarizes collection 
 \end{itemize}
 The second case is exactly the case described above in \bsref{lst:atomicity}, where weak atomicity led to the risk of race conditions between transactional and non-transactional code. 
 
-Another issue of using weak atomicity, is known as privatization. If only one thread can access a variable, the need for tracking it through the \ac{STM} system ceases, and so does the overhead. It is therefore desirable, to privatize a previously shared variable when doing intensive work, that does not need to be shared across threads. A technique used for privatizing a variable, \bscode{x}, is to use another variable as a shared marker \bscode{priv_x}, which indicates whether or not the \bscode{x} is private. This is demonstrated in \bsref{lst:privatization}. Intuitively one would believe, that if \bscode{Thread1} wants to privatize \bscode{x}, it can mark \bscode{priv_x} in a transaction, and after the transaction ends assume that \bscode{x} is now private. This however is false, since \bscode{Thread2} could read \bscode{priv_x} before \bscode{Thread1}, and then be aborted and thus roll \bscode{x} back to the value before. This will cause the write to \bscode{x}, on line 5, outside of the transaction to be overwritten, and lost. This example is under the assumption of weak atomicity, commit-time conflict detection, and eager version management, but also exists under lazy version management\cite[p. 34]{harris2010transactional}. 
+Another issue of using weak atomicity, is known as privatization. If only one thread can access a variable, the need for tracking it through the \ac{STM} system ceases, and so does the overhead. It is therefore desirable, to privatize a previously shared variable when doing intensive work, that does not need to be shared across threads. A technique used for privatizing a variable, \bscode{x}, is to use another variable as a shared marker \bscode{priv_x}, which indicates whether or not the \bscode{x} is private. This is demonstrated in \bsref{lst:privatization}. Intuitively one would believe, that if \bscode{Thread1} wants to privatize \bscode{x}, it can mark \bscode{priv_x} in a transaction, and after the transaction ends assume that \bscode{x} is now private. This however is false, since \bscode{Thread2} could read \bscode{priv_x} before \bscode{Thread1}, and then be aborted and thus roll \bscode{x} back to the value before. This will cause the write to \bscode{x}, on line 5, outside of the transaction to be overwritten, and lost. This example is under the assumption of weak atomicity, commit-time conflict detection, and in place updating, but also exists under lazy updating\cite[p. 34]{harris2010transactional}. 
 
 \begin{lstlisting}[label=lst:privatization,
   caption={Privatization issue},
@@ -100,13 +100,13 @@ Another issue of using weak atomicity, is known as privatization. If only one th
 
   // Thread 1
   atomic {
-    x_priv = 1;
+    x_priv = true;
     }
   x = 100;
   
   // Thread 2
   atomic {
-    if (x_priv == 0) {
+    if (x_priv) {
       x = 200;
     }
   }
@@ -115,9 +115,9 @@ Another issue of using weak atomicity, is known as privatization. If only one th
 \andreas[inline]{Strong atomicity is more attractive from the point of view of defining the \ac{STM} semantics. It does however not solve all problems.}
 
 \subsubsection{Choice of Atomicity Level}
-All the issues listed above, is related to weak atomicity, and is not present under strong atomicity. The reason that strong atomicity is not chosen without an analysis, is that the overhead of guaranteeing atomicity between transactional and non-transactional code can be huge\cite{spear2007privatization}. In \cite{spear2007privatization} Spear et al. proposes four contracts, under which privatization can be guaranteed under some conditions. Strong atomicity is ranked as the least restrictive, but comes with a considerable cost. Although the performance is not optimal, Hindman and Grossman shows in \cite{hindman2006atomicity} that strong atomicity with good performance is achievable by source-to-source compiling with optimizations through static analysis.
+All the issues listed above, is related to weak atomicity, and is not present under strong atomicity. The reason that strong atomicity is not chosen without an analysis, is that the overhead of guaranteeing atomicity between transactional and non-transactional code can occur a considerable cost\cite{spear2007privatization}. In \cite{spear2007privatization} Spear et al. proposes four contracts, under which privatization can be guaranteed under some conditions. Strong atomicity is ranked as the least restrictive, but comes with a considerable cost. Although the performance is not optimal, Hindman and Grossman shows in \cite{hindman2006atomicity} that strong atomicity with good performance is achievable by source-to-source compiling with optimizations through static analysis.
 
-As we seek to validate whether \ac{STM} is a valid alternative to locks by characteristics, and not by performance, we choose to use strong atomicity in our \ac{STM} system.
+As we seek to validate whether \ac{STM} is a valid alternative to locks by characteristics, and not by performance, strong atomicity over marked transactional variables is chosen for \stmname.
 \andreas[inline]{Should we reference our method? Or our characteristics} 
 
 \subsection{Side-effects}
