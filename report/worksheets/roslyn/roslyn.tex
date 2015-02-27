@@ -1,6 +1,6 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Roslyn}{0}{Februar 10, 2015}{}{../../}
-This chapter presents a conceptual overview of the Roslyn compiler project. In BLA we describe BLA\toby{Ændre dette når vi ved hvad der skal være i kapitlet}
+This chapter presents a conceptual overview of the Roslyn project. In BLA we describe BLA\toby{Ændre dette når vi ved hvad der skal være i kapitlet}
 
 \section{Introduction}
 Project Roslyn is Microsoft's initiative of completely rewriting the C\# and \ac{VB} compilers, using their own managed code language. That is, the C\# compiler is written in C\# and the \ac{VB} compiler in \ac{VB}. Roslyn was released open source at the Microsoft Build Conference 2014\cite{csharpBuild}.
@@ -13,18 +13,14 @@ The compiler APIs available are illustrated in \bsref{fig:api_vs_compiler_pipeli
 \begin{figure}[htbp]
 \centering
  \includegraphics[width=1\textwidth]{\rootpath/worksheets/roslyn/figures/compiler_pipeline_vs_api} 
- \caption{Compiler pipeline in contrast to compiler API\cite[p. 4]{ng2012roslyn}.}
+ \caption{Compiler pipeline in contrast to compiler APIs\cite[p. 4]{ng2012roslyn}.}
 \label{fig:api_vs_compiler_pipeline}
 \end{figure}
 
-Knowledge obtained through the APIs can be valuable in order to create tools that analyze and transform C\# or \ac{VB} code. Furthermore Roslyn allows interactive use of the languages using a \acs{REPL}\footnote{http://blogs.msdn.com/b/csharpfaq/archive/2012/01/30/roslyn-ctp-introduces-interactive-code-for-c.aspx} and embedding of  C\# and \ac{VB} in a \ac{DSL}\cite[p. 3]{ng2012roslyn}.
+Knowledge obtained through the APIs can be valuable in order to create tools that analyze and transform C\# or \ac{VB} code. Furthermore Roslyn allows interactive use of the languages using a \acs{REPL}\footnote{http://blogs.msdn.com/b/csharpfaq/archive/2012/01/30/roslyn-ctp-introduces-interactive-code-for-c.aspx}, and embedding of  C\# and \ac{VB} in a \ac{DSL}\cite[p. 3]{ng2012roslyn}.
 
 \section{Inside Roslyn}
 In this section we will describe the inner architecture of Roslyn's source code and further elaborate on the compiler phases from \bsref{fig:api_vs_compiler_pipeline}.
-
-The Roslyn solution available on github\footnote{https://github.com/dotnet/roslyn}, forked on the 9th February 2015, consists of 118 projects which include projects for Visual Studio development, interactive usage of the languages etc. as illustrated on \bsref{fig:roslyn_solution_overview}. We will focus on the \bscode{Compilers} folder which contains the source code for the C\# and \ac{VB} compiler, which are located in separate folders. They share common code and functionality within the \bscode{Core} folder which is also responsible for invoking both compilers.
-
-%fortæl at CSharp og VB indeholder stort set det samme kode, men er forskellig i det sprogene er forskelllige (men at det overordnede er det samme) 
 
 \begin{figure}[htbp]
 \centering
@@ -32,6 +28,31 @@ The Roslyn solution available on github\footnote{https://github.com/dotnet/rosly
  \caption{Overview of projects in Roslyn solution.}
 \label{fig:roslyn_solution_overview}
 \end{figure}
+
+The Roslyn solution available on github\footnote{https://github.com/dotnet/roslyn}, forked on the 9th February 2015, consists of 118 projects which include projects for Visual Studio development, interactive usage of the languages and more as illustrated on \bsref{fig:roslyn_solution_overview}. We will focus on the \bscode{Compilers} folder which contains the source code for the C\# and \ac{VB} compiler, each located in a separate folder. They share common code and functionality within the \bscode{Core} folder which includes code for controlling the overall compilation flow. We describe only the C\# compiler and the core code. However, the code for each compiler is very similar and use the same patterns for compilation\cite[09:36-10:36]{campbellDeeperRos}, so most of the following will apply for the \ac{VB} compiler also.
+
+\begin{figure}[htbp]
+\centering
+ \includegraphics[width=0.4\textwidth]{\rootpath/worksheets/roslyn/figures/roslyn_csharp_overview} 
+ \caption{Overview of CSharp folder.}
+\label{fig:roslyn_csharp_overview}
+\end{figure}
+
+The projects contained in the \bscode{CSharp} folder are shown on \bsref{fig:roslyn_csharp_overview}. The \bscode{csc} project is the C\# command line compiler, which is the starting point of a C\# compilation. It receives the arguments passed to compilation and pass them to \bscode{Csc} class located in the \bscode{csc} project using the \bscode{Run} method. \bscode{Csc} is a subtype of the \bscode{CSharpCompiler} class located in the \bscode{CSharpCodeAnalysis.Desktop} project, and it further invokes its parents \bscode{Run} method. \bscode{CSharpCompiler} is a subtype of the class \bscode{CommonCompiler} located in the \bscode{CSharpCodeAnalysis.Desktop} project inside the \bscode{Core} folder, which is the top parent. The \bscode{Run} method invokes the \bscode{RunCore} method in the same class, which contains the code that controls the overall compilation flow.
+
+%fortæl om CSharpCodeAnalysis projekterne
+
+%evt. lav sekvens diagram med DIA
+
+
+%når jeg ligesom har fået projekterne på plads, så evt. fortæl ud fra RunCore af og mapperne i 
+
+%mange klasser i CSharp er subklasser af klasser i Core
+
+%it receives the 
+
+Ref til roslyn og csc 
+
 
 \section{Compile Phases}\toby{tror den her titel skal slettes nu (bliver fortalt i intro og inside roslyn istedet}
 %Earlier in intro we looked at the phases of the compiler in contrast to the compiler API, howerver This does not include all phases. In this section we will explain in more detail what phases the compiler consits of and how it is build on in the code
