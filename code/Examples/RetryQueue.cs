@@ -38,7 +38,7 @@ namespace STM.Collections
         public T Dequeue()
         {
             atomic{
-                if (_head == null)
+                if (_size == 0)
                 {
                     retry;
                 }

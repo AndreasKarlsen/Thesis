@@ -237,7 +237,7 @@ As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply
   }
 \end{lstlisting}
 
-As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_strong_weak_atomicity} \stmnamesp must provide strong atomicity as well as allow reads and writes to occur from outside transactions. As a result, reads and writes occurring from outside transactions will be accounted for when validating transactions. With that ind mind the previous example can be slightly simplified to the example presented in \bsref{label=lst:stm_atomic_syntax_simplified}. The atomic block on line 17 of the previous example has been removed. As the atomic block only contains a single write it serves no purpose as the write is still tracked by the \ac{STM} system without atomic block. The atomic block on line 24 of the previous example can also be removed as the read can safely be performed from outside a transactions.
+As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_strong_weak_atomicity} \stmnamesp must provide strong atomicity as well as allow reads and writes to occur from outside transactions. As a result, reads and writes occurring from outside transactions will be accounted for when validating transactions. With that ind mind the previous example can be slightly simplified to the example presented in \bsref{label=lst:stm_atomic_syntax_simplified}. The atomic block on line 17 of the previous example has been removed. As the atomic block only contains a single write it serves no purpose because the write is still tracked by the \ac{STM} system without need for enclosing it within an atomic block. The atomic block on line 24 of the previous example can also be removed as the read can safely be performed from outside a transactions.
 
 \begin{lstlisting}[label=lst:stm_atomic_syntax_simplified,
   caption={Transaction Syntax Simplified},
@@ -277,13 +277,13 @@ As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_
       }
   }
 \end{lstlisting}
-Allowing access to transactional variables from outside transactions dispenses with the need for defining a transaction whenever only a single read or write is to be performed, thereby simplifying these cases. The atomic block is then employed only when multiple operations are to be performed as a single atomic step.  
+Allowing access to transactional variables from outside transactions dispenses with the need for defining a transaction whenever only a single read or write is to be performed, thereby simplifying these cases. The atomic block is then serves the purpose of combining multiple operations to be performed as a single atomic step.
+
+The examples presented here specify atomic fields. \stmnamesp also allows declaration of atomic local variables and parameters. As as result the orthogonality of the atomic keyword is increased.
+\kasper[inline]{OPS på beslutning omkring atomic paramter. Kan give problemer med ref / out keywords.}
 
 \subsection{Conditional Synchronization}
-As described in \bsref{sec:req_conditional} \stmnamesp support conditional synchronization via the \bscode{retry} and \bscode{orElse} constructs. To that end \stmnamesp extends C\# with a \bscode{retry} statement that can only be used inside atomic blocks as well as allowing zero to many \bscode{orElse} blocks to be associated with a atomic block. Much like catch clauses are associated with a \bscode{try} statement in many C like languages, including C\#. \bsref{lst:stm_atomic_syntax_retry} presents the \bscode{Dequeue} method from a transactional queue. \bscode{Dequeue} consists of a atomic block, defined on line 11, performing the dequeue operation as a single atomic step.
-
- The queue blocks if \bscode{Dequeue} is called on an empty queue.
-
+As described in \bsref{sec:req_conditional} \stmnamesp support conditional synchronization via the \bscode{retry} and \bscode{orElse} constructs. To that end \stmnamesp extends C\# with a \bscode{retry} statement that can only be used inside atomic blocks. \bsref{lst:stm_atomic_syntax_retry} presents the \bscode{Dequeue} method from a transactional queue. The queue is defined over a singly linked list nodes from which items are dequeued from the front and enqueued in the back. The \bscode{Dequeue} method consists of a atomic block, defined on line 11, performing the dequeue operation as a single atomic step. On line 13 the transaction checks if the queue is empty in which case it executes the retry statement on line 14, blocking the transaction to be restarted when the \bscode{_size} variable changes. If the queue is not empty the new head of the queued is removed and the next item in the linked list becomes the new head. Finally the size of the queue is decreased and the value associated with the previous head is returned. 
 
 \begin{lstlisting}[label=lst:stm_atomic_syntax_retry,
   caption={Retry Syntax},
@@ -310,7 +310,7 @@ As described in \bsref{sec:req_conditional} \stmnamesp support conditional synch
   	{
   		atomic{
   		
-  			if (_head == null)
+  			if (_size == 0)
   				retry;
 
   			var oldHead = _head;
@@ -329,7 +329,44 @@ As described in \bsref{sec:req_conditional} \stmnamesp support conditional synch
   }
 \end{lstlisting}
 
+\stmnamesp supports a \bscode{orelse} keyword allowing zero to many \bscode{orElse} blocks to be associated with a atomic block. Much like catch clauses are associated with a \bscode{try} statement in many C like languages, including C\#\cite[p. 96]{sestoft2011c}. \bsref{lst:stm_atomic_syntax_orelse} depicts a consumer which extracts an item from one of two buffer via the \bscode{ConsumeItem} method. On line 10 the \bscode{ConsumeItem} method defines a transaction. If \bscode{buffer1} is empty the transaction executes the retry statement on line 12, if not an item from \bscode{buffer} is returned. If \bscode{buffer1} is empty and the retry statement is executed, controls flows to the \bscode{orelse} block defined on line 15. The \bscode{orelse} then executes its own transaction returning an item from \bscode{buffer2} in case its not empty. If \bscode{buffer2} is empty the retry statement one line 17 is executed, resulting in the entire atomic block blocking until one of the previously read transactional variables change.
 
+\begin{lstlisting}[label=lst:stm_atomic_syntax_orelse,
+  caption={OrElse Syntax},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, using}]  % Start your code-block
+
+  using System;
+  
+  public class Consumer<T>
+  {
+      private Buffer<T> _buffer1;
+      private Buffer<T> _buffer2;
+
+      public T ConsumeItem()
+      {
+          atomic{
+              if(_buffer1.Count == 0)
+                  retry;
+
+              return _buffer1.Get();
+          }orelse{
+              if(_buffer2.Count == 0)
+                  retry;
+
+              return _buffer2.Get();
+          }
+      }
+  }
+\end{lstlisting}
 
 \section{Syntax design}
 
