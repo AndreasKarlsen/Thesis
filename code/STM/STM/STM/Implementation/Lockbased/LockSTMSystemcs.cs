@@ -14,12 +14,10 @@ namespace STM.Implementation.Lockbased
     {
         internal static readonly int TIME_OUT = 100;
 
-
         public static void Retry()
         {
             throw new STMRetryException();
         }
-
 
         private static void OnAbort()
         {
@@ -53,8 +51,7 @@ namespace STM.Implementation.Lockbased
             if (me.GetStatus() == Transaction.Status.Aborted)
             {
                 return false;
-            } 
-
+            }
 
             var writeset = WriteSet.GetLocal();
             var readset = ReadSet.GetLocal();
@@ -71,7 +68,6 @@ namespace STM.Implementation.Lockbased
             writeset.Unlock();
             return false;
         }
-
 
         private static bool ValidateReadset(ReadSet readset)
         {
