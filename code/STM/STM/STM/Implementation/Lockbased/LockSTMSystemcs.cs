@@ -37,7 +37,7 @@ namespace STM.Implementation.Lockbased
             {
                 var lo = entry.Key;
                 var value = entry.Value;
-                lo.SetValueCommit(value);
+                lo.CommitValue(value);
                 lo.SetStamp(writeStamp);
             }
             writeset.Unlock();

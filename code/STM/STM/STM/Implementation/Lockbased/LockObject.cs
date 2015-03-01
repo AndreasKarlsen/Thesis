@@ -34,9 +34,8 @@ namespace STM.Implementation.Lockbased
 
         public virtual T GetValue()
         {
-            T tmp;
             Lock();
-            tmp = _version;
+            var tmp = _version;
             Unlock();
             
             return tmp;
@@ -58,7 +57,7 @@ namespace STM.Implementation.Lockbased
             }
         }
 
-        public override void SetValueCommit(object o)
+        public override void CommitValue(object o)
         {
 
 #if DEBUG

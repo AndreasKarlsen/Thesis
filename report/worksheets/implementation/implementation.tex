@@ -6,13 +6,75 @@ This chapter describes the \ac{STM} was implemented in the C\# programming langu
 \subsection{Implementation Strategies}
 Various implementations strategies have been proposed for \ac{STM} of which a few where described in \bsnameref{sec:intro_related_work}. This section will cover a number of implementation strategies in greater detail in order to facility a choice of implementation strategy for \stmname. In addition the correctness criteria opacity will be described.
 
-\ac{STM} algorithms can coarsely be divided into blocking and nonblocking algorithms\cite[p. 47]{harris2010transactional}. Blocking algorithms employ some form of locking in order to ensure atomicity while nonblocking do not\cite[p. 59]{herlihy2012art}. Nonblocking algorithms guarantee that the failure of one thread does not keep other threads from making progress\cite[p. 47]{harris2010transactional}\cite[p. 142]{herlihy1991wait}\cite[p. 59]{herlihy2012art}. This  makes it impossible to employ locking as the failure of some thread $T$, which is holding a lock, will keep other threads from acquiring the lock, and thereby from progressing. Nonblocking algorithms can further be distinguished by the progress guarantees they provide. Wait-freedom is the strongest of these, and guarantees that any thread makes progress on its own work if it keeps executing\cite[p. 124]{herlihy1991wait}\cite[p. 59]{herlihy2012art}. Lock-freedom is less strict as it only guarantees that if a thread $T$ keeps executing then some thread (not necessarily $T$) makes progress\cite[p. 47]{harris2010transactional}\cite[p. 60]{herlihy2012art}. The least strict progress guarantees is call obstruction-freedom\cite[p. 47]{harris2010transactional}\cite{herlihy2003obstruction}\cite[p. 61]{herlihy2012art}. As mentioned in \bsref{sec:intro_related_work}, obstruction-freedom guarantees that any thread which runs for long enough without encountering a synchronization conflict makes progress\cite{herlihy2003obstruction}[p. 1]. While all of these progress guarantees precludes deadlocks only wait-freedom and lock-freedom precludes livelocks\cite[p. 47]{harris2010transactional}.
+\ac{STM} algorithms can coarsely be divided into blocking and nonblocking algorithms\cite[p. 47]{harris2010transactional}. Blocking algorithms employ some form of locking in order to ensure atomicity while nonblocking do not\cite[p. 59]{herlihy2012art}. Nonblocking algorithms guarantee that the failure of one thread does not keep other threads from making progress\cite[p. 47]{harris2010transactional}\cite[p. 142]{herlihy1991wait}\cite[p. 59]{herlihy2012art}. This  makes it impossible to employ locking as the failure of some thread $T$, which is holding a lock, will keep other threads from acquiring the lock, and thereby from progressing. Nonblocking algorithms can further be distinguished by the progress guarantees they provide. Wait-freedom is the strongest of these, and guarantees that any thread makes progress on its own work if it keeps executing\cite[p. 124]{herlihy1991wait}\cite[p. 59]{herlihy2012art}. Lock-freedom is less strict as it only guarantees that if a thread $T$ keeps executing then some thread (not necessarily $T$) makes progress\cite[p. 47]{harris2010transactional}\cite[p. 60]{herlihy2012art}. The least strict progress guarantees is call obstruction-freedom\cite[p. 47]{harris2010transactional}\cite{herlihy2003obstruction}\cite[p. 61]{herlihy2012art}. As mentioned in \bsref{sec:intro_related_work}, obstruction-freedom guarantees that any thread which runs for long enough without encountering a synchronization conflict makes progress\cite{herlihy2003obstruction}[p. 1]. While all of these progress guarantees precludes deadlocks only wait-freedom and lock-freedom precludes livelocks\cite[p. 47]{harris2010transactional}. Obstruction free algorithms have been shown to provide efficient implementations in practice\cite[p. 61]{herlihy2012art}. Especially when paired with techniques such as exponential backoff\cite[p. 147]{herlihy2012art} and contention managers\cite[p. 51]{harris2010transactional}.  Whether \ac{STM} implementations needs to be wait-free, lock-free, obstruction-free or even provide any of these guarantees at all is a ongoing discussion. Arguments have been made for even obstruction-freedom being to strong a guarantee and that \ac{STM} can be made faster by employing controlled locking\cite{ennals2006software}.
+
+Due to the observations above we chose to focus on obstruction-free and blocking algorithms. The following sections describe a number of such algorithms. The algorithms are based on case studies of existing \ac{STM} systems and their implementations. The authors assumes the reader has knowledge of terminology related to implementation of \ac{STM} system, such as eager vs lazy updating. If this is not the case a description of the terminology can be found in our previous study\cite[p. 53]{dpt907e14trending}.
+
+\subsubsection{Locking With Global Version Clock}
+\subsubsection{Obstruction-free With Indirection}
+\subsubsection{Linearizability}
+\subsubsection{Opacity}
+Opacity is a correctness criteria requiring transaction to only read consistent data throughout its execution\cite[p. 1]{guerraoui2007opacity}\cite[p. 29]{harris2010transactional}. This means that at the point where a transaction reads some variable it must be assured that the data read is consistent. Consequently opacity does not require that the variable can not be changed at some later point by another transaction, only that the value read is consistent when the read occurs. Transactions must be aborted when reads can not be guaranteed to be consistent.
+
+By providing opacity programmers do not have to reason about problems that occur as a result of inconsistent reads\cite[p. 28]{harris2010transactional}, thereby simplifying the programming model. As an example of such an issue consider \bsref{label=lst:stm_opacity}.
+\kasper[inline]{Forklaring of interleaving eksempel}
+
+\begin{lstlisting}[label=lst:stm_opacity,
+  caption={Opacity example},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, using}]  % Start your code-block
+
+  using System.Threading;
+
+  public class Opacity
+  {
+      private atomic static int X = 10;
+      private atomic static int Y = 10;
+
+      public static int Main(string[] args)
+      {
+          var t1 = new Thread(() =>
+          {
+              atomic
+              {
+                Y = 20;
+                X = 20;
+              }
+          });
+
+          var t2 = new Thread(() =>
+          {
+              atomic
+              {
+                  var tmpx = X;
+                  var tmpy = Y;
+                  while (tmpx != tmpy)
+                  {
+                  }
+              }
+          });
+
+          t1.Start();
+          t2.Start();
+        
+          return 0;
+      }
+  }
+\end{lstlisting}
 
 \kasper[inline]{obstruction freedom useful in practice}
-\kasper{pending commit, permissiveness}
+\kasper[inline]{pending commit, permissiveness}
 \andreas[inline]{Analysis of privatization techniques is done by \cite{spear2007privatization}. Strong atomicity is the technique with less restrictions, but worst performance}
 \andreas[inline]{Strong atomicity can be optimized via compile time optimizations and obtain good performance. Key is removing barriers cite \cite{hindman2006atomicity}}
-\andreas[inline]{In some cases, the order of reading values must be enforced. The compiler will reorder the value readings, and the volatile keyword must be used to enforce no optimizations from the compiler. Example \cite[p. 35]{harris2010transactional}.
+\andreas[inline]{In some cases, the order of reading values must be enforced. The compiler will reorder the value readings, and the volatile keyword must be used to enforce no optimizations from the compiler. Example \cite[p. 35]{harris2010transactional}}.
 \section{Compiler and Library}
 \section{Static Analysis}
 Side-effects, change of Atomic fields outside of TM scope.

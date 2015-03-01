@@ -14,7 +14,7 @@ namespace STM.Implementation.Lockbased
         protected readonly ReentrantLock ReentrantLock = new ReentrantLock();
         internal readonly IList<ManualResetEvent> WaitHandles = new List<ManualResetEvent>();
         protected readonly object WaitHandlesLock = new object();
-        internal readonly Semaphore WaitHandle = new Semaphore(0, 99);
+        //internal readonly Semaphore WaitHandle = new Semaphore(0, 99);
         protected int WaitCount = 0;
 
         private long _stamp;
@@ -39,7 +39,7 @@ namespace STM.Implementation.Lockbased
         }
 
 
-        public abstract void SetValueCommit(object o);
+        public abstract void CommitValue(object o);
 
         public void Lock()
         {
