@@ -194,7 +194,7 @@ An \ac{STM} system for C\# must support nesting of transaction as this will miti
 \section{Opacity}
 Opacity is a correctness criteria requiring transactions to only read consistent data throughout their execution\cite[p. 1]{guerraoui2007opacity}\cite[p. 29]{harris2010transactional}. This means that transactions must not read data which would cause them to abort at a later time. Consequently opacity does not require that the variable can not be changed at some later point by another transaction, only that the value read is consistent when the read occurs. Transactions must be aborted when reads can not be guaranteed to be consistent.
 
-By providing opacity programmers do not have to reason about problems that occur as a result of inconsistent reads\cite[p. 28]{harris2010transactional}, thereby simplifying the programming model. As an example of such an issue consider \bsref{label=lst:stm_opacity}.
+By providing opacity programmers do not have to reason about problems that occur as a result of inconsistent reads\cite[p. 28]{harris2010transactional}, thereby simplifying the programming model. As an example of such an issue consider \bsref{lst:stm_opacity}.
 
 \begin{lstlisting}[label=lst:stm_opacity,
   caption={Opacity example},
