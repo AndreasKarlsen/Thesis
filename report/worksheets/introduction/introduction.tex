@@ -38,39 +38,30 @@ Inside Microsoft, a group of architects and researchers led an incubation projec
 %\andreas[inline]{Bringing the concurrency construct STM into a C\#}
 %\kasper[inline]{No coreclr}
 %\kasper[inline]{Focus on the C\# part of Roslyn}
-\ac{STM} has been an active area of research for almost 20 years\cite{shavit1997software}. While the research has come far from the initial proposal of statically sized memory transactions, the area still has unsolved problems, including issues with side effect, \ac{IO} and exceptions occurring inside transactions\cite{harris2005exceptions}. While more research in these areas would be of interest to the community, it is not the focus of this master thesis. As such we restrict the project to investigating integration of \ac{STM} in the C\# programming language and not on solving these known issues. Furthermore while the creation of new \ac{STM} algorithms with good performance is of interest to the research community this is not the focus of this thesis. Instead  the focus is on the integration of \ac{STM} in the C\# programming language.
+\ac{STM} has been an active area of research for almost 20 years\cite{shavit1997software}. While the research has come far from the initial proposal of statically sized memory transactions, the area still has unsolved problems, including issues with side effects, \ac{IO} and exceptions occurring inside transactions\cite{harris2005exceptions}. While more research in these areas would be of interest to the research community, it is not the focus of this master thesis. As such we restrict the project to investigating integration of \ac{STM} in the C\# programming language and not on solving these known issues. Furthermore while the creation of new \ac{STM} algorithms with good performance is of interest to the research community this is not the focus of this thesis. Instead  the focus is on the integration of \ac{STM} in the C\# programming language.
 
-The Roslyn compiler project contains compilers for both Visual Basic and the C\# programming languages\cite{roslyn}. As this master thesis focuses on C\# we will restrict any investigation into the Roslyn compiler to focus on the C\# compiler as well as shared functionality of interest. 
+The Roslyn compiler project contains compilers for both Visual Basic and C\#\cite{roslyn}. As this master thesis focuses on C\# we will restrict any investigation into the Roslyn compiler to focus on the C\# compiler as well as shared functionality of interest. 
 
-As of February 2015 Microsoft released the source code for an independent version of its .NET runtime environment \acl{CLR}, called \ac{CLR} Core on Github\cite{coreclr}. While this undoubtedly present many exiting research opportunities for the area of \ac{STM} as well as other computer science areas, we consider the \ac{CLR} to be out of scope for this thesis. The \ac{CLR} Core is mainly written in C++\cite{coreclr}, a language with which we have only limited experience. Furthermore, the \ac{CLR} Core consists of roughly 2.6 million lines of code\cite{coreclrBlog} making it a complex and time demanding task to gain a understanding of its structure.
+As of February 2015 Microsoft released the source code for an independent version of its .NET runtime environment \acl{CLR}, called \ac{CLR} Core on Github\cite{coreclr}. While this undoubtedly presents many exiting research opportunities for the area of \ac{STM} as well as other computer science areas, we consider the \ac{CLR} to be out of scope for this thesis. The \ac{CLR} Core is mainly written in C++\cite{coreclr}, a language with which we have only limited experience. Furthermore, the \ac{CLR} Core consists of roughly 2.6 million lines of code\cite{coreclrBlog} making it a complex and time demanding task to gain an understanding of its structure.
 
 \section{Problem Statement}
-The goals of this master thesis is to investigate the possibility of supplying language integrated support for \ac{STM} in the C\# programming language. The hypothesis we seek to prove or falsify is:
+The goal of this master thesis is to investigate the possibility of supplying language integrated support for \ac{STM} in C\#. To formalize our goal, we have made a hypothesis.
 
-\begin{hypo}
-Language integrated \ac{STM} provides a valid alternative to locking when solving known concurrent problems by using C\#
-\end{hypo}
+\paragraph{Hypothesis} Language integrated \ac{STM} provides a valid alternative to locking when solving known concurrent problems by using C\#.\andreas{Does not solve IO and placing CR}
 
-In order to validate the hypothesis a language integrated \ac{STM} system for C\#, called \stmname, will be developed. Using this implementation a number of representative concurrent problems will be implemented. These implementations will be compared to equivalent lock based implementations by quantifying their characteristics.% in order to prove or falsify the hypothesis.
+In order to validate the hypothesis, a language integrated \ac{STM} system for C\#, called \stmname, will be designed, implemented and integrated\andreas{Is this sufficient, or should we expand and reference to chapters?}. Using this implementation a number of representative concurrent problems will be implemented. These implementations will be compared to equivalent lock based implementations by quantifying their characteristics in regards to concurrency, using the characteristics defined in \cite[p. 15-21]{dpt907e14trending}.
 
 \subsection{Method}
-In order to structure our investigation we have extracted a number of problem statement questions. The questions are based on findings from the theory investigated in our previous study, investigation of related work, exploratory investigations into \ac{STM} implementations, and the Roslyn compiler. These questions will serve as a guideline for investigating the integration of \ac{STM} into C\#, as well as being used to conclude upon the project in \bsref{chap:conclusion}.
+In order to structure our investigation we have extracted a number of problem statement questions. The questions are based on findings from the theory investigated in our previous study\cite{dpt907e14trending}, investigation of related work, exploratory investigations into \ac{STM} implementations, and the Roslyn compiler. These questions will serve as a guideline for investigating the integration of \ac{STM} into C\#, as well as being used to conclude upon the project in \bsref{chap:conclusion}.
 
 \begin{enumerate}
-\item How is the Roslyn compiler structured?
 \item What features should an \ac{STM} system for C\# contain?
 \item What problems exist in integrating \ac{STM} in C\#?
-\item How can the Roslyn compiler be utilized to integrate \ac{STM} into the C\# language?
 \item What different implementation strategies exist for \ac{STM}?
+\item How is the Roslyn compiler structured?
+\item How can the Roslyn compiler be utilized to integrate \ac{STM} into the C\# language?
+\item How does the characteristics differ when using locks or our \ac{STM} in C\#?
 \end{enumerate}
 
 Answering these questions along with supplying a prototype implementation will build the foundation for evaluating the hypothesis.
- 
-\section{Preliminary Investigation}
-In order to further our understand of implementing an \ac{STM} system and the Roslyn compiler, a preliminary investigation was conduced. As these areas are new to us, they initially present some uncertainty in the project. A preliminary investigation will further our understanding of the selected as well as mitigate some of the uncertainty.
-
-In order to further our understanding of developing an \ac{STM} system, a number of papers describing \ac{STM} system implementations were investigated. This gave us a better understanding of the known approaches for implementing \ac{STM} systems. To get some hands on experience, a prototype \ac{STM} system based on the two implementations described in \cite{herlihy2012art}[p. 424] was developed\andreas{Should we include those on the CD?}. Developing such a prototype system furthered our understanding of the different implementation strategies.
-
-As the Roslyn compiler was only released 10 months prior to the time of writing, the amount of available literature on the subject is limited. Consisting of mostly: a white paper\cite{ng2012roslyn}, documentation associated with the Roslyn Github repository\cite{roslynwiki}, sample implementations and walkthroughs\cite{roslynsamples}, as well as blog posts. Most of these sources describe the compiler \ac{API} opposed to the structure of the compiler. In order to further our understanding of the Roslyn compiler we have investigated these sources. In addition, an exploratory modification of the compiler, investigating its structure was done. The lexer and parser of the compiler was modified to handle the syntax of an \bscode{atomic} block. The exploratory implementation furthered our knowledge of the compilers structure and \ac{API} design, as well as ensured the feasibility of compiler modifications.
-
 \worksheetend
