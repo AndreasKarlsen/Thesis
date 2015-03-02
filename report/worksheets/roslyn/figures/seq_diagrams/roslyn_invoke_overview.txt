@@ -1,0 +1,14 @@
+ex:external [e]
+program:CSharp.csc.Program "CSharp.csc.Program"
+csc:CSharp.csc.Csc "CSharp.csc.Csc"
+/compiler:Csc
+base:CSharp.CSharpCodeAnalysis.CSharpCompiler
+baseOfBase:Core.CodeAnalysis.CommonCompiler
+
+ex:program.Invoke
+program:csc.Run()
+csc:compiler.new
+csc:compiler.Run()
+compiler:base.Run()
+base:baseOfBase.Run()
+baseOfBase:baseOfBase.RunCore()
