@@ -40,26 +40,8 @@ The Roslyn solution available on github\footnote{https://github.com/dotnet/rosly
 
 The projects contained in the \bscode{CSharp} folder are shown on \bsref{fig:roslyn_csharp_overview}. The important projects are \bscode{csc}, \bscode{CSharpCodeAnalysis.Portable} and \bscode{CSharpCodeAnalysis.Desktop}. The \bscode{csc} project is the C\# command line compiler, which is the starting point of a C\# compilation. The two other projects contain the actual code required for compilation. The rest of the projects in the \bscode{CSharp} folder mainly involves tests for the C\# compiler.
 
-In \bsref{fig:roslyn_invoke_overview} an overview of the compilation call chain is shown. Compilation starts with \bscode{csc's} main method being invoked, which calls the static \bscode{Run} method on the \bscode{Csc} class. This method creates a new \bscode{compiler} object of type \bscode{Csc}. \bscode{Csc} is a subtype of \bscode{CSharpCompiler}, located in the \bscode{CSharp.CSharpCodeAnalysis.Desktop} project, which again is a subtype of \bscode{CommonCompiler}, located in \bscode{Core.CodeAnalysis}. This means that the creation of the \bscode{compiler} object, calls the constructors of \bscode{Csc}, \bscode{CSharpCompiler} and \bscode{CommonCompiler}. Hereafter the \bscode{Run} method is invoked on the \bscode{compiler} object, which further invokes its parents \bscode{Run} method, which again invokes its parent \bscode{Run} method. Finally \bscode{RunCore} in \bscode{CommonCompiler} is invoked, which contains the code that controls the overall flow of the compiler pipeline, that was illustrated in \bsref{fig:api_vs_compiler_pipeline}. 
+In \bsref{fig:roslyn_invoke_overview} an overview of the compilation call chain is shown. Compilation starts with \bscode{csc's} main method being invoked, which calls the static \bscode{Run} method on the \bscode{Csc} class. This method creates a new \bscode{compiler} object of type \bscode{Csc}. \bscode{Csc} is a subtype of \bscode{CSharpCompiler}, located in the \bscode{CSharp.CSharpCodeAnalysis.Desktop} project, which again is a subtype of \bscode{CommonCompiler}, located in \bscode{Core.CodeAnalysis}. This means that the creation of the \bscode{compiler} object, calls the constructors of \bscode{Csc}, \bscode{CSharpCompiler} and \bscode{CommonCompiler}. Afterwards the \bscode{Run} method is invoked on the \bscode{compiler} object, which further invokes its parents \bscode{Run} method, which again invokes its parent \bscode{Run} method. Finally the \bscode{RunCore} method in \bscode{CommonCompiler} is invoked, which contains the general code that controls the overall flow of the compiler pipeline, that was illustrated in \bsref{fig:api_vs_compiler_pipeline}. The \bscode{RunCore} method will for the phases at run time call the actual compiler logic for C\# in \bscode{CSharp.CSharpCodeAnalysis.Portable} or \ac{VB} in \bscode{VisualBasic.BasicCodeAnalysis.Portable} through dynamic dispatch.\toby{Er det helt rigtigt? Muligvis kalder den også i noget generelt, som kun er defineret i core, der ikke kalder videre. Tror måske IL emitting, kun har kode i Core - men er også noget i CSharpCodeAnalysis med kodegenerering. Andet eksempel: SemanticModel ligger i Core.}
 
-%dynamic dispatch og polymorfi
-
-%This works 
-
-%call to base is illustrated
-
-%Csc is a subtype of CSharpCompiler loacted in BLA which again is a subtype of CommonCompiler
-
-%\bscode{csc} is invoked externally after which  
-
-
-
-
-It receives the arguments passed to compilation and pass them to \bscode{Csc} class located in the \bscode{csc} project using the \bscode{Run} method. \bscode{Csc} is a subtype of the \bscode{CSharpCompiler} class located in the \bscode{CSharpCodeAnalysis.Desktop} project, and 
-
-it further invokes its parents \bscode{Run} method. \bscode{CSharpCompiler} is a subtype of the class \bscode{CommonCompiler} located in the \bscode{CSharpCodeAnalysis.Desktop} project inside the \bscode{Core} folder, which is the top parent. The \bscode{Run} method invokes the \bscode{RunCore} method in the same class, which contains the code that controls the overall compilation flow.
-
-%ved hjælp af arv
 \begin{sidewaysfigure}[htbp]
 \centering
  \includegraphics[width=\textwidth]{\rootpath/worksheets/roslyn/figures/seq_diagrams/roslyn_invoke_overview} 
@@ -67,21 +49,66 @@ it further invokes its parents \bscode{Run} method. \bscode{CSharpCompiler} is a
 \label{fig:roslyn_invoke_overview}
 \end{sidewaysfigure}
 
+\subsection{CSharpCodeAnalysis}
 %fortæl om CSharpCodeAnalysis projekterne
 
-%evt. lav sekvens diagram med DIA
+\begin{figure}[htbp]
+\centering
+ \includegraphics[width=0.4\textwidth]{\rootpath/worksheets/roslyn/figures/csharp_codeanalysis_overview} 
+ \caption{Overview of the \bscode{CSharp.CSharpCodeAnalysis.Portable} project.}
+\label{fig:roslyn_csharpanalysis_overview}
+\end{figure}
+\toby[i]{Ved ikke om jeg vil have den her figur med}
+
+\section{Key Concepts}
+The C\# compiler builds upon concepts from traditional compiler theory, such as lexing, parsing, declaration processing, semantic analysis and code generation\cite{sebestaProLang}\cite{fischer2009crafting}. Throughout the phases of compilation, traditional concepts such as a syntax tree, symbol table and visitor pattern are also used. In this section we describe the core concepts used in the C\# compilation phases.
+
+\toby[i]{Måske inddel i syntax og semantic subsubsektioner (dem under)}
+
+\subsection{Syntax trees}
+Syntax trees are the primary structure used throughout the phases of compilation. Roslyn's syntax tress have three key attributes\cite[p. 6]{ng2012roslyn}. The first attribute is that a syntax tree is a \textit{full fidelity} representation of source code, which means that everything in the source code is represented as a node in the syntax tree. If programs are invalid, the syntax tree represent these errors in source code by skipped or missing tokens in the tree. 
+
+The first attribute enables the second attribute, which is that a syntax tree produced from parsing must be \textit{round-trippable} back to the original source code.
+
+The third attribute is that syntax trees are immutable and thread-safe. This enables multiple users to use the same syntax tree at the same time in different threads without concurrency issues. As syntax trees are immutable, factory methods exists in order to help create and modify trees. This might seem inefficient, as one would expect a copy of the tree is required, however syntax tress are efficient as they reuse underlying nodes. This means trees can be modified fast and with a low memory overhead.
+
+In fact there exists two types of tress in Roslyn, which we will describe.
+%fortæl måske først om det nede i røde og grønne træer
+
+ at least for one kind of tree
+
+%trees are efficient in the way they reuse underlying nodes, so the new version can be rebuilt fast and with little extra memory.
+
+%A syntax tree is literally a tree data structure, where non-terminal structural elements parent other elements. Each syntax tree is made up of nodes, tokens, and trivia.
 
 
-%når jeg ligesom har fået projekterne på plads, så evt. fortæl ud fra RunCore af og mapperne i 
 
-%mange klasser i CSharp er subklasser af klasser i Core
+ which means that a tree never changes
 
-%it receives the 
+This enables
 
-Ref til roslyn og csc 
+Meaning that a tree is never changed 
+
+\subsubsection{Red And Green Trees}
+%syntax træ generelt.
+%røde og grønne træer
+
+\toby[i]{Måske skal nogen af disse op foran træet}
+\subsection{Syntax Nodes}
+\subsection{Syntax Tokens}
+\subsection{Syntax Trivia}
+\subsection{Spans}
+\subsection{Kinds}
+\subsection{Errors}
+
+\subsection{Compilation}
+\subsection{Symbols}
 
 
+
+%ng2012roslyn
 \section{Compile Phases}\toby{tror den her titel skal slettes nu (bliver fortalt i intro og inside roslyn istedet}
+\toby[i]{Skal have det et sted, hvor jeg fortæller mere præcist en compiler line billedet om faserne der sker, ligesom beskrevet i blogpostet. Også i forhold til om de køres med en eller flere tråde}
 %Earlier in intro we looked at the phases of the compiler in contrast to the compiler API, howerver This does not include all phases. In this section we will explain in more detail what phases the compiler consits of and how it is build on in the code
 	%Omformuler så det lyder bedere (men noget i den stil)
 
