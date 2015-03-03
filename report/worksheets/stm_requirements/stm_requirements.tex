@@ -1,6 +1,6 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{STM Designed for C\#}{0}{Februar 10, 2015}{}{../../}
-This chapter describes the requirements for the \ac{STM} system powering \stmname. The requirements are based on known \ac{STM} as well as the criteria for which the final system must be evaluated. Implementation details are described in \bsref{chap:implementation}.
+This chapter describes the requirements for the \ac{STM} system powering \stmname. The requirements are based on known \ac{STM} constructs as well as the criteria for which the final system must be evaluated. Implementation details are described in \bsref{chap:implementation}.
 \label{sec:stm_requirements}
 \kasper[inline]{Refer to work last semester}
 \section{Transactions \& Variables}
@@ -135,61 +135,64 @@ Our previous work in \cite{dpt907e14trending} included an implementation of $k$-
 \andreas{A disadvantage is that the complexity of using STM is increased. Albiet the retry and orelse constructs are optional}
 
 \section{Nesting}
-The traditional \ac{TL} approach to concurrency has issues with composability due to the threat of deadlocks\cite[p. 58]{sutter2005software} when composing lock based code. \ac{STM} attempts to mitigate this issues by removing the threat of deadlock, and allowing transactions to nest. Nesting can occur both lexically and dynamically\cite[p. 1]{kumar2011hparstm}\cite[p. 42]{harris2010transactional}\cite[p. 2081]{herlihy2011tm}. \bsref{lst:stm_nested_transactions} shows an example of lexically nested transaction while \bsref{lst:stm_nested_transactions_real} shows an example of dynamically nested transactions. Here the withdraw and deposit methods on the accounts are themselves defined using transactions.
+\label{sec:stm_req_nesting}
+The traditional \ac{TL} approach to concurrency has issues with composability due to the threat of deadlocks\cite[p. 58]{sutter2005software} when composing lock based code. \ac{STM} attempts to mitigate this issues by removing the threat of deadlock, and allowing transactions to nest. Nesting can occur both lexically and dynamically\cite[p. 1]{kumar2011hparstm}\cite[p. 42]{harris2010transactional}\cite[p. 2081]{herlihy2011tm}. 
 
-\begin{lstlisting}[label=lst:stm_nested_transactions,
-  caption={Lexically nested transactions},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var}]  % Start your code-block
+%\bsref{lst:stm_nested_transactions} shows an example of lexically nested transaction while \bsref{lst:stm_nested_transactions_real} shows an example of dynamically nested transactions. Here the withdraw and deposit methods on the accounts are themselves defined using transactions.
+%
+%\begin{lstlisting}[label=lst:stm_nested_transactions,
+%  caption={Lexically nested transactions},
+%  language=Java,  
+%  showspaces=false,
+%  showtabs=false,
+%  breaklines=true,
+%  showstringspaces=false,
+%  breakatwhitespace=true,
+%  commentstyle=\color{greencomments},
+%  keywordstyle=\color{bluekeywords},
+%  stringstyle=\color{redstrings},
+%  morekeywords={atomic, retry, orElse, var}]  % Start your code-block
+%
+%	atomic{
+%		x = 7;
+%		atomic{
+%			y = 12;		
+%		}
+%	}
+%       
+%\end{lstlisting}
+%
+%\begin{lstlisting}[label=lst:stm_nested_transactions_real,
+%  caption={Dynamically nested transactions},
+%  language=Java,  
+%  showspaces=false,
+%  showtabs=false,
+%  breaklines=true,
+%  showstringspaces=false,
+%  breakatwhitespace=true,
+%  commentstyle=\color{greencomments},
+%  keywordstyle=\color{bluekeywords},
+%  stringstyle=\color{redstrings},
+%  morekeywords={atomic, retry, orElse, var}]  % Start your code-block
+%
+%	atomic{
+%		var amount = 200;
+%		account1.withdraw(amount);
+%		account2.deposit(amount);
+%	}
+%       
+%\end{lstlisting}
 
-	atomic{
-		x = 7;
-		atomic{
-			y = 12;		
-		}
-	}
-       
-\end{lstlisting}
-
-\begin{lstlisting}[label=lst:stm_nested_transactions_real,
-  caption={Dynamically nested transactions},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var}]  % Start your code-block
-
-	atomic{
-		var amount = 200;
-		account1.withdraw(amount);
-		account2.deposit(amount);
-	}
-       
-\end{lstlisting}
-
-An \ac{STM} system for C\# must support nesting of transaction as this will mitigate the before mentioned issues and be a valid alternative to the existing locked based synchronization mechanisms. A more in depth description of the composability problems of the \ac{TL} concurrency model and nesting of transactions can be found in \cite{dpt907e14trending}.
+An \ac{STM} system for C\# must support nesting of transaction as this will allow the system to mitigate one of the major caveats associated with lock based concurrency. A more in depth description of the composability problems of the \ac{TL} concurrency model and nesting of transactions can be found in \cite{dpt907e14trending}.
 
 Different semantics exist for nesting of transactions. These are:  \begin{inparaenum}
 \item Flat
 \item Open and 
 \item Closed\cite[p. 1]{kumar2011hparstm}\cite[p. 42]{harris2010transactional}.
 \end{inparaenum}
-Flat nesting treats any nested transactions as part of the already executing transaction, meaning that a abort of the nested transaction also aborts the enclosing transaction. Closed nested semantics allow nested transactions to abort independently of the enclosing transaction. Under closed nested semantics commits by nested transactions only propagate any changes to the enclosing transaction as opposed to the entire system. Open transactions allow nested transaction to commit even if the enclosing transaction aborts and propagate changes made by nested transactions to the entire system.
+Flat nesting treats any nested transactions as part of the already executing transaction, meaning that a abort of the nested transaction also aborts the enclosing transaction. Closed nested semantics allow nested transactions to abort independently of the enclosing transaction. Under closed nested semantics commits by nested transactions only propagate any changes to the enclosing transaction as opposed to the entire system. Open transactions allow nested transaction to commit even if the enclosing transaction aborts and propagates changes made by nested transactions to the entire system whenever a nested transaction commits.
 
-Flat nesting is the easiest to implement but closed and especially open nesting allows for higher degrees of concurrency\cite[p. 43]{harris2010transactional}. Considering the simplicity, readability and level of abstraction provided by the different strategies,as well as the degree of concurrency offered, closed nesting is selected for \stmnamesp.
+Flat nesting is the easiest to implement but closed and especially open nesting allows for higher degrees of concurrency\cite[p. 43]{harris2010transactional}. Considering the simplicity, readability and level of abstraction provided by the different strategies,as well as the degree of concurrency offered, closed nesting is selected for \stmnamesp. In order to improve the flexibility and orthogonality \stmnamesp is required to support both lexical and dynamic nesting.
 \kasper[inline]{Flat nesting har også nogle problemer med retry men det er ikke rigtig dokumenteret nogle steder.}
 
 \andreas[inline]{We will encourage to use immutable objects in combination with our STM in our to avoid side effects}
