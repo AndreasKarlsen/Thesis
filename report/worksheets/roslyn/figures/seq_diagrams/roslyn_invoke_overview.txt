@@ -12,3 +12,10 @@ csc:compiler.Run()
 compiler:base.Run()
 base:baseOfBase.Run()
 baseOfBase:baseOfBase.RunCore()
+*5 baseOfBase
+Invokes actual compiler 
+logic in the "CSharp.
+CSharpCodeAnalysis.
+Portable" project, through
+dynamic dispatch.
+*5
