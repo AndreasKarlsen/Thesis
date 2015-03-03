@@ -99,7 +99,7 @@ The examples presented here specify atomic fields. \stmnamesp also allows declar
 \kasper[inline]{OPS på beslutning omkring atomic paramter. Kan give problemer med ref / out keywords.}
 
 \section{Conditional Synchronization}
-As described in \bsref{sec:req_conditional} \stmnamesp support conditional synchronization via the \bscode{retry} and \bscode{orElse} constructs. To that end \stmnamesp extends C\# with a \bscode{retry} statement that can only be used inside atomic blocks. \bsref{lst:stm_atomic_syntax_retry} presents the \bscode{Dequeue} method from a transactional queue. The queue is defined over a singly linked list nodes from which items are dequeued from the front and enqueued in the back. The \bscode{Dequeue} method consists of a atomic block, defined on line 11, performing the dequeue operation as a single atomic step. On line 13 the transaction checks if the queue is empty in which case it executes the retry statement on line 14, blocking the transaction to be restarted when the \bscode{_size} variable changes. If the queue is not empty the new head of the queued is removed and the next item in the linked list becomes the new head. Finally the size of the queue is decreased and the value associated with the previous head is returned. 
+As described in \bsref{sec:req_conditional} \stmnamesp support conditional synchronization via the \bscode{retry} and \bscode{orElse} constructs. To that end \stmnamesp extends C\# with a \bscode{retry} statement that can only be used inside atomic blocks. \bsref{lst:stm_atomic_syntax_retry} presents the \bscode{Dequeue} method from a transactional queue. The queue is defined over a singly linked list from which items are dequeued from the front and enqueued in the back. The \bscode{Dequeue} method consists of a atomic block, defined on line 11, performing the dequeue operation as a single atomic step. On line 13 the transaction checks if the queue is empty in which case it executes the retry statement on line 14, blocking the transaction to be retried when the \bscode{_size} variable changes. If the queue is not empty the new head of the queued is removed and the next item in the linked list becomes the new head. Finally the size of the queue is decreased and the value associated with the previous head is returned. 
 
 \begin{lstlisting}[label=lst:stm_atomic_syntax_retry,
   caption={Retry Syntax},
@@ -184,7 +184,76 @@ As described in \bsref{sec:req_conditional} \stmnamesp support conditional synch
   }
 \end{lstlisting}
 
+\section{Nesting}
+As described in \bsref{sec:stm_req_nesting} \stmnamesp must support nesting of transaction under closed nesting semantics. For this purpose \stmnamesp will allow lexical nesting of atomic blocks as shown in \bsref{lst:stm_syntax_lexical_nesting}. Here we see a small program reading two integers from the console. The string arguments are parsed as integers on line 12 to 16. The program then defines two transaction, one starting on line 18 the other at line 20 nested inside the first transactions. The first transaction initiates a nested transaction which sets the transactional variables \bscode{X} and \bscode{Y} based on the input. Due to the semantics with closed nesting these changes become visible to the outer transaction but not the rest of the system. As a result the outer transaction uses the updated values when it computes the new value of \bscode{Z} on line 26. When the outer transaction commits the assignments to \bscode{X}, \bscode{Y} and \bscode{Z} becomes visible to the rest of the system as a single atomic step.
 
+\begin{lstlisting}[label=lst:stm_syntax_lexical_nesting,
+  caption={Lexical Nesting},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, using}]  % Start your code-block
+
+  public class LexicalNesting
+  {
+      private atomic static int X = 0;
+      private atomic static int Y = 0;
+      private atomic static int Z = 0;
+
+      public void Main(string[] args)
+      {
+          if (args.Length != 2)
+              return;
+
+          int tmpx;
+          int tmpy;
+          if (int.TryParse(args[0],out tmpx) 
+              || !int.TryParse(args[1],out tmpy))
+              return;
+
+          atomic
+          {
+              atomic
+              {
+                  X = tmpx;
+                  Y = tmpy;
+              }
+
+              Z = X * Y;
+          }
+          System.Console.WriteLine(Z);
+      }
+  }
+\end{lstlisting}
+
+To increase the flexibility and orthogonality of the \ac{STM} implementation dynamic nesting of transactions are allowed. Dynamic nesting allows transactions to be nested at runtime. As an example consider \bsref{lst:stm_nested_transactions_real} where a transaction is defined on line 1. The transaction transfers funds from \bscode{account1} to \bscode{account2} which withdraw and deposit methods are themselves defined using transactions. Because of the closed nested semantics the transfer is executed as one atomic step.
+
+\begin{lstlisting}[label=lst:stm_nested_transactions_real,
+  caption={Dynamically nested transactions},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var}]  % Start your code-block
+
+	atomic{
+		var amount = 200;
+		account1.withdraw(amount);
+		account2.deposit(amount);
+	}
+       
+\end{lstlisting}
 
 %atomic {
 %  if ( booleanexpression ) {
