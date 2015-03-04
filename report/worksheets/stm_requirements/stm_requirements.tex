@@ -11,6 +11,7 @@ A variable tracked by the \ac{STM} system can be tracked with different granular
 Tracking changes to the variable directly limits the effect of the \ac{STM} system only to the variable, and not internal changes inside of the referenced object. This approach is known by the \ac{STM} system in Clojure\cite{clojureConcurrent}. It offers a simple mental model for the programmer, as only changes visible in the transaction scope will be provided with the transactional guarantees of atomicity and isolation.  \bsref{lst:tracking_variable} shows an example, where the field \bscode{_car} is assigned to a new modified version of a car on line 10. This assignment is tracked by the \ac{STM} system, as opposed to the example in \bscode{lst:tracking_object}, where the internals of the object is not tracked, when a method with a side-effect is called on line 7. The discussion of side-effects is expanded in \bsref{sec:side-effects}.
 
 This approach enables the \ac{STM} system to be used in combination with code where the internals are available, such as libraries shipped as binaries, as their internal state is not tracked.
+\kasper[inline]{Should properly say that because internal changes are not tracked the reusability of existing libraries is limited. They will have to be rewritten using transaction if tracking of internal changes is needed.}
 \begin{lstlisting}[label=lst:tracking_variable,
   float,
   caption={Tracking Assignment to Variables},
