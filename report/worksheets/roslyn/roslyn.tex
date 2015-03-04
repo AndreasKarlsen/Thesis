@@ -64,18 +64,39 @@ In \bsref{fig:roslyn_invoke_overview} an overview of the compilation call chain 
 The C\# compiler builds upon concepts from traditional compiler theory, such as lexing, parsing, declaration processing, semantic analysis and code generation\cite{sebestaProLang}\cite{fischer2009crafting}. Throughout the phases of compilation, traditional concepts such as a syntax tree, symbol table and visitor pattern are also used. In this section we describe the core concepts used in the C\# compilation phases.
 
 \subsection{Syntax trees}
-Syntax trees are the primary structure used throughout the phases of compilation. Roslyn's syntax tress have three key attributes\cite[p. 6]{ng2012roslyn}. The first attribute is that a syntax tree is a \textit{full fidelity} representation of source code, which means that everything in the source code is represented as a node in the syntax tree. If programs are invalid, the syntax tree represent these errors in source code by skipped or missing tokens in the tree. 
+Syntax trees are the primary structure used throughout the phases of compilation. Roslyn's syntax tress have three key attributes\cite[p. 6]{ng2012roslyn}. The first attribute is that a syntax tree is a full fidelity representation of source code, which means that everything in the source code is represented as a node in the syntax tree. If programs are invalid, the syntax tree represent these errors in source code by skipped or missing tokens in the tree. 
 
-The first attribute enables the second attribute, which is that a syntax tree produced from parsing must be \textit{round-trippable} back to the original source code.
+The first attribute enables the second attribute, which is that a syntax tree produced from parsing must be round-trippable back to the original source code.
 
 The third attribute is that syntax trees are immutable and thread-safe. This enables multiple users to use the same syntax tree at the same time in different threads without concurrency issues. As syntax trees are immutable, factory methods exists in order to help create and modify trees. This might seem inefficient, as one would expect a copy of the tree is required, however syntax tress are efficient as they reuse underlying nodes. This means that trees can be modified fast and with a low memory overhead.
 
 \subsubsection{Red And Green Trees}\toby{Hvad med boundtree? Eller evt. fortæl om det i et uddybende compiler fase afsnit}
-There exists two types of syntax tress in Roslyn: green trees and red trees. The reason for this is that they would like a primary data structure with the following characteristics:
+The Roslyn team wanted a primary data structure for compilation with the following characteristics\cite{lippert2012redgreen}:
+\begin{itemize}
+	\item Immutable.
+	\item Form of a tree.
+	\item Cheap access to parent nodes from child nodes.
+	\item Possible to map from a node in the tree to a character offset in the source code.
+	\item Ability to reuse most nodes in the original tree when modifying trees.\toby{måske brug ordet persistent}
+\end{itemize}
+However fitting all those characteristics into a single data structure is problematic\cite{lippert2012redgreen}. One problem is simply constructing a tree node, as the child and parent must refer to each other, and are immutable, it is not possible to create one before the other. Another problem is reusing nodes for another parent when modifying the tree, as nodes are immutable and it is therefore not allowed to change the parent of a node. A last problem is inserting a new character into the source code, as the position of all nodes after that point changes. This is problematic in relation to adhering to the characteristic of reusing nodes, because a modification to source code can change the character offset of many nodes.
+%til den sidste, husk at de selv bruger roslyn til at udvikle interne værktøjer, derfor er det vigtigt at når man skrive et nyt tegn i starten af source koden, at de ikke skal bygge træet helt på nyt.
 
-\paragraph{The green tree} bla bla
+Instead Roslyn uses two types of trees, green trees and red trees, in order to fulfill all their characteristics.
 
-\paragraph{The red tree} bla bla
+\paragraph{The green tree} is immutable, has the ability upon modification to reuse most unaffected nodes, has no parent references, is built bottom-up, and knows not the absolute positions of nodes in source code but only their widths\cite{lippert2012redgreen}.
+%green nodes does not know their parent 
+
+%forklar at grønne noder kan genbruges, når man modificerer et træ og laver et nyt og man kan genbruge unaffected noder. En grøn node kan være brugt af mange forskellige syntax træer.
+
+%figur over grøn træ og dets noder
+
+\paragraph{The red tree} is an immutable facade built around the green tree. It has parent references and knows the absolute positions of nodes in source code. However these features prevents nodes from being reused, which means that making modifications to a red tree is expensive. Therefore they take another approach than building a new red tree upon every modification\cite{lippert2012redgreen}. 
+
+The red tree is build lazily using a top-down approach, starting from the root of the tree and descending down into children. To access a given node in the tree, the parent must first be available, otherwise the parents parent must be available, and so on. Once the parent of a node is available, all information required to construct a red node is available. The parent reference is known, as it is the current node. Additionally the internal data for the child can be obtained from the corresponding green node. Furthermore the absolute position of the node in source code can be computed, as the position of the parent is known, and the width of all children that come before the given node\cite{sadovRoslynPerf}.
+
+So when modifications are made to source code, an entire new red tree is not computed. Instead the green tree is modified, which is a relatively cheap operation, as most nodes can be reused. In terms of the red tree, a new root red note is created with 0 as position, null as parent and the root green node as the corresponding green node. The red tree will then only build itself if a user descends into its children\cite{sadovRoslynPerf}. % iforhold til performacne er det godt evt. kort
+%evt. forklar mere her
 
 %lav tegning
 %røde og grønne træer
