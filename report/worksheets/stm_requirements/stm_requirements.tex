@@ -10,8 +10,9 @@ A variable tracked by the \ac{STM} system can be tracked with different granular
 \subsection{Tracking of Variables} 
 Tracking changes to the variable directly limits the effect of the \ac{STM} system only to the variable, and not internal changes inside of the referenced object. This approach is known by the \ac{STM} system in Clojure\cite{clojureConcurrent}. It offers a simple mental model for the programmer, as only changes visible in the transaction scope will be provided with the transactional guarantees of atomicity and isolation.  \bsref{lst:tracking_variable} shows an example, where the field \bscode{_car} is assigned to a new modified version of a car on line 10. This assignment is tracked by the \ac{STM} system, as opposed to the example in \bscode{lst:tracking_object}, where the internals of the object is not tracked, when a method with a side-effect is called on line 7. The discussion of side-effects is expanded in \bsref{sec:side-effects}.
 
-This approach enables the \ac{STM} system to be used in combination with code where the internals are available, such as libraries shipped as binaries, as their internal state is not tracked.
-\kasper[inline]{Should properly say that because internal changes are not tracked the reusability of existing libraries is limited. They will have to be rewritten using transaction if tracking of internal changes is needed.}
+This approach can be used in combination with code where the internals are available, such as libraries shipped as binaries, but changes to their internals will not be traced, and therefore the reusability is limited. Should the programmer wish transactional support for the side-effects, the internals must be rewritten using the \ac{STM} system.
+
+%
 \begin{lstlisting}[label=lst:tracking_variable,
   float,
   caption={Tracking Assignment to Variables},
@@ -39,15 +40,14 @@ This approach enables the \ac{STM} system to be used in combination with code wh
     _car = _car.drive(25);
   }
 \end{lstlisting}
-
-
+%
 \subsection{Tracking of Objects}
 Tracking changes to the entire object allows the \ac{STM} system to track side-effects causing changes to the internals of the object. This is desirable in cases where you want to reverse the side-effect. E.g. when adding an object to a collection inside a transaction, and the transaction is aborted, the collection should be left in a state not containing the object. Tracking the objects internals reveals an interesting dilemma should the object itself contain other objects. How deep in the object structure, should the \ac{STM} system track changes? 
 
 In \cite{herlihy2003software} Herlihy et al. presents a library based \ac{STM} called DSTM. It uses an approach, where the programmer explicitly have to create a traceable copy from the original object, and do the modifications on the copy inside the transaction. As the copy is shallow, the internals could reference objects shared with the original, and side-effects on these objects will effect the original, thus be able to break isolation unintentionally\andreas{Is this true? Only if strong atomicity?}. If the programmer wish a deeper tracking, she must design the internals using the \ac{STM} system. The example in \bsref{lst:tracking_object} demonstrates a side-effect on \bscode{_kmDriven} being tracked, as it is a value type, not an object, where as the side-effect on \bsref{_engine} is not.
 
 In \cite{harris2003language} Harris et al. presents a \ac{STM} system which traces changes throughout the whole object structure, e.g. the objects referenced by the object etc. Changes to objects are buffered in a log, and written to the original if the transaction commits. This deep  traceability is enabled by having a part of the \ac{STM} system in the \ac{JIT} compiler, as the entire structure is known at that level, even if an object is from a compiled library. This approach ensures isolation, but requires modifications to the \ac{JIT} compiler. In the example of \bsref{lst:tracking_object}, both \bscode{_kmDriven} and \bscode{_engine} will be tracked by the \ac{STM} system.
-
+%
 \begin{lstlisting}[label=lst:tracking_object,
   float,
   caption={Tracking Changes to Object},
@@ -76,8 +76,9 @@ In \cite{harris2003language} Harris et al. presents a \ac{STM} system which trac
     _car.Drive(25);
   }
 \end{lstlisting}
-
+%
 \subsection{Choice of Tracking Granularity}
+As deep tracking of objects require changes to the \ac{JIT}, and we have restricted our self from changes to \ac{CLR} core in \bsref{sec:scope}, this is not feasible. This leave the option of tracking changes of the object, but not the objects internals, or only tracking the variable. If we cannot provide transactional support for all side-effects, but only those one level deep, the support will seem inconsistent from the programmers point of view. We therefore choose only to track the variable, since it provides a consistent, simple mental model for the programmer, displaying exactly what is tracked by the \ac{STM} system.
 
 \section{Transactions \& Variables}
 \label{subsec:rec_transactions_variables}
