@@ -86,6 +86,38 @@ However fitting all those characteristics into a single data structure is proble
 Instead Roslyn uses two types of trees, green trees and red trees, in order to fulfill all their characteristics.
 
 \paragraph{The green tree} is immutable, has the ability upon modification to reuse most unaffected nodes, has no parent references, is built bottom-up, and knows not the absolute positions of nodes in source code but only their widths\cite{lippert2012redgreen}.
+
+For the expression ``5+5*5+5'', a typical parse tree is shown in \bsref{fig:normal_syntax_tree}, and a potential green tree is shown in \bsref{fig:green_syntax_deduplication}. The green tree is more compact and can reuse nodes because it does not store parent references and positions in source code for nodes.
+%this is obtained by the factory methods used to create nodes, first checks if a given expression is already avaialble.
+	%restriction
+
+\begin{figure}[htbp]
+\centering
+ \includegraphics[width=\textwidth]{\rootpath/worksheets/roslyn/figures/normal_syntax_tree} 
+ \caption{Typical parse tree of expression.}
+\label{fig:normal_syntax_tree}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+ \includegraphics[width=0.6\textwidth]{\rootpath/worksheets/roslyn/figures/green_syntax_deduplication} 
+ \caption{Green tree of expression, reusing identical sub-trees. Inspired by \cite{sadovRoslynPerf}.}
+\label{fig:green_syntax_deduplication}
+\end{figure}
+%MAY LOOK LIKE THIS!
+
+%Husk, inspired by blog indlæg med VSadov
+
+%however, det er ikke alle der ser sådan ud (pga. det ikke er performance mæssigt godt at cache all subtræer)
+
+%more about green tree reuse
+
+%As the green tree nodes does not know parents or positions of nodes in source code, similar sub trees can be reused across several 
+An advantage of the green tree 
+
+
+%when you create a node with factory, it already has a similar expression
+
 %green nodes does not know their parent 
 
 %forklar at grønne noder kan genbruges, når man modificerer et træ og laver et nyt og man kan genbruge unaffected noder. En grøn node kan være brugt af mange forskellige syntax træer.
