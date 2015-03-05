@@ -4,7 +4,7 @@ This chapter describes the requirements for the \ac{STM} system powering \stmnam
 \label{sec:stm_requirements}
 \kasper[inline]{Refer to work last semester}
 
-\section{Tracking Granularity}
+\section{Tracking Granularity}\label{sec:tracking}
 A variable tracked by the \ac{STM} system can be tracked with different granularity. By tracking assignments to the variable, or tracking changes to the object referenced by the variable. These different approaches affect the semantics of the \ac{STM} system, and will be discussed in the subsequent sections.
 
 \subsection{Tracking of Variables} 
@@ -25,10 +25,10 @@ This approach can be used in combination with code where the internals are avail
   commentstyle=\color{greencomments},
   keywordstyle=\color{bluekeywords},
   stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+  morekeywords={atomic, retry, orElse, var, get, set, sealed}]  % Start your code-block
   
-  class Car {
-    private int _kmDriven;
+  sealed class Car {
+    private final int _kmDriven;
     public Car(int km) { _kmDriven = km; }
     public Car Drive (int km) { 
       return new Car(_kmDriven + km); 
@@ -68,7 +68,7 @@ In \cite{harris2003language} Harris et al. presents a \ac{STM} system which trac
     public void Drive (int km) { 
       _kmDriven += km; 
       _engine.Degrade(km);
-      }
+    }
   }
   
   ...
@@ -191,29 +191,21 @@ All the issues listed above, is related to weak atomicity, and is not present un
 As we seek to validate whether \ac{STM} is a valid alternative to locks by characteristics, and not by performance, strong atomicity over marked transactional variables is chosen for \stmname.
 \andreas[inline]{Should we reference our method? Or our characteristics} 
 
-
-
 \section{Side-effects}\label{sec:side-effects}
-If the transaction should fail, the immutable design ensures that the \bscode{_car} field is left unchanged. 
-% This approach promotes immutable design
-% Even though C\# originally was designed to use shared state to make changes, the immutable approach is now promoted as a best practice. 
-
-%% However, for small classes or structs that just encapsulate a set of values (data) and have little or no behaviors, it is recommended to make the objects immutable by declaring the set accessor as private. 
-%% Effective Java item 15. Page 73
-
-\cite[p. 50-52]{dpt907e14trending}
-
-% Reference to old report
-% Tim Harris Exceptions and Side-effects
+Side-effects in methods are a common idiom in C\#, and comes in different shapes and form. We categorize side-effects as an in memory effect, exceptions or irreversible action. In the following section, we will discuss the design requirements for handling the different types of side-effects in \stmname.
 
 \subsection{In memory}
-% We only track on the reference
-% Consequence is, that side effects are not tracked.
-% We advice for use of immutability
+Side-effects in memory is done by changing values through references to variables outside of the method scope, instead of returning a new value\andreas{I need to find a more official definition}. An example is \bsref{lst:tracking_object} where the \bscode{Drive} method updates the field \bscode{_kmDriven} and invokes a method call on \bscode{_engine}, potentially causing another side-effect. As discussed in \bsref{sec:tracking}, we only track the variable, and not changes to the internals of it. As a consequence, a side-effect such as the one in \bsref{lst:tracking_object} will persist through an aborted transaction. To remedy this, we promote the use of immutable objects, such as the design of the \bscode{car} class in \bsref{lst:tracking_variable}. This design ensures no side-effects, and changes to the object will return a new value, which will be tracked if assigned to the variable.
+
+The immutable approach suites \ac{STM} well, as it is free of side-effects. Additionally it is a less error prone and secure design approach, than mutable objects\cite[p. 73]{bloch2008effective}. Microsoft got an official immutable collection package\footnote{\url{https://www.nuget.org/packages/Microsoft.Bcl.Immutable}}, and is therefore giving first class support for immutability. They also advises for immutability for ``[...] small classes or structs that just encapsulate a set of values (data) and have little or no behaviors''\footnote{\url{https://msdn.microsoft.com/en-us/library/bb384054.aspx}}. For designing immutable objects, we refer to Bloch's Effective Java\cite[p. 73-80]{bloch2008effective}.
+
 \subsection{Exceptions}
+There exist different approaches of how to handle exceptions happening inside a transaction. We discuss these approaches in-depth in our prior study\cite[p. 50-51]{dpt907e14trending}. For \stmnamesp we want to keep programmers intuition of how exceptions work in non-transactional code, the same in transactional code. Therefore, transactions will not be used as a recovery mechanism as proposed by in \cite{harris2005exceptions}, but instead the exception will be propagated if and only if the transaction is committed. We argue that keeping the purpose of transactions to synchronization only keeps it simpler. This way, the programmer will only receive exceptions of code that actually takes effect, and will be able to recover in usual fashion by catching exceptions.
 
-\subsection{IO}
+\subsection{Irreversible Actions}
+Effects such as \ac{IO} performed on disk or network, native calls, or GUI operations are not reversible. This makes them unsuitable for use in transactions, since their effect cannot be undone should the transaction be aborted. We expand on this problem in our prior study\cite[p. 51-52]{dpt907e14trending}. In \cite{duffy2010stmnet} Duffy proposes using a well known strategy from the transaction theory\cite{reuter1993transaction}, having the programmer supply on-commit and on-rollback actions to perform or compensate for the irreversible action. In \cite{harris2005exceptions} Harris et al. proposes that \ac{IO} libraries should implement an interface, allowing the \ac{STM} to do callbacks when the transaction is committed, allowing the effect to be buffered until then. These solutions either burdens the programmer using \ac{STM}, or the library designer that must implement a special interface.
 
+While we recognize the potential in the presented solutions, the focus of \stmnamesp is limited from solving these well known problems with irreversible actions in \ac{STM}. Due to this, we do not give any guarantee of the effect of using  irreversible actions in transactions, and it is thus disencouraged.
 
 \section{Conditional Synchronization}
 \label{sec:req_conditional}
@@ -311,7 +303,7 @@ By providing opacity programmers do not have to reason about problems that occur
       private atomic static int X = 10;
       private atomic static int Y = 10;
 
-      public static int Main(string[] args)
+      public static void Main(string[] args)
       {
           var t1 = new Thread(() =>
           {
@@ -336,8 +328,6 @@ By providing opacity programmers do not have to reason about problems that occur
 
           t1.Start();
           t2.Start();
-        
-          return 0;
       }
   }
 \end{lstlisting}

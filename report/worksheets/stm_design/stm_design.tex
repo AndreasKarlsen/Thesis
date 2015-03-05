@@ -28,7 +28,7 @@ As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply
   {
       public static atomic int number = 10;
   
-      public static int Main(string[] args)
+      public static void Main(string[] args)
       {
           Thread t1 = new Thread ( () => {
               atomic{
@@ -48,7 +48,6 @@ As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply
           	result = number;          
           }
           Console.WriteLine("Result is: "+result);
-          return 0;
       }
   }
 \end{lstlisting}
@@ -75,11 +74,11 @@ As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_
   {
       public static atomic int number = 10;
   
-      public static int Main(string[] args)
+      public static void Main(string[] args)
       {
           Thread t1 = new Thread ( () => {
               atomic{
-                  if (number == 10 )           
+                  if (number == 10)           
                       number = number * 3;
               }
            });
@@ -88,8 +87,7 @@ As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_
           });
           t1.Start(); t2.Start();
           t1.Join(); t2.Start();
-          Console.WriteLine("Result is: "+number);
-          return 0;
+          Console.WriteLine("Result is: " + number);
       }
   }
 \end{lstlisting}
@@ -213,8 +211,8 @@ As described in \bsref{sec:stm_req_nesting} \stmnamesp must support nesting of t
 
           int tmpx;
           int tmpy;
-          if (int.TryParse(args[0],out tmpx) 
-              || !int.TryParse(args[1],out tmpy))
+          if (!int.TryParse(args[0], out tmpx) 
+              || !int.TryParse(args[1], out tmpy))
               return;
 
           atomic
