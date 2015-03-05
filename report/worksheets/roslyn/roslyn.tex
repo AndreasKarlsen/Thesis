@@ -3,21 +3,21 @@
 This chapter presents a conceptual overview of the Roslyn project. In BLA we describe BLA\toby{Ændre dette når vi ved hvad der skal være i kapitlet}
 
 \section{Introduction}
-Project Roslyn is Microsoft's initiative of completely rewriting the C\# and \ac{VB} compilers, using their own managed code language. That is, the C\# compiler is written in C\# and the \ac{VB} compiler in \ac{VB}. Roslyn was released open source at the Microsoft Build Conference 2014\cite{csharpBuild}.
+Project Roslyn is Microsoft's initiative of completely rewriting the C\# and \ac{VB} compilers, using their own managed code language. That is, the C\# compiler is written in C\# and the \ac{VB} compiler in \ac{VB}. Roslyn was released as open source at the Microsoft Build Conference 2014\cite{csharpBuild}.
 
-Beyond changing the languages the compilers are written in, Roslyn provides a new approach to compiler interaction and usage. Traditionally a compiler is treated as a black box where it is given some source files as input, magic happens in the middle, and out comes objects files or assemblies\cite[p. 3]{ng2012roslyn}. During compilation the compiler builds a deep knowledge about the code, unavailable to the programmer, which is discarded once the compilation is done. This is where Roslyn differs, as it exposes the code analysis of the compiler by providing an API layer, which allows the programmer to obtain information about the different compilation phases\cite[p. 3]{ng2012roslyn}. 
+Beyond changing the languages the compilers are written in, Roslyn provides a new approach to compiler interaction and usage. Traditionally a compiler is treated as a black box where it is given source files as input, magic happens in the middle, and out comes objects files or assemblies\cite[p. 3]{ng2012roslyn}. During compilation the compiler builds a deep knowledge about the code, unavailable to the programmer, which is discarded once the compilation is done. This is where Roslyn differs, as it exposes the code analysis of the compiler by providing an \ac{API}, which allows the programmer to obtain information about the different compilation phases\cite[p. 3]{ng2012roslyn}. 
 
-The compiler APIs available are illustrated in \bsref{fig:api_vs_compiler_pipeline} where each API corresponds to a phase in the compiler pipeline. In the first phase the source code is turned into tokens and parsed according to the language grammar. This phase is exposed through an API as a syntax tree. In the second phase declarations i.e. namespaces and types from code and imported metadata are analyzed to form named symbols. This phase is exposed as a hierarchical symbol table. In the third phase identifiers in the code are matched to symbols.\toby{Det inkluderer type check og scope check også?} This phase is exposed as a model which exposes the result of the semantic analysis. In the last phase, information gathered throughout compilation is used to emit an assembly. This phase is exposed as an API that produces IL byte code\cite[p. 3-4]{ng2012roslyn}.
+The compiler \acp{API} available are illustrated in \bsref{fig:api_vs_compiler_pipeline} where each \ac{API} corresponds to a phase in the compiler pipeline. In the first phase the source code is turned into tokens and parsed according to the language grammar. This phase is exposed through an \ac{API} as a syntax tree. In the second phase declarations, i.e. namespaces and types from code and imported metadata, are analyzed to form named symbols. This phase is exposed as a hierarchical symbol table. In the third phase identifiers in the code are matched to symbols.\toby{Det inkluderer type check og scope check også?} This phase is exposed as a model which exposes the result of the semantic analysis. In the last phase, information gathered throughout compilation is used to emit an assembly. This phase is exposed as an \ac{API} that produces IL bytecode\cite[p. 3-4]{ng2012roslyn}.
 %second phase:  a kind of an index to the sources that tells where namespaces and types are declared
 
 \begin{figure}[htbp]
 \centering
  \includegraphics[width=1\textwidth]{\rootpath/worksheets/roslyn/figures/compiler_pipeline_vs_api} 
- \caption{Compiler pipeline in contrast to compiler APIs\cite[p. 4]{ng2012roslyn}.}
+ \caption{Compiler pipeline in contrast to compiler \acp{API}s\cite[p. 4]{ng2012roslyn}.}
 \label{fig:api_vs_compiler_pipeline}
 \end{figure}
 
-Knowledge obtained through the APIs can be valuable in order to create tools that analyze and transform C\# or \ac{VB} code. Furthermore Roslyn allows interactive use of the languages using a \acs{REPL}\footnote{http://blogs.msdn.com/b/csharpfaq/archive/2012/01/30/roslyn-ctp-introduces-interactive-code-for-c.aspx}, and embedding of  C\# and \ac{VB} in a \ac{DSL}\cite[p. 3]{ng2012roslyn}.
+Knowledge obtained through the \acp{API} can be valuable in order to create tools that analyze and transform C\# or \ac{VB} code. Furthermore Roslyn allows interactive use of the languages using a \acs{REPL}\footnote{\url{http://blogs.msdn.com/b/csharpfaq/archive/2012/01/30/roslyn-ctp-introduces-interactive-code-for-c.aspx}}, and embedding of  C\# and \ac{VB} in a \ac{DSL}\cite[p. 3]{ng2012roslyn}.
 
 \section{Inside Roslyn}
 In this section we will describe the inner architecture of Roslyn's source code and further elaborate on the compiler phases from \bsref{fig:api_vs_compiler_pipeline}.
@@ -64,11 +64,12 @@ In \bsref{fig:roslyn_invoke_overview} an overview of the compilation call chain 
 The C\# compiler builds upon concepts from traditional compiler theory, such as lexing, parsing, declaration processing, semantic analysis and code generation\cite{sebestaProLang}\cite{fischer2009crafting}. Throughout the phases of compilation, traditional concepts such as a syntax tree, symbol table and visitor pattern are also used. In this section we describe the core concepts used in the C\# compilation phases.
 
 \subsection{Syntax trees}
-Syntax trees are the primary structure used throughout the phases of compilation. Roslyn's syntax tress have three key attributes\cite[p. 6]{ng2012roslyn}. The first attribute is that a syntax tree is a full fidelity representation of source code, which means that everything in the source code is represented as a node in the syntax tree. If programs are invalid, the syntax tree represent these errors in source code by skipped or missing tokens in the tree. 
-
-The first attribute enables the second attribute, which is that a syntax tree produced from parsing must be round-trippable back to the original source code.
-
-The third attribute is that syntax trees are immutable and thread-safe. This enables multiple users to use the same syntax tree at the same time in different threads without concurrency issues. As syntax trees are immutable, factory methods exists in order to help create and modify trees. This might seem inefficient, as one would expect a copy of the tree is required, however syntax tress are efficient as they reuse underlying nodes. This means that trees can be modified fast and with a low memory overhead.
+Syntax trees are the primary structure used throughout the phases of compilation. Roslyn's syntax tress have three key attributes\cite[p. 6]{ng2012roslyn}: 
+\begin{enumerate}
+	\item The first attribute is that a syntax tree is a full fidelity representation of source code, which means that everything in the source code is represented as a node in the syntax tree. If programs are invalid, the syntax tree represent these errors in source code by skipped or missing tokens in the tree. 
+	\item The first attribute enables the second attribute, which is that a syntax tree produced from parsing must be round-trippable back to the original source code.
+	\item The third attribute is that syntax trees are immutable and thread-safe. This enables multiple users to use the same syntax tree at the same time in different threads without concurrency issues. As syntax trees are immutable, factory methods exists in order to help create and modify trees. This might seem inefficient, as one would expect a copy of the tree is required, however syntax tress are efficient as they reuse underlying nodes. This means that trees can be modified fast and with a low memory overhead.
+\end{enumerate}
 
 \subsubsection{Red And Green Trees}\toby{Hvad med boundtree? Eller evt. fortæl om det i et uddybende compiler fase afsnit}
 The Roslyn team wanted a primary data structure for compilation with the following characteristics\cite{lippert2012redgreen}:
