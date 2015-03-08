@@ -6,49 +6,48 @@ using System.Threading;
 using System.Threading.Tasks;
 using STM.Exceptions;
 
-namespace STM.Implementation.Lockbased
+namespace STM.Implementation.Lockbased 
 {
-    public class ReadSet
+    public class ReadSet : IEnumerable<BaseLockObject>
     {
-        public readonly HashSet<BaseLockObject> LockObjects;
+        private readonly HashSet<BaseLockObject> _lockObjects;
 
-        private static readonly ThreadLocal<ReadSet> Locals
-            = new ThreadLocal<ReadSet>(() => new ReadSet());
 
-        public ReadSet()
+        internal ReadSet()
         {
-            LockObjects = new HashSet<BaseLockObject>();
-        }
-
-        public static ReadSet GetLocal()
-        {
-            return Locals.Value;
+            _lockObjects = new HashSet<BaseLockObject>();
         }
 
         public void Add(BaseLockObject blo)
         {
-            LockObjects.Add(blo);
+            _lockObjects.Add(blo);
+        }
+
+        public void Merge(ReadSet items)
+        {
+            _lockObjects.UnionWith(items);
         }
 
         public void Remove(BaseLockObject blo)
         {
-            LockObjects.Remove(blo);
+            _lockObjects.Remove(blo);
         }
 
         public void Clear()
         {
-            LockObjects.Clear();
+            _lockObjects.Clear();
         }
 
-        public int Count()
-        {
-            return LockObjects.Count;
+        public int Count {
+            get { return _lockObjects.Count; }
         }
+
+        #region Locking
 
         public bool TryLock(int milisecs)
         {
-            var objects = new List<BaseLockObject>(LockObjects.Count);
-            foreach (var lo in LockObjects)
+            var objects = new List<BaseLockObject>(_lockObjects.Count);
+            foreach (var lo in _lockObjects)
             {
                 if (!lo.TryLock(milisecs))
                 {
@@ -67,10 +66,29 @@ namespace STM.Implementation.Lockbased
 
         public void Unlock()
         {
-            foreach (var lo in LockObjects)
+            foreach (var lo in _lockObjects)
             {
                 lo.Unlock();
             }
         }
+
+#endregion Locking
+
+        #region IEnumerable
+
+        public IEnumerator<BaseLockObject> GetEnumerator()
+        {
+            foreach (var baseLockObject in _lockObjects)
+            {
+                yield return baseLockObject;
+            }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        #endregion IEnumerable
     }
 }

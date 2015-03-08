@@ -9,15 +9,15 @@ namespace STM.Collections
 {
     public class Queue<T>
     {
-        private readonly RefLockObject<Node> _head = new RefLockObject<Node>(null);
-        private readonly RefLockObject<Node> _tail = new RefLockObject<Node>(null);
-        private RefLockObject<int> _size = new RefLockObject<int>(0);
+        private readonly TMVar<Node> _head = new TMVar<Node>(null);
+        private readonly TMVar<Node> _tail = new TMVar<Node>(null);
+        private TMVar<int> _size = new TMVar<int>(0);
 
         public int Count
         {
             get
             {
-                return LockSTMSystem.Atomic(() =>
+                return STMSystem.Atomic(() =>
                 {
                     return _size.GetValue();
                 });
@@ -26,7 +26,7 @@ namespace STM.Collections
 
         public void Enqueue(T value)
         {
-            LockSTMSystem.Atomic(() =>
+            STMSystem.Atomic(() =>
             {
                 var node = new Node(value);
                 if (_tail.GetValue() == null)
@@ -46,11 +46,11 @@ namespace STM.Collections
 
         public T Dequeue()
         {
-            return LockSTMSystem.Atomic(() =>
+            return STMSystem.Atomic(() =>
             {
                 if (_head.GetValue() == null)
                 {
-                    LockSTMSystem.Retry();
+                    STMSystem.Retry();
                 }
 
                 var oldHead = _head.GetValue();
@@ -70,7 +70,7 @@ namespace STM.Collections
 
         private class Node
         {
-            public readonly RefLockObject<Node> Next = new RefLockObject<Node>(null);
+            public readonly TMVar<Node> Next = new TMVar<Node>(null);
             public readonly T Value;
 
             public Node(T value)

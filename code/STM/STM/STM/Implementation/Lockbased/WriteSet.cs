@@ -10,48 +10,39 @@ using STM.Interfaces;
 
 namespace STM.Implementation.Lockbased
 {
-    public class WriteSet
+    public class WriteSet : IEnumerable<KeyValuePair<BaseLockObject,object>>
     {
-        public readonly Dictionary<BaseLockObject, object> Map; 
+        private readonly Dictionary<BaseLockObject, object> _map; 
 
-        private static readonly ThreadLocal<WriteSet> Locals
-            = new ThreadLocal<WriteSet>(() => new WriteSet());
-
-
-        public WriteSet()
+        internal WriteSet()
         {
-            Map = new Dictionary<BaseLockObject, object>();
-        }
-
-        public static WriteSet GetLocal()
-        {
-            return Locals.Value;
+            _map = new Dictionary<BaseLockObject, object>();
         }
 
         public bool Contains(BaseLockObject stmObject)
         {
-            return Map.ContainsKey(stmObject);
+            return _map.ContainsKey(stmObject);
         }
 
         public object Get(BaseLockObject stmObject)
         {
-            return Map[stmObject];
+            return _map[stmObject];
         }
 
         public void Put(BaseLockObject stmObject, object value)
         {
-            Map[stmObject] = value;
+            _map[stmObject] = value;
         }
 
         public void Clear()
         {
-            Map.Clear();
+            _map.Clear();
         }
 
         public bool TryLock(int milisecs)
         {
-            var objects = new List<BaseLockObject>(Map.Count);
-            foreach (var lo in Map.Keys)
+            var objects = new List<BaseLockObject>(_map.Count);
+            foreach (var lo in _map.Keys)
             {
                 if (!lo.TryLock(milisecs))
                 {
@@ -70,9 +61,36 @@ namespace STM.Implementation.Lockbased
 
         public void Unlock()
         {
-            foreach (var lo in Map.Keys)
+            foreach (var lo in _map.Keys)
             {
                 lo.Unlock();
+            }
+        }
+
+        public IEnumerator<KeyValuePair<BaseLockObject, object>> GetEnumerator()
+        {
+            foreach (var item in _map)
+            {
+                yield return item;
+            }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public object this[BaseLockObject key]
+        {
+            get { return _map[key]; }
+            set { _map[key] = value; }
+        }
+
+        public void Merge(WriteSet other)
+        {
+            foreach (var kvpair in other)
+            {
+                _map[kvpair.Key] = kvpair.Value;
             }
         }
     }

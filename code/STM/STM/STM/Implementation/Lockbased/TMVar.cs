@@ -9,10 +9,10 @@ using STM.Exceptions;
 
 namespace STM.Implementation.Lockbased
 {
-    public class RefLockObject<T> : LockObject<T>
+    public class TMVar<T> : LockObject<T>
     {
 
-        public RefLockObject(T value)
+        public TMVar(T value)
             : base(value)
         {
 
@@ -26,39 +26,39 @@ namespace STM.Implementation.Lockbased
 
         private T GetValueInternal()
         {
-            var me = Transaction.GetLocal();
-            var readset = ReadSet.GetLocal();
-            switch (me.GetStatus())
+            var me = Transaction.LocalTransaction;
+           // var readset = ReadSet.GetLocal();
+            switch (me.Status)
             {
-                case Transaction.Status.Committed:
+                case Transaction.TransactionStatus.Committed:
                     return base.GetValue();
-                case Transaction.Status.Active:
-                    WriteSet writeset = WriteSet.GetLocal();
+                case Transaction.TransactionStatus.Active:
+                    var writeset = me.WriteSet;
                     if (!writeset.Contains(this))
                     {
-                        T value = base.GetValue();
+                        var value = base.GetValue();
 #if DEBUG
                         Console.WriteLine("Transaction: " + me.ID + " read:" + value);
 #endif
                         
-                        if (IsLocked() || VersionClock.GetReadStamp() < GetStamp())
+                        if (IsLocked() || me.ReadStamp < TimeStamp)
                         {
                             throw new STMAbortException("Aborted due to read from locked object");
                         }
 
-                        ReadSet.GetLocal().Add(this);
+                        me.ReadSet.Add(this);
                         return value;
                     }
                     else
                     {
-                        T curVersion = (T)writeset.Get(this);
+                        var curVersion = (T)writeset.Get(this);
 #if DEBUG
                         Console.WriteLine("Transaction: " + me.ID + " read:" + curVersion);
 #endif
-                        ReadSet.GetLocal().Add(this);
+                        me.ReadSet.Add(this);
                         return curVersion;
                     }
-                case Transaction.Status.Aborted:
+                case Transaction.TransactionStatus.Aborted:
                     throw new STMException("Aborted transaction attempted to read.");
                 default:
                     throw new Exception("Shits on fire yo!");
@@ -76,14 +76,14 @@ namespace STM.Implementation.Lockbased
         }
         private void SetValueInternal(T value)
         {
-            var me = Transaction.GetLocal();
-            switch (me.GetStatus())
+            var me = Transaction.LocalTransaction;
+            switch (me.Status)
             {
-                case Transaction.Status.Committed:
+                case Transaction.TransactionStatus.Committed:
                     base.SetValue(value);
                     break;
-                case Transaction.Status.Active:
-                    var writeset = WriteSet.GetLocal();
+                case Transaction.TransactionStatus.Active:
+                    var writeset = me.WriteSet;
                     if (!writeset.Contains(this))
                     {
 
@@ -104,7 +104,7 @@ namespace STM.Implementation.Lockbased
                         writeset.Put(this, value);
                     }
                     break;
-                case Transaction.Status.Aborted:
+                case Transaction.TransactionStatus.Aborted:
                     throw new STMException("Aborted transaction attempted to write.");
                 default:
                     throw new Exception("Shits on fire yo!");

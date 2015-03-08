@@ -43,14 +43,14 @@ namespace STM.Implementation.Lockbased
 
         public virtual bool Validate()
         {
-            Transaction me = Transaction.GetLocal();
-            switch (me.GetStatus())
+            var me = Transaction.LocalTransaction;
+            switch (me.Status)
             {
-                case Transaction.Status.Committed:
+                case Transaction.TransactionStatus.Committed:
                     return true;
-                case Transaction.Status.Active:
-                    return GetStamp() <= VersionClock.GetReadStamp();
-                case Transaction.Status.Aborted:
+                case Transaction.TransactionStatus.Active:
+                    return TimeStamp <= me.ReadStamp;
+                case Transaction.TransactionStatus.Aborted:
                     return false;
                 default:
                     throw new Exception("Shits on fire yo!");
@@ -61,7 +61,7 @@ namespace STM.Implementation.Lockbased
         {
 
 #if DEBUG
-            Transaction me = Transaction.GetLocal();
+            Transaction me = Transaction.LocalTransaction;
             Console.WriteLine("Transaction: " + me.ID + " commited:" + o);
 #endif
             _version = (T)o;
