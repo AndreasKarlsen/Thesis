@@ -12,7 +12,7 @@ namespace STM.Implementation.Lockbased
 {
     public abstract class BaseLockObject
     {
-        protected readonly ILock ReentrantLock = new AtomicLock();
+        protected readonly ILock ReentrantLock = new ReentrantLock();
         internal readonly IList<ManualResetEvent> WaitHandles = new List<ManualResetEvent>();
         protected readonly object WaitHandlesLock = new object();
         //internal readonly Semaphore WaitHandle = new Semaphore(0, 99);

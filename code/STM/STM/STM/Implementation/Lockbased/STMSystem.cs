@@ -112,7 +112,7 @@ namespace STM.Implementation.Lockbased
                 try
                 {
                     result = stmAction();
-        
+
                     if (OnValidate(me) && me.Commit())
                     {
                         if (me.IsNested)
@@ -125,7 +125,7 @@ namespace STM.Implementation.Lockbased
                         {
                             OnCommit(me);
                         }
-                       
+
                         return result;
                     }
 
@@ -139,14 +139,14 @@ namespace STM.Implementation.Lockbased
                 {
                     index = HandleRetry(stmActions, me, index, overAllReadSet);
                 }
-                catch (STMException) { }
+                catch (STMException)
+                { }
 
                 //If the transaction is nested restore the parent as current transaction before retrying
                 if (me.IsNested)
                 {
                     Transaction.LocalTransaction = me.Parent;
                 }
-
             }
         }
 
@@ -246,6 +246,11 @@ namespace STM.Implementation.Lockbased
 
         private static void WaitOnReadset(Transaction me, ReadSet readSet)
         {
+
+#if DEBUG
+            Console.WriteLine("ENTERED WAIT ON RETRY: " + me.ID);
+#endif
+
             if (readSet.Count == 0)
             {
                 throw new STMInvalidRetryException();
@@ -266,11 +271,11 @@ namespace STM.Implementation.Lockbased
             }
 
 #if DEBUG
-            Console.WriteLine("Transaction: " + me.ID + " waiting for retry.");
+            Console.WriteLine("WAIT ON RETRY: " + me.ID);
 #endif
             WaitHandle.WaitAny(waiton);
 #if DEBUG
-            Console.WriteLine("Transaction: " + me.ID + " awoken from retry.");
+            Console.WriteLine("WAIT ON RETRY: " + me.ID);
 #endif
             /*
                 //Attempt to block the transaction waiting for some value to change

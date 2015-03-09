@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Spring.Threading.AtomicTypes;
 using STM.Implementation.Lockbased;
+using STM.Util;
 
 namespace STM
 {
@@ -16,7 +17,7 @@ namespace STM
 
         //Possibly use int or class ref instead of enum for compare and swap
         private TransactionStatus _transactionStatus;
-        public string ID { get; private set; }
+        public long ID { get; private set; }
         public int ReadStamp { get; internal set; }
         public WriteSet WriteSet { get; private set; }
         public ReadSet ReadSet { get; private set; }
@@ -32,21 +33,25 @@ namespace STM
         internal static Transaction StartTransaction()
         {
             var transaction = new Transaction(TransactionStatus.Active) {ReadStamp = VersionClock.TimeStamp};
-            Local.Value = transaction;
+          
 #if DEBUG
             Console.WriteLine("STARTED: "+transaction.ID);
 #endif
+            Local.Value = transaction;
             return transaction;
         }
 
         internal static Transaction StartNestedTransaction(Transaction parent)
         {
-            var transaction = new Transaction(TransactionStatus.Active) { ReadStamp = VersionClock.TimeStamp };
-            Local.Value = transaction;
-            transaction.Parent = parent;
+            var transaction = new Transaction(TransactionStatus.Active)
+            {
+                ReadStamp = VersionClock.TimeStamp,
+                Parent = parent
+            };
 #if DEBUG
             Console.WriteLine("STARTED NESTED: " + transaction.ID);
 #endif
+            Local.Value = transaction;
             return transaction;
         }
 
@@ -58,7 +63,7 @@ namespace STM
         private void Init(TransactionStatus status)
         {
 #if DEBUG
-            ID = Guid.NewGuid().ToString();
+            ID = IDGenerator.NextID;
 #endif
             _transactionStatus = status;
             ReadSet = new ReadSet();

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -8,13 +9,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Spring.Threading.AtomicTypes;
 using STM.Interfaces;
+using STM.Util;
 
 namespace STM.Implementation.Lockbased
 {
     public class AtomicLock : ILock
     {
 #if DEBUG
-        protected readonly string ID = Guid.NewGuid().ToString();
+        protected readonly long ID = IDGenerator.NextID;
 #endif
         protected readonly ManualResetEvent ResetEvent = new ManualResetEvent(true);
         protected readonly ConcurrentQueue<Thread> Waiters = new ConcurrentQueue<Thread>(); 
@@ -79,8 +81,9 @@ namespace STM.Implementation.Lockbased
                         return false;
                     }
 
-                    milisecs -=  (int)(DateTime.UtcNow - start).TotalMilliseconds;
-                    if (milisecs > 0)
+                    var now = DateTime.UtcNow;
+                    milisecs -= (int)now.Subtract(start).TotalMilliseconds;
+                    if (milisecs < 0)
                     {
                         return false;
                     }
@@ -102,7 +105,7 @@ namespace STM.Implementation.Lockbased
             Thread current;
             while (!Waiters.TryDequeue(out current)) { }
 #if DEBUG
-            Console.WriteLine("Thead {0} aquired lock {1}", current.ManagedThreadId, ID);
+            Console.WriteLine("Transaction {0} aquired lock {1}", Transaction.LocalTransaction.ID, ID);
 #endif
         }
 

@@ -11,7 +11,7 @@ namespace STM.Collections
     {
         private readonly TMVar<Node> _head = new TMVar<Node>(null);
         private readonly TMVar<Node> _tail = new TMVar<Node>(null);
-        private TMVar<int> _size = new TMVar<int>(0);
+        private readonly TMVar<int> _size = new TMVar<int>(0);
 
         public int Count
         {
@@ -39,7 +39,8 @@ namespace STM.Collections
                 }
                 else
                 {
-                    _tail.Value.Next.Value = node;
+                    var curTail = _tail.Value;
+                    curTail.Next.Value = node;
                     _tail.Value = node;
                 }
                 _size.Value = _size.Value + 1;

@@ -304,21 +304,25 @@ namespace STMTester
             var buffer = new STM.Collections.Queue<int>();
             var t1 = new Thread(() =>
             {
+                var sw = Stopwatch.StartNew();
                 for (var i = 0; i < 1000; i++)
                 {
                     Console.WriteLine(buffer.Dequeue());
                     Console.WriteLine("Index :"+i);
                 }
+
+                sw.Stop();
+                Console.WriteLine("Milisecs: "+sw.ElapsedMilliseconds);
             });
 
-            var t2 = new Thread(() => STMSystem.Atomic(() =>
+            var t2 = new Thread(() => 
             {
                 for (var i = 0; i < 1000; i++)
                 {
                     buffer.Enqueue(i);
                 }
-            }));
-
+            });
+            
             t1.Start();
             t2.Start();
 

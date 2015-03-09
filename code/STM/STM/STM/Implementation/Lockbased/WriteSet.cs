@@ -50,7 +50,7 @@ namespace STM.Implementation.Lockbased
                     {
                         baseLockObject.Unlock();
                     }
-                    throw new STMException("Abort due to being unable to aquire locks on all objects");
+                    throw new STMAbortException("Abort due to being unable to aquire locks on all objects");
                 }
 
                 objects.Add(lo);

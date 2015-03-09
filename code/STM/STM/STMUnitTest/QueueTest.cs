@@ -9,6 +9,7 @@ namespace STMUnitTest
     public class QueueTest
     {
         private Queue<int> _queue;
+        
         [TestInitialize]
         public void Setup()
         {
@@ -33,6 +34,14 @@ namespace STMUnitTest
             }
         }
 
+        private void Dequeue(int amount)
+        {
+            for (var i = 0; i < amount; i++)
+            {
+                _queue.Dequeue();
+            }
+        }
+
         [TestMethod]
         public void TestEnqueue()
         {
@@ -53,6 +62,20 @@ namespace STMUnitTest
             thread2.Join();
 
             Assert.AreEqual(200000, _queue.Count);
+        }
+
+        [TestMethod]
+        public void TestThreadedProducerConsumer()
+        {
+            var thread1 = new Thread(() => Enqueue(100000));
+            var thread2 = new Thread(() => Dequeue(100000));
+
+            thread1.Start();
+            thread2.Start();
+            thread1.Join();
+            thread2.Join();
+
+            Assert.AreEqual(0, _queue.Count);
         }
     }
 }
