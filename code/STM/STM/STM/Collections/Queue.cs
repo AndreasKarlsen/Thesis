@@ -19,7 +19,7 @@ namespace STM.Collections
             {
                 return STMSystem.Atomic(() =>
                 {
-                    return _size.GetValue();
+                    return _size.Value;
                 });
             }
         }
@@ -28,19 +28,21 @@ namespace STM.Collections
         {
             STMSystem.Atomic(() =>
             {
+#if DEBUG
+                Console.WriteLine("Enqueue by: " + Transaction.LocalTransaction.ID);
+#endif
                 var node = new Node(value);
-                if (_tail.GetValue() == null)
+                if (_size.Value == 0)
                 {
-
-                    _head.SetValue(node);
-                    _tail.SetValue(node);
+                    _head.Value = node;
+                    _tail.Value = node;
                 }
                 else
                 {
-                    _tail.GetValue().Next.SetValue(node);
-                    _tail.SetValue(node);
+                    _tail.Value.Next.Value = node;
+                    _tail.Value = node;
                 }
-                _size.SetValue(_size.GetValue() + 1);
+                _size.Value = _size.Value + 1;
             });
         }
 
@@ -48,21 +50,24 @@ namespace STM.Collections
         {
             return STMSystem.Atomic(() =>
             {
-                if (_head.GetValue() == null)
+#if DEBUG
+                Console.WriteLine("Dequeue by: "+Transaction.LocalTransaction.ID);
+#endif
+                if (_size.Value == 0)
                 {
                     STMSystem.Retry();
                 }
 
-                var oldHead = _head.GetValue();
-                var newHead = oldHead.Next.GetValue();
+                var oldHead = _head.Value;
+                var newHead = oldHead.Next.Value;
                 var value = oldHead.Value;
-                
-                _head.SetValue(newHead);
+
+                _head.Value = newHead;
                 if (newHead == null)
                 {
-                    _tail.SetValue(null);
+                    _tail.Value = null;
                 }
-                _size.SetValue(_size.GetValue() - 1);
+                _size.Value = _size.Value - 1;
 
                 return value;
             });

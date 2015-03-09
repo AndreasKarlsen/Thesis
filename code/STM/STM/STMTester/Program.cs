@@ -26,13 +26,13 @@ namespace STMTester
             //TestRetry();
             //TestRetry2();
             //SingleItemBufferTest();
-            //QueueTest();
+            QueueTest();
             //AtomicLockTest();
             //DinningPhilosophersTest();
             //OrElseNestingTest();
             //OrElseTest();
             //OrElseNestingTest2();
-            OrElseNestingTest3();
+            //OrElseNestingTest3();
             Console.ReadKey();
         }
 
@@ -304,15 +304,16 @@ namespace STMTester
             var buffer = new STM.Collections.Queue<int>();
             var t1 = new Thread(() =>
             {
-                for (var i = 0; i < 100000; i++)
+                for (var i = 0; i < 1000; i++)
                 {
                     Console.WriteLine(buffer.Dequeue());
+                    Console.WriteLine("Index :"+i);
                 }
             });
 
             var t2 = new Thread(() => STMSystem.Atomic(() =>
             {
-                for (var i = 0; i < 100000; i++)
+                for (var i = 0; i < 1000; i++)
                 {
                     buffer.Enqueue(i);
                 }
