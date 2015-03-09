@@ -6,7 +6,7 @@ This chapter describes the design of \stmname.
 \label{sec:stm_design}
 This section describes the design of \stmnamesp based on the requirements defined in \bsref{sec:stm_requirements}.
 
-As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply language integrated support definition of transaction scopes as well as declaration of transactional. For this purpose \stmnamesp extends C\# with a \bscode{atomic} keyword. The atomic keyword will serve as both a statement denoting a transaction scope as well a modifier applicable to the definition of variables. \bsref{lst:stm_atomic_syntax}, which is a modified version of the race condition example from our previous study\cite[p. 23]{dpt907e14trending}, presents an example of the syntax extension. On line 6 the transactional variable number is defined and assigned a initial value of 10. The main method defines and starts two threads. \bscode{t1} checks if the value of number is equal to 10 and assigns \bscode{number} times 3 to the variable if the condition is true. These operations are executed as a transaction defined by the \bscode{atomic} keyword and associated block on line 11. \bscode{t2} simply assigns 20 to number inside a transaction defined on line 17. In this example \stmnamesp removes the race conditions associated with \bscode{t2} changing the value of \bscode{number} between the read on line 12 and the read on line 13. In the case such a change occurs the \ac{STM} system of \stmnamesp will abort and retry on of the implicated transactions.
+As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply language integrated support for defining transaction scopes as well as declaration of transactional variables. For this purpose \stmnamesp extends C\# with an \bscode{atomic} keyword. The atomic keyword will serve as both a statement denoting a transaction scope as well a modifier applicable to the definition of variables. \bsref{lst:stm_atomic_syntax}, which is a modified version of the race condition example from our previous study\cite[p. 23]{dpt907e14trending}, presents an example of the syntax extension. On line 6 the transactional variable number is defined and assigned an initial value of 10. The main method defines and starts two threads. \bscode{t1} checks if the value of number is equal to 10 and assigns \bscode{number} times 3 to the variable if the condition is true. These operations are executed as a transaction defined by the \bscode{atomic} keyword and associated block on line 11. \bscode{t2} simply assigns 20 to number inside a transaction defined on line 17. In this example \stmnamesp removes the race conditions associated with \bscode{t2} changing the value of \bscode{number} between the read on line 12 and the read on line 13. In the case such a change occurs the \ac{STM} system of \stmnamesp will abort and retry on of the implicated transactions.
  
 \begin{lstlisting}[label=lst:stm_atomic_syntax,
   caption={Transaction Syntax},
@@ -44,15 +44,15 @@ As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply
           t1.Start(); t2.Start();
           t1.Join(); t2.Start();
           int result;
-          atomic{
-          	result = number;          
+          atomic {
+            result = number;          
           }
-          Console.WriteLine("Result is: "+result);
+          Console.WriteLine("Result is: " + result);
       }
   }
 \end{lstlisting}
 
-As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_strong_weak_atomicity} \stmnamesp must provide strong atomicity as well as allow reads and writes to occur from outside transactions. As a result, reads and writes occurring from outside transactions will be accounted for when validating transactions. With that ind mind the previous example can be slightly simplified to the example presented in \bsref{lst:stm_atomic_syntax_simplified}. The atomic block on line 17 of the previous example has been removed. As the atomic block only contains a single write it serves no purpose because the write is still tracked by the \ac{STM} system without need for enclosing it within an atomic block. The atomic block on line 24 of the previous example can also be removed as the read can safely be performed from outside a transactions.
+As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_strong_weak_atomicity} \stmnamesp must provide strong atomicity as well as allow reads and writes to occur from outside transactions. As a result, reads and writes occurring from outside transactions will be accounted for when validating transactions. With that in mind the previous example can be slightly simplified to the example presented in \bsref{lst:stm_atomic_syntax_simplified}. The atomic block on line 17 of the previous example has been removed. As the atomic block only contains a single write it serves no purpose because the write is still tracked by the \ac{STM} system without need for enclosing it within an atomic block. The atomic block on line 24 of the previous example can also be removed as the read can safely be performed from outside a transactions.
 
 \begin{lstlisting}[label=lst:stm_atomic_syntax_simplified,
   caption={Transaction Syntax Simplified},
@@ -77,7 +77,7 @@ As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_
       public static void Main(string[] args)
       {
           Thread t1 = new Thread ( () => {
-              atomic{
+              atomic {
                   if (number == 10)           
                       number = number * 3;
               }
@@ -91,10 +91,10 @@ As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_
       }
   }
 \end{lstlisting}
-Allowing access to transactional variables from outside transactions dispenses with the need for defining a transaction whenever only a single read or write is to be performed, thereby simplifying these cases. The atomic block is then serves the purpose of combining multiple operations to be performed as a single atomic step.
+Allowing access to transactional variables from outside transactions dispenses the need for defining a transaction whenever only a single read or write is to be performed, thereby simplifying these cases. The atomic block then serves the purpose of combining multiple operations to be performed as a single atomic step.
 
 The examples presented here specify atomic fields. \stmnamesp also allows declaration of atomic local variables and parameters. As as result the orthogonality of the atomic keyword is increased.
-\kasper[inline]{OPS på beslutning omkring atomic paramter. Kan give problemer med ref / out keywords.}
+\kasper[inline]{OBS på beslutning omkring atomic paramter. Kan give problemer med ref / out keywords.}
 
 \section{Conditional Synchronization}
 As described in \bsref{sec:req_conditional} \stmnamesp support conditional synchronization via the \bscode{retry} and \bscode{orElse} constructs. To that end \stmnamesp extends C\# with a \bscode{retry} statement that can only be used inside atomic blocks. \bsref{lst:stm_atomic_syntax_retry} presents the \bscode{Dequeue} method from a transactional queue. The queue is defined over a singly linked list from which items are dequeued from the front and enqueued in the back. The \bscode{Dequeue} method consists of a atomic block, defined on line 11, performing the dequeue operation as a single atomic step. On line 13 the transaction checks if the queue is empty in which case it executes the retry statement on line 14, blocking the transaction to be retried when the \bscode{_size} variable changes. If the queue is not empty the new head of the queued is removed and the next item in the linked list becomes the new head. Finally the size of the queue is decreased and the value associated with the previous head is returned. 
