@@ -26,14 +26,22 @@ namespace STMTester
             //TestRetry();
             //TestRetry2();
             //SingleItemBufferTest();
-            QueueTest();
+            //QueueTest();
             //AtomicLockTest();
             //DinningPhilosophersTest();
             //OrElseNestingTest();
             //OrElseTest();
             //OrElseNestingTest2();
             //OrElseNestingTest3();
+            DynamicTest();
             Console.ReadKey();
+        }
+
+        private static void DynamicTest()
+        {
+            var dyna =  new TMVar<dynamic>(0);
+            STMSystem.Atomic(() => dyna.Value = "abc");
+            Console.WriteLine(dyna.Value);
         }
 
         private static void OrElseTest()

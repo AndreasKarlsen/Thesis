@@ -38,6 +38,8 @@ Non-transactional reads can be supported by choose the correct value to read. A 
 The base algorithm has no need for a read-set as any read is communicated to other transactions by installing a new locator specifying that the transaction has accessed the transactional object. Supporting the \bscode{retry} construct requires adding support for a read-set by modifying the existing algorithm.
 %Object based conflict detection.
 
+The base DSTM algorithm does not support concurrent reads as the locator objects does not allow distinguishing a read from a write operation\cite[p. 435]{herlihy2012art}. As concurrent reads is one of the major advantages offered by \ac{STM}'s optimistic approach to shared memory concurrency, the algorithm must be modified to support such operations in order to be useful in practice. 
+
  
 %Locking implementation simpler McRT
 

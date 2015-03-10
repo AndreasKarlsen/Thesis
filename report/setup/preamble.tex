@@ -320,9 +320,17 @@ with-meta,with-open,with-out-str,with-precision,xml-seq,zero?,zipmap
 }
 
 
-\newcommand{\bscode}{
-	\lstinline
+%\newcommand{\bscode}{
+%	\lstinline
+%}
+
+\font\fontcode=pcrr at 12pt
+
+\newcommand{\bscode}[1]{
+	{\fontcode#1}
 }
+
+
 
 \newcommand{\bscodemath}[1]{
 	\text{\lstinline|#1|}
