@@ -12,6 +12,8 @@ namespace STM.Collections
         private readonly RefLockObject<T> _item;
         private readonly RefLockObject<bool> _full;
 
+        public bool IsFull => _full.GetValue();
+
         public SingleItemBuffer(T initial)
         {
             _item = new RefLockObject<T>(initial);

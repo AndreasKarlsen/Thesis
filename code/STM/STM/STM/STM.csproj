@@ -53,7 +53,7 @@
     <Compile Include="Exceptions\STMException.cs" />
     <Compile Include="Exceptions\STMRetryException.cs" />
     <Compile Include="Implementation\Lockbased\LockObject.cs" />
-    <Compile Include="Implementation\Lockbased\LockSTMSystemcs.cs" />
+    <Compile Include="Implementation\Lockbased\LockSTMSystem.cs" />
     <Compile Include="Implementation\Lockbased\ReadSet.cs" />
     <Compile Include="Implementation\Lockbased\ReentrantLock.cs" />
     <Compile Include="Implementation\Lockbased\BaseLockObject.cs" />

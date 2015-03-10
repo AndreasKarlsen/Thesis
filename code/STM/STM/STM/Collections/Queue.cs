@@ -11,18 +11,9 @@ namespace STM.Collections
     {
         private readonly RefLockObject<Node> _head = new RefLockObject<Node>(null);
         private readonly RefLockObject<Node> _tail = new RefLockObject<Node>(null);
-        private RefLockObject<int> _size = new RefLockObject<int>(0);
+        private readonly RefLockObject<int> _size = new RefLockObject<int>(0);
 
-        public int Count
-        {
-            get
-            {
-                return LockSTMSystem.Atomic(() =>
-                {
-                    return _size.GetValue();
-                });
-            }
-        }
+        public int Count => _size.GetValue();
 
         public void Enqueue(T value)
         {

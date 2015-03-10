@@ -150,35 +150,10 @@ namespace STMTester
             t2.Start();
 
             t1.Join();
-            t1.Join();
+            t2.Join();
         }
 
-        private static void SingleItemBufferTest()
-        {
-            Console.WriteLine("SingleItemBufferTest:");
-            var buffer = new SingleItemBuffer<int>();
-            var t1 = new Thread(() =>
-            {
-                for (var i = 0; i < 100000; i++)
-                {
-                    Console.WriteLine(buffer.GetValue());
-                }
-            });
 
-            var t2 = new Thread(() => LockSTMSystem.Atomic(() =>
-            {
-                for (var i = 0; i < 100000; i++)
-                {
-                    buffer.SetValue(i);
-                }
-            }));
-
-            t1.Start();
-            t2.Start();
-
-            t1.Join();
-            t1.Join();
-        }
 
         private static void TestRetry2()
         {
@@ -192,7 +167,7 @@ namespace STMTester
             });
 
             t1.Start();
-            t1.Join();
+            t2.Join();
         }
 
         private static void TestRetry()
@@ -223,7 +198,7 @@ namespace STMTester
             t2.Start();
 
             t1.Join();
-            t1.Join();
+            t2.Join();
 
         }
 
