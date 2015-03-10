@@ -112,26 +112,27 @@ The red tree is build lazily using a top-down approach, starting from the root o
 So when modifications are made to source code, an entire new red tree is not computed. Instead the green tree is modified, which is a relatively cheap operation, as most nodes can be reused. In terms of the red tree, a new root red note is created with 0 as position, null as parent and the root green node as the corresponding green node. The red tree will then only build itself if a user descends into its children, which may not happen and it might only descend into a small fraction of all the nodes in the tree\cite{sadovRoslynPerf}. % i forhold til hvad det er godt til? med ide typing tankegang
 
 \subsection{Contents Of Syntax Trees}
-The elements contained within syntax trees are syntax nodes, tokens and trivia. We will in this section describe these and some of their properties.
+The elements contained within syntax trees are syntax nodes, tokens and trivia. We will in this section describe these and some of their properties.\toby{Evt. nævn spans, kind osv. også}
 
 \subsubsection{Syntax Nodes}
-Syntax nodes represent non-terminals and are one of the main elements of syntax trees. Each syntax node is represented as a separate class that derives from a base \bscode{SyntaxNode} class.
+Syntax nodes represent non-terminals of the language grammar, such as declarations, statements and expressions. It is one of the main elements of syntax trees and each syntax node type is represented as a separate class that derives from a base \bscode{SyntaxNode} class.
 
 As syntax nodes are non-terminals, they always have children, either in the form of other syntax nodes or syntax tokens. In relation to navigating the tree all syntax nodes has, a parent property to obtain the parent node, a \bscode{ChildNodes} method to return a list of all child nodes, and descendant methods i.e. \bscode{DescendantNodes}, \bscode{DescendantTokens} and \bscode{DescendantTrivia}, to obtain a list of all descendant nodes, tokens or trivia for a given node. Furthermore, for a given node, each child is also exposed through a separate property\cite[p. 7]{ng2012roslyn}.
 
 Additionally, optional children are allowed, which are represented as \bscode{null} if they are not present. For example an \bscode{IfStatementsyntax} syntax node has an optional \bscode{ElseClauseSyntax} syntax node\cite[p. 7]{ng2012roslyn}.
 
 \subsubsection{Syntax Tokens}
-Syntax tokens represent terminals and is another of the main elements of syntax trees. Opposed to syntax nodes, syntax tokes does not have any children. 
+Syntax tokens represent terminals of the language grammar, such as keywords, literals and identifiers. Opposed to syntax nodes, syntax tokes do not have any children. 
 
-The \bscode{SyntaxToken} class is for performance reasons a struct type and therefore a value type\cite[p. 7]{ng2012roslyn}. This means that BLA
+Each syntax token does not have a separate class, instead all syntax tokens are represented by a single \bscode{SyntaxToken} type. This means that there is a single structure for all tokens. To get the value of a token, there exists three properties: \bscode{Text}, \bscode{ValueText} and \bscode{Value}. The first returns the raw source text as a \bscode{String}, this includes extra characters such as escape characters. The second returns only the value of the token as a \bscode{String}. The last returns the value as the actual value type e.g. if the token is an integer literal then the property returns the actual integer. To allow different return types, the return type of the last property is \bscode{Object}.
 
-%there is only one structure for all kinds of syntax tokens, which have different 
-%struct
-
-%does not have a property for each chi
+Additionally, for performance reasons the \bscode{SyntaxToken} type is defined as a struct, which is a value type\cite[p. 7]{ng2012roslyn}.
 
 \subsubsection{Syntax Trivia}
+Syntax trivia represent extra parts of source code that can appear between any two tokens, such as white space and comments. Syntax trivia is not included as a child node in the tree, but is instead associated with a given token. In general, a token holds all trivia that follows it, on the same line, up to the next token. Syntax tokens hold trivia in two collections: \bscode{LeadingTrivia} and \bscode{TrailingTrivia}. The first token holds all leading initial trivia, and the end-of-file token holds the last trailing trivia in source code\cite[p. 8]{ng2012roslyn}.
+
+As trivia are not nodes in the tree, they do not have a \bscode{Parent} property. Instead the associated token for some trivia, can be accessed with the \bscode{Token} property. Additionally, like syntax tokens, trivia are also value types and have only a single \bscode{SyntaxTrivia} type to describe them all.
+
 \subsubsection{Spans}
 \subsubsection{Kinds}
 \subsubsection{Errors}
