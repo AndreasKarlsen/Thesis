@@ -13,16 +13,7 @@ namespace STM.Collections
         private readonly TMVar<Node> _tail = new TMVar<Node>(null);
         private readonly TMVar<int> _size = new TMVar<int>(0);
 
-        public int Count
-        {
-            get
-            {
-                return STMSystem.Atomic(() =>
-                {
-                    return _size.Value;
-                });
-            }
-        }
+        public int Count => _size.GetValue();
 
         public void Enqueue(T value)
         {

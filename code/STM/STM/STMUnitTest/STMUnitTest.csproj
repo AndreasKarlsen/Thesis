@@ -52,6 +52,8 @@
   <ItemGroup>
     <Compile Include="QueueTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SingleItemBufferTest.cs" />
+    <Compile Include="RetryTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\STM\STM.csproj">
