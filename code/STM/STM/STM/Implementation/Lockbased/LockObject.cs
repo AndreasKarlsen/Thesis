@@ -16,6 +16,17 @@ namespace STM.Implementation.Lockbased
             _version = value;
         }
 
+        public virtual T Value
+        {
+            get { return GetValue(); }
+            set { SetValue(value); }
+        }
+
+        public static implicit operator T(LockObject<T> tmObject)
+        {
+            return tmObject.Value;
+        }
+
         public virtual void SetValue(T value)
         {
             _version = value;
@@ -23,9 +34,8 @@ namespace STM.Implementation.Lockbased
 
         public virtual T GetValue()
         {
-            T tmp;
             Lock();
-            tmp = _version;
+            var tmp = _version;
             Unlock();
             
             return tmp;
@@ -33,25 +43,25 @@ namespace STM.Implementation.Lockbased
 
         public virtual bool Validate()
         {
-            Transaction me = Transaction.GetLocal();
-            switch (me.GetStatus())
+            var me = Transaction.LocalTransaction;
+            switch (me.Status)
             {
-                case Transaction.Status.Committed:
+                case Transaction.TransactionStatus.Committed:
                     return true;
-                case Transaction.Status.Active:
-                    return GetStamp() <= VersionClock.GetReadStamp();
-                case Transaction.Status.Aborted:
+                case Transaction.TransactionStatus.Active:
+                    return TimeStamp <= me.ReadStamp;
+                case Transaction.TransactionStatus.Aborted:
                     return false;
                 default:
                     throw new Exception("Shits on fire yo!");
             }
         }
 
-        public override void SetValueCommit(object o)
+        public override void CommitValue(object o)
         {
 
 #if DEBUG
-            Transaction me = Transaction.GetLocal();
+            Transaction me = Transaction.LocalTransaction;
             Console.WriteLine("Transaction: " + me.ID + " commited:" + o);
 #endif
             _version = (T)o;

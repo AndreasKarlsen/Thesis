@@ -1,9 +1,56 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Implementation}{0}{Februar 10, 2015}{}{../../}
-This chapter describes the how \ac{STM} was implemented in the C\# programming language.
+This chapter describes the implementation of the \ac{STM} system that executes transaction in \stmname.
 \label{chap:implementation}
-\section{Compiler and Library}
-\section{Static Analysis}
-Side-effects, change of Atomic fields outside of TM scope.
+\section{Selection of Implementation Strategy}
+Various implementation strategies have been proposed for \ac{STM} of which a few were briefly described in \bsnameref{sec:intro_related_work}. This section will cover the considerations which went into selecting a implementation strategy for \stmname. Specific attention is payed to the requirements and design choices made in \bsref{sec:stm_requirements} and \bsref{chap:stm_design}. Based on this overview a known algorithm will be selected. In the following sections its is assumed that the reader has knowledge of terminology related to implementation of \ac{STM} system, such as eager vs. lazy updating. If this is not the case a description of the terminology can be found in our previous study\cite[p. 53]{dpt907e14trending}.
 
+\subsection{Strong Atomicity}
+As described in \bsref{sec:design_strong_weak_atomicity} strong atomicity ensures atomicity between transactional and non-transactional access. As \stmnamesp is required to support strong atomicity the implementation strategy should facilitate such access.
+
+Lazy updating inherently supports non-transactional reads as the value associated with transactional variables are always the most recently committed value\cite[p. 2084]{herlihy2011tm}\cite[p. 21]{harris2010transactional}. As a result a non-transactional read can never read a non-committed value and atomicity is ensured because a single non-transactional read always reads the most recently committed value of a transactional variable. Ensuring atomicity for non-transactional reads is however also possible using eager updating, but may incur some overhead in selecting the correct value to read.
+
+While non-transactional writes to transactional variables cannot conflict with one another, they must be tracked by the \ac{STM} system in order to ensure that any transactions with which they conflict are aborted and retried. \cite{hindman2006atomicity} proposes expanding non-transactional access to mini transactions allowing the \ac{STM} system to track their actions. Their approach goes even further supplying optimized non-transactional access which skips much of the unnecessary logging required for normal transactions. As \stmnamesp could benefit from a similar approach the selected should support be capable of supporting it.
+ 
+\subsection{Conditional Synchronization}
+\label{subsec:stm_impl_selection_conditional}
+The \bscode{retry} construct described in \bsref{sec:req_conditional} requires knowledge of which transactional variables has been read up to the point where a retry is requested\cite{harris2005composable}. As such the \ac{STM} system needs to maintain a set of transactional variables which has been read, for all active transactions, so that a transaction can be blocked until one of these variables change. Such a set is often referred to as a read-set\cite{dice2006transactional}\cite{harris2010transactional}\cite{herlihy2012art}. \ac{STM} systems employing lazy conflicts detection commonly use such a set to record reads for validation when the transaction is about to commit\cite{dice2006transactional}\cite{mohamedin2013bytestm}. Choosing an algorithm which already maintains a read-set will limit the overhead of the \bscode{retry} statement as well as simplify the implementation as the algorithm must not be modified to support the accumulation of a read-set. As such selecting a algorithm witch inherently supports a read-set should be a priority.
+
+\subsection{Library Implementation}
+As described in \bsref{}\kasper{HUSK REFERENCE!} the \ac{STM} system of \stmnamesp must be implemented as a .NET library the strategy employed must not entails details which require changes to the runtime system as seem by a number of \ac{STM} implementations\cite{mohamedin2013bytestm}\cite{harris2003language}. Furthermore we aim at providing a library with a \ac{API} that facilitates use from both compiler generated code and regular C\# programs.
+
+\subsection{Progress Guarantee}
+\ac{STM} algorithms can coarsely be divided into blocking and non-blocking algorithms\cite[p. 47]{harris2010transactional}. Blocking algorithms employ some form of locking in order to ensure atomicity while non-blocking do not\cite[p. 59]{herlihy2012art}. Non-blocking algorithms guarantee that the failure of one thread does not keep other threads from making progress\cite[p. 47]{harris2010transactional}\cite[p. 142]{herlihy1991wait}\cite[p. 59]{herlihy2012art}. This  makes it impossible to employ locking as the failure of some thread $T$, which is holding a lock, will keep other threads from acquiring the lock, and thereby from progressing. Non-blocking algorithms can further be distinguished by the progress guarantees they provide. Wait-freedom is the strongest of these, and guarantees that any thread makes progress on its own work if it keeps executing\cite[p. 124]{herlihy1991wait}\cite[p. 59]{herlihy2012art}. Lock-freedom is less strict as it only guarantees that if a thread $T$ keeps executing then some thread (not necessarily $T$) makes progress\cite[p. 47]{harris2010transactional}\cite[p. 60]{herlihy2012art}. The least strict progress guarantees is call obstruction-freedom\cite[p. 47]{harris2010transactional}\cite{herlihy2003obstruction}\cite[p. 61]{herlihy2012art}. As mentioned in \bsref{sec:intro_related_work}, obstruction-freedom guarantees that any thread which runs for long enough without encountering a synchronization conflict makes progress\cite{herlihy2003obstruction}[p. 1]. While all of these progress guarantees precludes deadlocks, only wait-freedom and lock-freedom precludes livelocks\cite[p. 47]{harris2010transactional}. Obstruction free algorithms have been shown to provide efficient implementations in practice\cite[p. 61]{herlihy2012art}. Especially when paired with techniques such as exponential backoff\cite[p. 147]{herlihy2012art} and contention managers\cite[p. 51]{harris2010transactional}.  Whether \ac{STM} implementations needs to be wait-free, lock-free, obstruction-free or even provide any of these guarantees at all is a ongoing discussion. Arguments have been made for even obstruction-freedom being too strong a guarantee and that \ac{STM} can be made faster by employing controlled locking\cite{ennals2006software}. In practice many locking-free algorithms behave as if they where wait-free\cite{alistarh2014lock}, decreasing the value of complex wait-free implementations. Older \ac{STM} systems tend to be either lock-free or obstruction-free\cite[p. 47]{harris2010transactional} while blocking \ac{STM} systems have emerged in an attempt to tune performance\cite[p. 51]{harris2010transactional}. Due to the observations above we choose to focus on lock-free, obstruction-free and blocking \ac{STM} algorithms.
+
+
+\subsection{Final Selection}
+%Choice of implementation based on previous sections and requirements
+\cite{dice2006transactional}
+\cite{fernandes2011lock}
+\cite{herlihy2003software}
+
+By investigating a number of different \ac{STM} implementations the field, on which the final selection is based, was narrowed down to the obstruction-free DSTM presented in \cite{herlihy2003software}, the lock-free variation of JVSTM presented in \cite{fernandes2011lock} and lock based TL presented in \cite{dice2006transactional}. All of these implementations contribute with a \ac{STM} library intended to be used directly by the programmer\cite[p. 92]{herlihy2003software}\cite[p. 73]{cachopo2007development}\cite[p. 38]{lourencco2007testing}.
+
+As briefly described in \bsref{sec:intro_related_work}, DSTM is a obstruction-free \ac{STM} library for the Java and C++ programming languages. DSTM uses transactional objects which encapsulate regular objects and provide transactional access. Conflict detection occurs at object level which is the opposite of the requirement defined in \bsref{sec:tracking}. The value of a transactional object is represented by a locator object which is updated using a Compare-And-Swap operation\cite{herlihy2003software}[p. 95]. The locator contains a reference to the transaction which installed the locator, a new value and a old value. Based on the status of the transaction which installed the current locator a reading transaction can choose to read the old or new value. If the status is \bscode{Committed} the new value is the correct value, if the status is \bscode{Aborted} the old value is the correct value. The case where the status is \bscode{Active} indicates that a conflict is about to occur and that the involved transactions should contact the contention manager in order to resolve the conflict\cite{herlihy2003software}[p. 97]. As such the implementation employees eager updating and eager conflict detection\cite[p. 96]{herlihy2003software}. Committing and a aborting a transaction is reduced to changing the status of a transaction to \bscode{Commited} or \bscode{Aborted} using a Compare-and-Swap operation. Each transactional object will have the status associated with its locator changed by the same operation
+
+Non-transactional reads can be supported by choose the correct value to read. A read can occur similar to a transactional read. That is reading the new value if the status is \bscode{Committed} or the old value if status is \bscode{Aborted}. If the status is \bscode{Active} the old value should be read, causing the non-transactional read to occur before the transaction which installed the current locator. Choosing the correct value to read, as opposed to simply reading the most recently committed value which lazy updating allows, does however cause some overhead. Non-transactional writes can be accomplished by expanding the writes to mini transactions as described in \bsref{subsec:stm_impl_selection_conditional}.
+
+The base algorithm has no need for a read-set as any read is communicated to other transactions by installing a new locator specifying that the transaction has accessed the transactional object. Supporting the \bscode{retry} construct requires adding support for a read-set by modifying the existing algorithm.
+%Object based conflict detection.
+
+ 
+%Locking implementation simpler McRT
+
+\section{STM Algorithm}
+Description of selected algorithm.
+
+\section{Implementation Description}
+Key parts of the implementation including code examples.
+
+\kasper[inline]{obstruction freedom useful in practice}
+\kasper[inline]{pending commit, permissiveness}
+\andreas[inline]{Analysis of privatization techniques is done by \cite{spear2007privatization}. Strong atomicity is the technique with less restrictions, but worst performance}
+\andreas[inline]{Strong atomicity can be optimized via compile time optimizations and obtain good performance. Key is removing barriers cite \cite{hindman2006atomicity}}
+\andreas[inline]{In some cases, the order of reading values must be enforced. The compiler will reorder the value readings, and the volatile keyword must be used to enforce no optimizations from the compiler. Example \cite[p. 35]{harris2010transactional}}.
+\andreas[inline]{We must handle interoperation with binaries using our library. They will be translated, and not annotated with atomic keywords. We must accommodate this when designing the compiler, to ensure interaction with atomicsharp works.}
 \worksheetend

@@ -9,51 +9,57 @@ namespace STM.Collections
 {
     public class Queue<T>
     {
-        private readonly RefLockObject<Node> _head = new RefLockObject<Node>(null);
-        private readonly RefLockObject<Node> _tail = new RefLockObject<Node>(null);
-        private readonly RefLockObject<int> _size = new RefLockObject<int>(0);
+        private readonly TMVar<Node> _head = new TMVar<Node>(null);
+        private readonly TMVar<Node> _tail = new TMVar<Node>(null);
+        private readonly TMVar<int> _size = new TMVar<int>(0);
 
         public int Count => _size.GetValue();
 
         public void Enqueue(T value)
         {
-            LockSTMSystem.Atomic(() =>
+            STMSystem.Atomic(() =>
             {
+#if DEBUG
+                Console.WriteLine("Enqueue by: " + Transaction.LocalTransaction.ID);
+#endif
                 var node = new Node(value);
-                if (_tail.GetValue() == null)
+                if (_size.Value == 0)
                 {
-
-                    _head.SetValue(node);
-                    _tail.SetValue(node);
+                    _head.Value = node;
+                    _tail.Value = node;
                 }
                 else
                 {
-                    _tail.GetValue().Next.SetValue(node);
-                    _tail.SetValue(node);
+                    var curTail = _tail.Value;
+                    curTail.Next.Value = node;
+                    _tail.Value = node;
                 }
-                _size.SetValue(_size.GetValue() + 1);
+                _size.Value = _size.Value + 1;
             });
         }
 
         public T Dequeue()
         {
-            return LockSTMSystem.Atomic(() =>
+            return STMSystem.Atomic(() =>
             {
-                if (_head.GetValue() == null)
+#if DEBUG
+                Console.WriteLine("Dequeue by: "+Transaction.LocalTransaction.ID);
+#endif
+                if (_size.Value == 0)
                 {
-                    LockSTMSystem.Retry();
+                    STMSystem.Retry();
                 }
 
-                var oldHead = _head.GetValue();
-                var newHead = oldHead.Next.GetValue();
+                var oldHead = _head.Value;
+                var newHead = oldHead.Next.Value;
                 var value = oldHead.Value;
-                
-                _head.SetValue(newHead);
+
+                _head.Value = newHead;
                 if (newHead == null)
                 {
-                    _tail.SetValue(null);
+                    _tail.Value = null;
                 }
-                _size.SetValue(_size.GetValue() - 1);
+                _size.Value = _size.Value - 1;
 
                 return value;
             });
@@ -61,7 +67,7 @@ namespace STM.Collections
 
         private class Node
         {
-            public readonly RefLockObject<Node> Next = new RefLockObject<Node>(null);
+            public readonly TMVar<Node> Next = new TMVar<Node>(null);
             public readonly T Value;
 
             public Node(T value)

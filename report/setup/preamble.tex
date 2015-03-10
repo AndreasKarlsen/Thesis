@@ -14,12 +14,14 @@
 \theoremstyle{definition}
 \newtheorem{defn}[thm]{Definition}
 
-
 % Choses the depth of numerations
 \setsecnumdepth{subsubsection}
 
 % Choses the depth of toc
 %\maxtocdepth{subsection}
+
+% Turn figures sideways with \begin{sideways} figure \end{sideways}
+\usepackage{rotating}
 
 % LaTeX logical statements
 \usepackage{ifthen}
@@ -452,4 +454,11 @@ with-meta,with-open,with-out-str,with-precision,xml-seq,zero?,zipmap
 %roman numerals
 %\newcommand*{\rom}[1]{\expandafter\@slowromancap\romannumeral #1@}
 \newcommand{\rom}[1]{\uppercase\expandafter{\romannumeral #1\relax}}
+
+%Hypothesis
+\newtheorem{hypo}{Hypothesis}
+
+%STM name
+\newcommand{\stmname}{AtomiC\#}
+\newcommand{\stmnamesp}{AtomiC\# }
 

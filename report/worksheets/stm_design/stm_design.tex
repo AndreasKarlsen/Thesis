@@ -1,34 +1,15 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{STM Designed for C\#}{0}{Februar 10, 2015}{}{../../}
-This chapter describes the process of designing an \ac{STM} system for C\#. \bsref{sec:stm_requirements} highlights the requirements for the \ac{STM} system while \bsref{sec:stm_design} describes the \ac{STM} systems design. Implementation details are described in \bsref{chap:implementation}.
+This chapter describes the design of \stmname.
 \label{chap:stm_design}
-\section{Requirements}
-\label{sec:stm_requirements}
-\kasper[inline]{General stuff. Atomic block. Language support}
-\kasper[inline]{Purpose}
-In this section we analyze what properties the design of an \ac{STM} system requires in order to integrate with C\#.
-\kasper[inline]{Refer to work last semester}
-\andreas[inline]{Should we have an analysis of C\# to see how we should design the STM system?}
+\section{Atomic Block \& Transactional variables}
+\label{sec:stm_design}
+This section describes the design of \stmnamesp based on the requirements defined in \bsref{sec:stm_requirements}.
 
-\subsection{Strong or Weak Atomicity}
-The atomicity guarantee provided by \ac{STM} systems varies, depending on the semantics provided. In \cite{blundell2006subtleties} Blundell et al. defines two levels of atomicity:
-%
-\begin{defn}\label{def:strong_atomicity}
-\emph{[...] strong atomicity to be a semantics in which transactions execute atomically
-with respect to both other transactions and non-transactional code.}
-\end{defn}
-%
-\begin{defn}\label{def:weak_atomicity}
-\emph{[...] weak atomicity to be a semantics in which transactions are atomic only with respect to other transactions.}
-\end{defn}
-
-Strong atomicity provides non-interference and containment between transactional and non-transactional code, where as weak atomicity does not. As an example, using the \bscode{Car} class defined in \bsref{lst:atomicity}, having the \bscode{KmDriven} setter called from one thread, while another thread is calling the \bscode{Drive} method strong and weak atomicity yields different results. Under strong atomicity, all changes made inside the \bscode{atomic} block at line 12, is isolated from non-transactional code. Additionally, changes made from the setter is isolated from inside the atomic block. The result is, that if the setter is called in the middle of the \bscode{Drive} method, there will be a conflict which must be resolved. 
-
-If only weak atomicity is guaranteed, given the same scenario, the change made through the setter, would be visible inside the atomic block. Thus shared memory between transaction and non-transactional code can lead to race conditions.
-%
-
-\begin{lstlisting}[label=lst:atomicity,
-  caption={Level of Atomicity},
+As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply language integrated support for defining transaction scopes as well as declaration of transactional variables. For this purpose \stmnamesp extends C\# with an \bscode{atomic} keyword. The atomic keyword will serve as both a statement denoting a transaction scope as well a modifier applicable to the definition of variables. \bsref{lst:stm_atomic_syntax}, which is a modified version of the race condition example from our previous study\cite[p. 23]{dpt907e14trending}, presents an example of the syntax extension. On line 6 the transactional variable number is defined and assigned an initial value of 10. The main method defines and starts two threads. \bscode{t1} checks if the value of number is equal to 10 and assigns \bscode{number} times 3 to the variable if the condition is true. These operations are executed as a transaction defined by the \bscode{atomic} keyword and associated block on line 11. \bscode{t2} simply assigns 20 to number inside a transaction defined on line 17. In this example \stmnamesp removes the race conditions associated with \bscode{t2} changing the value of \bscode{number} between the read on line 12 and the read on line 13. In the case such a change occurs the \ac{STM} system of \stmnamesp will abort and retry on of the implicated transactions.
+ 
+\begin{lstlisting}[label=lst:stm_atomic_syntax,
+  caption={Transaction Syntax},
   language=Java,  
   showspaces=false,
   showtabs=false,
@@ -38,61 +19,43 @@ If only weak atomicity is guaranteed, given the same scenario, the change made t
   commentstyle=\color{greencomments},
   keywordstyle=\color{bluekeywords},
   stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+  morekeywords={atomic, retry, orElse, var, get, set, using}]  % Start your code-block
 
-  class Car {
-    private int _kmDriven;
-    public int KmDriven {
-      get {
-        return _kmDriven;
+  using System;
+  using System.Threading;
+  
+  public class RaceCondition
+  {
+      public static atomic int number = 10;
+  
+      public static void Main(string[] args)
+      {
+          Thread t1 = new Thread ( () => {
+              atomic{
+                  if (number == 10 )           
+                      number = number * 3;
+              }
+           });
+          Thread t2 = new Thread( () => {
+              atomic{
+                  number = 20;
+              }
+          });
+          t1.Start(); t2.Start();
+          t1.Join(); t2.Start();
+          int result;
+          atomic {
+            result = number;          
+          }
+          Console.WriteLine("Result is: " + result);
       }
-      set {
-        _kmDriven = value;
-      }
-    }
-    public void Drive (int km) {
-      atomic {
-        _kmDriven += km;
-      }
-    }
   }
 \end{lstlisting}
 
-% TODO: Decide if we want the manual written properties or the auto-implemented ones.
-%
-%\begin{lstlisting}[label=lst:atomicity,
-%  caption={Level of Atomicity},
-%  language=Java,  
-%  showspaces=false,
-%  showtabs=false,
-%  breaklines=true,
-%  showstringspaces=false,
-%  breakatwhitespace=true,
-%  commentstyle=\color{greencomments},
-%  keywordstyle=\color{bluekeywords},
-%  stringstyle=\color{redstrings},
-%  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
-%
-%  class car {
-%    public int KmDriven { get; set; }
-%    public void Drive (int km) {
-%      atomic {
-%        KmDriven += km;
-%      }
-%    }
-%  }
-%\end{lstlisting}
+As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_strong_weak_atomicity} \stmnamesp must provide strong atomicity as well as allow reads and writes to occur from outside transactions. As a result, reads and writes occurring from outside transactions will be accounted for when validating transactions. With that in mind the previous example can be slightly simplified to the example presented in \bsref{lst:stm_atomic_syntax_simplified}. The atomic block on line 17 of the previous example has been removed. As the atomic block only contains a single write it serves no purpose because the write is still tracked by the \ac{STM} system without need for enclosing it within an atomic block. The atomic block on line 24 of the previous example can also be removed as the read can safely be performed from outside a transactions.
 
-\subsection{Conditional Synchronization}
-To be a valid alternative for existing C\# synchronization mechanism a \ac{STM} system must be broadly applicable. This requires support for conditional synchronization so that \ac{STM} can be employed in well know scenarios such as shared buffers and other producer consumer setups\cite[p. 128]{tanenbaum2008modern}. \bsref{chap:stm_key_concepts} discusses the \bscode{retry} and \bscode{orElse} constructs proposed in \cite{harris2005composable} for conditional synchronization and composition of alternatives. Supporting such constructs in C\# will increase the applicability of the \ac{STM} system.
-
-Our previous work in \cite{dpt907e14trending} included a implementation of $k$-means clustering algorithm\cite[p. 451]{dataminingconceptsandtechniques} in the functional programming language Clojure. Clojures contains a language integrated \ac{STM} implementation which does not support constructs such as \bscode{retry} and \bscode{orElse}. As a result the implementation requires the use of condition variables and busy waiting in scenarios where the \bscode{retry} construct could have been employed\cite{duffy2010stmnet}.  As such, supplying \bscode{retry} and \bscode{orElse} constructs in C\# will allow for simpler conditional synchronization without the need for busy waiting.
-
-\subsection{Nesting}
-The traditional \ac{TL} approach to concurrency has issues with composability due to the threat of deadlocks\cite[p. 58]{sutter2005software} when composing lock based code. \ac{STM} attempts to mitigate this issues by removing the threat of deadlock, and allowing transactions to nest. Nesting can occur both lexically and dynamically\cite[p. 1]{kumar2011hparstm}\cite[p. 42]{harris2010transactional}\cite[p. 2081]{herlihy2011tm}. \bsref{lst:stm_nested_transactions} shows a example a lexically nested transaction while \bsref{lst:stm_nested_transactions_real} shows a example of dynamically nested transactions. Here the withdraw and deposit methods on the accounts are themselves defined using transactions.
-
-\begin{lstlisting}[label=lst:stm_nested_transactions,
-  caption={Lexically nested transactions},
+\begin{lstlisting}[label=lst:stm_atomic_syntax_simplified,
+  caption={Transaction Syntax Simplified},
   language=Java,  
   showspaces=false,
   showtabs=false,
@@ -102,16 +65,172 @@ The traditional \ac{TL} approach to concurrency has issues with composability du
   commentstyle=\color{greencomments},
   keywordstyle=\color{bluekeywords},
   stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var}]  % Start your code-block
+  morekeywords={atomic, retry, orElse, var, get, set, using}]  % Start your code-block
 
-	atomic{
-		x = 7;
-		atomic{
-			y = 12;		
-		}
-	}
-       
+  using System;
+  using System.Threading;
+  
+  public class RaceConditionSimple
+  {
+      public static atomic int number = 10;
+  
+      public static void Main(string[] args)
+      {
+          Thread t1 = new Thread ( () => {
+              atomic {
+                  if (number == 10)           
+                      number = number * 3;
+              }
+           });
+          Thread t2 = new Thread( () => {
+                  number = 20;
+          });
+          t1.Start(); t2.Start();
+          t1.Join(); t2.Start();
+          Console.WriteLine("Result is: " + number);
+      }
+  }
 \end{lstlisting}
+Allowing access to transactional variables from outside transactions dispenses the need for defining a transaction whenever only a single read or write is to be performed, thereby simplifying these cases. The atomic block then serves the purpose of combining multiple operations to be performed as a single atomic step.
+
+The examples presented here specify atomic fields. \stmnamesp also allows declaration of atomic local variables and parameters. As as result the orthogonality of the atomic keyword is increased.
+\kasper[inline]{OBS på beslutning omkring atomic paramter. Kan give problemer med ref / out keywords.}
+
+\section{Conditional Synchronization}
+As described in \bsref{sec:req_conditional} \stmnamesp support conditional synchronization via the \bscode{retry} and \bscode{orElse} constructs. To that end \stmnamesp extends C\# with a \bscode{retry} statement that can only be used inside atomic blocks. \bsref{lst:stm_atomic_syntax_retry} presents the \bscode{Dequeue} method from a transactional queue. The queue is defined over a singly linked list from which items are dequeued from the front and enqueued in the back. The \bscode{Dequeue} method consists of a atomic block, defined on line 11, performing the dequeue operation as a single atomic step. On line 13 the transaction checks if the queue is empty in which case it executes the retry statement on line 14, blocking the transaction to be retried when the \bscode{_size} variable changes. If the queue is not empty the new head of the queued is removed and the next item in the linked list becomes the new head. Finally the size of the queue is decreased and the value associated with the previous head is returned. 
+
+\begin{lstlisting}[label=lst:stm_atomic_syntax_retry,
+  caption={Retry Syntax},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set, using}]  % Start your code-block
+
+  using System;
+  
+  public class Queue<T>
+  {
+  	private atomic Node _head = null;
+  	private atomic Node _tail = null;
+  	private atomic int _size = 0;
+
+  	public T Dequeue()
+  	{
+  		atomic{
+  		
+  			if (_size == 0)
+  				retry;
+
+  			var oldHead = _head;
+
+  			_head = _old.Next;
+  			if (_head == null)
+  				_tail = null;
+  			
+  			_size--;
+
+  			return oldHead.Value;
+  		}
+  	}
+  	
+  	...
+  }
+\end{lstlisting}
+
+\stmnamesp supports a \bscode{orelse} keyword allowing zero to many \bscode{orElse} blocks to be associated with a atomic block. Much like catch clauses are associated with a \bscode{try} statement in many C like languages, including C\#\cite[p. 96]{sestoft2011c}. \bsref{lst:stm_atomic_syntax_orelse} depicts a consumer which extracts an item from one of two buffer via the \bscode{ConsumeItem} method. On line 10 the \bscode{ConsumeItem} method defines a transaction. If \bscode{buffer1} is empty the transaction executes the retry statement on line 12, if not an item from \bscode{buffer} is returned. If \bscode{buffer1} is empty and the retry statement is executed, controls flows to the \bscode{orelse} block defined on line 15. The \bscode{orelse} then executes its own transaction returning an item from \bscode{buffer2} in case its not empty. If \bscode{buffer2} is empty the retry statement one line 17 is executed, resulting in the entire atomic block blocking until one of the previously read transactional variables change.
+
+\begin{lstlisting}[label=lst:stm_atomic_syntax_orelse,
+  caption={OrElse Syntax},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, using}]  % Start your code-block
+
+  using System;
+  
+  public class Consumer<T>
+  {
+      private Buffer<T> _buffer1;
+      private Buffer<T> _buffer2;
+
+      public T ConsumeItem()
+      {
+          atomic{
+              if(_buffer1.Count == 0)
+                  retry;
+
+              return _buffer1.Get();
+          }orelse{
+              if(_buffer2.Count == 0)
+                  retry;
+
+              return _buffer2.Get();
+          }
+      }
+  }
+\end{lstlisting}
+
+\section{Nesting}
+As described in \bsref{sec:stm_req_nesting} \stmnamesp must support nesting of transaction under closed nesting semantics. For this purpose \stmnamesp will allow lexical nesting of atomic blocks as shown in \bsref{lst:stm_syntax_lexical_nesting}. Here we see a small program reading two integers from the console. The string arguments are parsed as integers on line 12 to 16. The program then defines two transaction, one starting on line 18 the other at line 20 nested inside the first transactions. The first transaction initiates a nested transaction which sets the transactional variables \bscode{X} and \bscode{Y} based on the input. Due to the semantics with closed nesting these changes become visible to the outer transaction but not the rest of the system. As a result the outer transaction uses the updated values when it computes the new value of \bscode{Z} on line 26. When the outer transaction commits the assignments to \bscode{X}, \bscode{Y} and \bscode{Z} becomes visible to the rest of the system as a single atomic step.
+
+\begin{lstlisting}[label=lst:stm_syntax_lexical_nesting,
+  caption={Lexical Nesting},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, using}]  % Start your code-block
+
+  public class LexicalNesting
+  {
+      private atomic static int X = 0;
+      private atomic static int Y = 0;
+      private atomic static int Z = 0;
+
+      public void Main(string[] args)
+      {
+          if (args.Length != 2)
+              return;
+
+          int tmpx;
+          int tmpy;
+          if (!int.TryParse(args[0], out tmpx) 
+              || !int.TryParse(args[1], out tmpy))
+              return;
+
+          atomic
+          {
+              atomic
+              {
+                  X = tmpx;
+                  Y = tmpy;
+              }
+
+              Z = X * Y;
+          }
+          System.Console.WriteLine(Z);
+      }
+  }
+\end{lstlisting}
+
+To increase the flexibility and orthogonality of the \ac{STM} implementation dynamic nesting of transactions are allowed. Dynamic nesting allows transactions to be nested at runtime. As an example consider \bsref{lst:stm_nested_transactions_real} where a transaction is defined on line 1. The transaction transfers funds from \bscode{account1} to \bscode{account2} which withdraw and deposit methods are themselves defined using transactions. Because of the closed nested semantics the transfer is executed as one atomic step.
 
 \begin{lstlisting}[label=lst:stm_nested_transactions_real,
   caption={Dynamically nested transactions},
@@ -133,24 +252,6 @@ The traditional \ac{TL} approach to concurrency has issues with composability du
 	}
        
 \end{lstlisting}
-
-An \ac{STM} system for C\# must support nesting of transaction as this will mitigate the before mentioned issues and be a valid alternative to the existing locked based synchronization mechanisms. A more in depth description of the composability problems of the \ac{TL} concurrency model and nesting of transactions can be found in \cite{dpt907e14trending}.
-
-
-%Flat, open, closed.
-
-\section{Design}
-\label{sec:stm_design}
-Something with\cite[p. 1]{harris2003language}
-
-%\section{Lock or Obstruction Free}
-%\section{Handling Side-effects}
-%Immutable collections
-%\section{Contention Manager}
-%\section{Log or In Place Update}
-%\section{Lazy or Eager Update}
-
-\section{Syntax design}
 
 %atomic {
 %  if ( booleanexpression ) {

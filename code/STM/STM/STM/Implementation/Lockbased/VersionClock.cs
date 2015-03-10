@@ -10,30 +10,21 @@ namespace STM.Implementation.Lockbased
 {
     public class VersionClock
     {
-        // global clock read and advanced by all
-        private static readonly AtomicLong Global = new AtomicLong();
-        // thread-local cached copy of global clock
-        private static readonly ThreadLocal<long> Local = new ThreadLocal<long>(() => 0L);
+        /// <summary>
+        /// Global clock read and advanced by all
+        /// </summary>
+        private static readonly AtomicInteger Global = new AtomicInteger();
 
-        public static void SetReadStamp()
+        public static int TimeStamp
         {
-            Local.Value = Global.Value;
+            get { return Global.Value; }
         }
 
-        public static long GetReadStamp()
+        public static int IncrementClock()
         {
-            return Local.Value;
+            return Global.IncrementValueAndReturn();
         }
 
-        public static void SetWriteStamp()
-        {
-            Local.Value = Global.IncrementValueAndReturn();
-        }
-
-        public static long GetWriteStamp()
-        {
-            return Local.Value;
-        }
     }
 }
 

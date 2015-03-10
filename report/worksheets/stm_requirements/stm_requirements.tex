@@ -1,0 +1,345 @@
+\makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
+\worksheetstart{Requirements for AtomiC\#}{0}{Februar 10, 2015}{}{../../}
+This chapter describes the requirements for the \ac{STM} system powering \stmname. The requirements are based on known \ac{STM} constructs as well as the criteria for which the final system must be evaluated. Implementation details are described in \bsref{chap:implementation}.
+\label{sec:stm_requirements}
+\kasper[inline]{Refer to work last semester}
+
+\section{Tracking Granularity}\label{sec:tracking}
+A variable tracked by the \ac{STM} system can be tracked with different granularity. By tracking assignments to the variable, or tracking changes to the object referenced by the variable. These different approaches affect the semantics of the \ac{STM} system, and will be discussed in the subsequent sections.
+
+\subsection{Tracking of Variables} 
+Tracking changes to the variable directly limits the effect of the \ac{STM} system only to the variable, and not internal changes inside of the referenced object. This approach is known by the \ac{STM} system in Clojure\cite{clojureConcurrent}. It offers a simple mental model for the programmer, as only changes visible in the transaction scope will be provided with the transactional guarantees of atomicity and isolation.  \bsref{lst:tracking_variable} shows an example, where the field \bscode{_car} is assigned to a new modified version of a car on line 10. This assignment is tracked by the \ac{STM} system, as opposed to the example in \bscode{lst:tracking_object}, where the internals of the object is not tracked, when a method with a side-effect is called on line 7. The discussion of side-effects is expanded in \bsref{sec:side-effects}.
+
+This approach can be used in combination with code where the internals are available, such as libraries shipped as binaries, but changes to their internals will not be traced, and therefore the reusability is limited. Should the programmer wish transactional support for the side-effects, the internals must be rewritten using the \ac{STM} system.
+
+%
+\begin{lstlisting}[label=lst:tracking_variable,
+  float,
+  caption={Tracking Assignment to Variables},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set, sealed}]  % Start your code-block
+  
+  sealed class Car {
+    private final int _kmDriven;
+    public Car(int km) { _kmDriven = km; }
+    public Car Drive (int km) { 
+      return new Car(_kmDriven + km); 
+    }
+  }
+  
+  ...
+  atomic {
+    _car = _car.drive(25);
+  }
+\end{lstlisting}
+%
+\subsection{Tracking of Objects}
+Tracking changes to the entire object allows the \ac{STM} system to track side-effects causing changes to the internals of the object. This is desirable in cases where you want to reverse the side-effect. E.g. when adding an object to a collection inside a transaction, and the transaction is aborted, the collection should be left in a state not containing the object. Tracking the objects internals reveals an interesting dilemma should the object itself contain other objects. How deep in the object structure, should the \ac{STM} system track changes? 
+
+In \cite{herlihy2003software} Herlihy et al. presents a library based \ac{STM} called DSTM. It uses an approach, where the programmer explicitly have to create a traceable copy from the original object, and do the modifications on the copy inside the transaction. As the copy is shallow, the internals could reference objects shared with the original, and side-effects on these objects will effect the original, thus be able to break isolation unintentionally\andreas{Is this true? Only if strong atomicity?}. If the programmer wish a deeper tracking, she must design the internals using the \ac{STM} system. The example in \bsref{lst:tracking_object} demonstrates a side-effect on \bscode{_kmDriven} being tracked, as it is a value type, not an object, where as the side-effect on \bsref{_engine} is not.
+
+In \cite{harris2003language} Harris et al. presents a \ac{STM} system which traces changes throughout the whole object structure, e.g. the objects referenced by the object etc. Changes to objects are buffered in a log, and written to the original if the transaction commits. This deep  traceability is enabled by having a part of the \ac{STM} system in the \ac{JIT} compiler, as the entire structure is known at that level, even if an object is from a compiled library. This approach ensures isolation, but requires modifications to the \ac{JIT} compiler. In the example of \bsref{lst:tracking_object}, both \bscode{_kmDriven} and \bscode{_engine} will be tracked by the \ac{STM} system.
+%
+\begin{lstlisting}[label=lst:tracking_object,
+  float,
+  caption={Tracking Changes to Object},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+  
+  class Car {
+    private int _kmDriven;
+    private Engine _engine;
+    public void Drive (int km) { 
+      _kmDriven += km; 
+      _engine.Degrade(km);
+    }
+  }
+  
+  ...
+  atomic {
+    _car.Drive(25);
+  }
+\end{lstlisting}
+%
+\subsection{Choice of Tracking Granularity}
+As deep tracking of objects require changes to the \ac{JIT}, and we have restricted our self from changes to \ac{CLR} core in \bsref{sec:scope}, this is not feasible. This leave the option of tracking changes of the object, but not the objects internals, or only tracking the variable. If we cannot provide transactional support for all side-effects, but only those one level deep, the support will seem inconsistent from the programmers point of view. We therefore choose only to track the variable, since it provides a consistent, simple mental model for the programmer, displaying exactly what is tracked by the \ac{STM} system.
+
+\section{Transactions \& Variables}
+\label{subsec:rec_transactions_variables}
+%Trans keyword
+%Atomic block
+%Read outside transactions
+%No write outside transactions
+As described in \bsref{sec:stm_keyconcepts_example} an \ac{STM} system must offer some way of defining a transaction scope. As \stmnamesp is a language integrated \ac{STM} system, C\# must be extended with syntax for specifying a transaction scope.\andreas{Does this belong under transactions and variables? It seems to stick out}
+
+An \ac{STM} system abstracts away many of the details of how synchronization is achieved. Simply applying transactions over a number of C\# variables provides a high level of abstraction but also hides the impact of synchronization. Having the programmer specify what variables should be tracked by the \ac{STM} system ensures that she is aware of what variables the \ac{STM} is managing. Explicitly reasoning about what variables are to be synchronized can assist the programmer in gauging the performance of a transaction as well as better understanding the execution of transactions. Both areas which usability studies\cite{rossbach2010transactional}\cite{pankratius2009does} have found to be problematic for some programmers. As with defining transaction scopes, C\# must be extended with syntax for marking variables for synchronization inside transactions. We define a variable marked for use in transactions a transactional variable.
+
+\stmnamesp must not be overly restrictive as this will limit its applicability. To that end the \ac{STM} system must allow reads from transactional variables to occur both inside and outside transactions. For writes to transactional variables a choice exists between allowing and disallowing writes from outside transactions. Disallowing writes from outside transaction will ensure that non-transactional access can not interfere with transactional access but will hamper the usability of the \ac{STM} system. Allowing writes from outside transactions increases the complexity of the implementation as any conflicts such writes create must be detected and resolved by the \ac{STM} system. As allowing writes from outside transactions provides the best usability \stmnamesp must provide support for such writes in addition to writes from inside transactions. This requirement is closely related to the choice between strong and weak atomicity discussed in \bsref{sec:design_strong_weak_atomicity}.
+
+\andreas{We only track changes to references. Thus using immutability is advised}
+
+
+
+\section{Strong or Weak Atomicity}
+\label{sec:design_strong_weak_atomicity}
+The atomicity guarantee provided by \ac{STM} systems varies, depending on the semantics provided. In \cite{blundell2006subtleties} Blundell et al. define two levels of atomicity:
+%
+\begin{defn}\label{def:strong_atomicity}
+\emph{[...] strong atomicity to be a semantics in which transactions execute atomically
+with respect to both other transactions and non-transactional code.}
+\end{defn}
+%
+\begin{defn}\label{def:weak_atomicity}
+\emph{[...] weak atomicity to be a semantics in which transactions are atomic only with respect to other transactions.}
+\end{defn}
+
+Strong atomicity provides non-interference and containment between transactional and non-transactional code, where as weak atomicity does not. As an example, using the \bscode{Car} class defined in \bsref{lst:atomicity}, having the \bscode{KmDriven} setter called from one thread, while another thread is calling the \bscode{Drive} method, strong and weak atomicity yields different results. Under strong atomicity, all changes made inside the \bscode{atomic} block at line 12, are isolated from non-transactional code. Additionally, changes made from the setter are isolated from inside the atomic block. The result is, that if the setter is called in the middle of the \bscode{Drive} method, there will be a conflict which must be resolved. 
+
+If only weak atomicity is guaranteed, given the same scenario, the change made through the setter, would be visible inside the atomic block. Thus shared memory between transaction and non-transactional code can lead to race conditions.
+%
+
+\begin{lstlisting}[label=lst:atomicity,
+  caption={Level of Atomicity},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  class Car {
+    private int _kmDriven;
+    public int KmDriven {
+      get {
+        return _kmDriven;
+      }
+      set {
+        _kmDriven = value;
+      }
+    }
+    public void Drive (int km) {
+      atomic {
+        _kmDriven += km;
+      }
+    }
+  }
+\end{lstlisting}
+
+\subsection{Issues with Atomicity Levels}
+In \cite[p. 30-35]{harris2010transactional} Harris et al. summarizes collection of issues related to the different levels of atomicity. The collection is non-exhaustive, but based on a wide selection of research. The consequence of race conditions can be either:
+\begin{itemize}
+	\item Non-repeatable read - if a transaction cannot repeat reading the value of a variable due to changes from non-transactional code in between the readings.
+	\item Intermediate lost update - if a write occurs in the middle of a read-modify-write series done by a transaction, the non-transactional write will be lost, as it comes after the transaction has read the value.
+	\item Intermediate dirty read - if eager updating\cite[p. 53]{dpt907e14trending} is used, a non-transactional read can see an intermediate value written by a transaction. This transaction might be aborted, leaving the non-transaction with a dirty read.
+\end{itemize}
+The second case is exactly the case described above in \bsref{lst:atomicity}, where weak atomicity led to the risk of race conditions between transactional and non-transactional code. 
+
+Another issue of using weak atomicity, is known as privatization. If only one thread can access a variable, the need for tracking it through the \ac{STM} system ceases, and so does the overhead. It is therefore desirable, to privatize a previously shared variable when doing intensive work, that does not need to be shared across threads. A technique used for privatizing a variable, \bscode{x}, is to use another variable as a shared marker \bscode{priv_x}, which indicates whether or not the \bscode{x} is private. This is demonstrated in \bsref{lst:privatization}. Intuitively one would believe, that if \bscode{Thread1} wants to privatize \bscode{x}, it can mark \bscode{priv_x} in a transaction, and after the transaction ends assume that \bscode{x} is now private. This however is false, since \bscode{Thread2} could read \bscode{priv_x} before \bscode{Thread1}, and then be aborted and thus roll \bscode{x} back to the value before. This will cause the write to \bscode{x}, on line 5, outside of the transaction to be overwritten, and lost. This example is under the assumption of weak atomicity, commit-time conflict detection, and in place updating, but also exists under lazy updating\cite[p. 34]{harris2010transactional}. 
+
+\begin{lstlisting}[label=lst:privatization,
+  caption={Privatization issue},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  // Thread 1
+  atomic {
+    x_priv = true;
+    }
+  x = 100;
+  
+  // Thread 2
+  atomic {
+    if (x_priv) {
+      x = 200;
+    }
+  }
+\end{lstlisting}
+
+\andreas[inline]{Strong atomicity is more attractive from the point of view of defining the \ac{STM} semantics. It does however not solve all problems.}
+
+\subsection{Choice of Atomicity Level}
+All the issues listed above, is related to weak atomicity, and is not present under strong atomicity. The reason that strong atomicity is not chosen without an analysis, is that the overhead of guaranteeing atomicity between transactional and non-transactional code can occur a considerable cost\cite{spear2007privatization}. In \cite{spear2007privatization} Spear et al. proposes four contracts, under which privatization can be guaranteed under some conditions. Strong atomicity is ranked as the least restrictive, but comes with a considerable cost. Although the performance is not optimal, Hindman and Grossman shows in \cite{hindman2006atomicity} that strong atomicity with good performance is achievable by source-to-source compiling with optimizations through static analysis.
+
+As we seek to validate whether \ac{STM} is a valid alternative to locks by characteristics, and not by performance, strong atomicity over marked transactional variables is chosen for \stmname.
+\andreas[inline]{Should we reference our method? Or our characteristics} 
+
+\section{Side-effects}\label{sec:side-effects}
+Side-effects in methods are a common idiom in C\#, and comes in different shapes and form. We categorize side-effects as an in memory effect, exceptions or irreversible action. In the following section, we will discuss the design requirements for handling the different types of side-effects in \stmname.
+
+\subsection{In memory}
+Side-effects in memory is done by changing values through references to variables outside of the method scope, instead of returning a new value\andreas{I need to find a more official definition}. An example is \bsref{lst:tracking_object} where the \bscode{Drive} method updates the field \bscode{_kmDriven} and invokes a method call on \bscode{_engine}, potentially causing another side-effect. As discussed in \bsref{sec:tracking}, we only track the variable, and not changes to the internals of it. As a consequence, a side-effect such as the one in \bsref{lst:tracking_object} will persist through an aborted transaction. To remedy this, we promote the use of immutable objects, such as the design of the \bscode{car} class in \bsref{lst:tracking_variable}. This design ensures no side-effects, and changes to the object will return a new value, which will be tracked if assigned to the variable.
+
+The immutable approach suites \ac{STM} well, as it is free of side-effects. Additionally it is a less error prone and secure design approach, than mutable objects\cite[p. 73]{bloch2008effective}. Microsoft got an official immutable collection package\footnote{\url{https://www.nuget.org/packages/Microsoft.Bcl.Immutable}}, and is therefore giving first class support for immutability. They also advises for immutability for ``[...] small classes or structs that just encapsulate a set of values (data) and have little or no behaviors''\footnote{\url{https://msdn.microsoft.com/en-us/library/bb384054.aspx}}. For designing immutable objects, we refer to Bloch's Effective Java\cite[p. 73-80]{bloch2008effective}.
+
+\subsection{Exceptions}
+There exist different approaches of how to handle exceptions happening inside a transaction. We discuss these approaches in-depth in our prior study\cite[p. 50-51]{dpt907e14trending}. For \stmnamesp we want to keep programmers intuition of how exceptions work in non-transactional code, the same in transactional code. Therefore, transactions will not be used as a recovery mechanism as proposed by in \cite{harris2005exceptions}, but instead the exception will be propagated if and only if the transaction is committed. We argue that keeping the purpose of transactions to synchronization only keeps it simpler. This way, the programmer will only receive exceptions of code that actually takes effect, and will be able to recover in usual fashion by catching exceptions.
+
+\subsection{Irreversible Actions}
+Effects such as \ac{IO} performed on disk or network, native calls, or GUI operations are not reversible. This makes them unsuitable for use in transactions, since their effect cannot be undone should the transaction be aborted. We expand on this problem in our prior study\cite[p. 51-52]{dpt907e14trending}. In \cite{duffy2010stmnet} Duffy proposes using a well known strategy from the transaction theory\cite{reuter1993transaction}, having the programmer supply on-commit and on-rollback actions to perform or compensate for the irreversible action. In \cite{harris2005exceptions} Harris et al. proposes that \ac{IO} libraries should implement an interface, allowing the \ac{STM} to do callbacks when the transaction is committed, allowing the effect to be buffered until then. These solutions either burdens the programmer using \ac{STM}, or the library designer that must implement a special interface.
+
+While we recognize the potential in the presented solutions, the focus of \stmnamesp is limited from solving these well known problems with irreversible actions in \ac{STM}. Due to this, we do not give any guarantee of the effect of using  irreversible actions in transactions, and it is thus disencouraged.
+
+\section{Conditional Synchronization}
+\label{sec:req_conditional}
+To be a valid alternative to existing C\# synchronization mechanisms an \ac{STM} system must be broadly applicable. This requires support for conditional synchronization so that \ac{STM} can be employed in well known scenarios such as shared buffers and other producer consumer setups\cite[p. 128]{tanenbaum2008modern}. \bsref{chap:stm_key_concepts} discusses the \bscode{retry} and \bscode{orElse} constructs proposed in \cite{harris2005composable} for conditional synchronization and composition of alternatives. Supporting such constructs in C\# will increase the applicability of the \ac{STM} system.
+
+Our previous work in \cite{dpt907e14trending} included an implementation of $k$-means clustering algorithm\cite[p. 451]{dataminingconceptsandtechniques} in the functional programming language Clojure. Clojures contains a language integrated \ac{STM} implementation which does not support constructs such as \bscode{retry} and \bscode{orElse}. As a result the implementation requires the use of condition variables and busy waiting in scenarios where the \bscode{retry} construct could have been employed\cite{duffy2010stmnet}.  As such, supplying \bscode{retry} and \bscode{orElse} constructs in C\# will allow for simpler conditional synchronization without the need for busy waiting thereby increasing the simplicity, level of abstraction and writability in such scenarios.
+\andreas[inline]{We therefore choose to include conditional synchronization?}
+\andreas{A disadvantage is that the complexity of using STM is increased. Albiet the retry and orelse constructs are optional}
+
+\section{Nesting}
+\label{sec:stm_req_nesting}
+The traditional \ac{TL} approach to concurrency has issues with composability due to the threat of deadlocks\cite[p. 58]{sutter2005software} when composing lock based code. \ac{STM} attempts to mitigate this issues by removing the threat of deadlock, and allowing transactions to nest. Nesting can occur both lexically and dynamically\cite[p. 1]{kumar2011hparstm}\cite[p. 42]{harris2010transactional}\cite[p. 2081]{herlihy2011tm}. 
+
+%\bsref{lst:stm_nested_transactions} shows an example of lexically nested transaction while \bsref{lst:stm_nested_transactions_real} shows an example of dynamically nested transactions. Here the withdraw and deposit methods on the accounts are themselves defined using transactions.
+%
+%\begin{lstlisting}[label=lst:stm_nested_transactions,
+%  caption={Lexically nested transactions},
+%  language=Java,  
+%  showspaces=false,
+%  showtabs=false,
+%  breaklines=true,
+%  showstringspaces=false,
+%  breakatwhitespace=true,
+%  commentstyle=\color{greencomments},
+%  keywordstyle=\color{bluekeywords},
+%  stringstyle=\color{redstrings},
+%  morekeywords={atomic, retry, orElse, var}]  % Start your code-block
+%
+%	atomic{
+%		x = 7;
+%		atomic{
+%			y = 12;		
+%		}
+%	}
+%       
+%\end{lstlisting}
+%
+%\begin{lstlisting}[label=lst:stm_nested_transactions_real,
+%  caption={Dynamically nested transactions},
+%  language=Java,  
+%  showspaces=false,
+%  showtabs=false,
+%  breaklines=true,
+%  showstringspaces=false,
+%  breakatwhitespace=true,
+%  commentstyle=\color{greencomments},
+%  keywordstyle=\color{bluekeywords},
+%  stringstyle=\color{redstrings},
+%  morekeywords={atomic, retry, orElse, var}]  % Start your code-block
+%
+%	atomic{
+%		var amount = 200;
+%		account1.withdraw(amount);
+%		account2.deposit(amount);
+%	}
+%       
+%\end{lstlisting}
+
+An \ac{STM} system for C\# must support nesting of transaction as this will allow the system to mitigate one of the major caveats associated with lock based concurrency. A more in depth description of the composability problems of the \ac{TL} concurrency model and nesting of transactions can be found in \cite{dpt907e14trending}.
+
+Different semantics exist for nesting of transactions. These are:  \begin{inparaenum}
+\item Flat
+\item Open and 
+\item Closed\cite[p. 1]{kumar2011hparstm}\cite[p. 42]{harris2010transactional}.
+\end{inparaenum}
+Flat nesting treats any nested transactions as part of the already executing transaction, meaning that a abort of the nested transaction also aborts the enclosing transaction. Closed nested semantics allow nested transactions to abort independently of the enclosing transaction. Under closed nested semantics commits by nested transactions only propagate any changes to the enclosing transaction as opposed to the entire system. Open transactions allow nested transaction to commit even if the enclosing transaction aborts and propagates changes made by nested transactions to the entire system whenever a nested transaction commits.
+
+Flat nesting is the easiest to implement but closed and especially open nesting allows for higher degrees of concurrency\cite[p. 43]{harris2010transactional}. Considering the simplicity, readability and level of abstraction provided by the different strategies,as well as the degree of concurrency offered, closed nesting is selected for \stmnamesp. In order to improve the flexibility and orthogonality \stmnamesp is required to support both lexical and dynamic nesting.
+\kasper[inline]{Flat nesting har også nogle problemer med retry men det er ikke rigtig dokumenteret nogle steder.}
+
+\andreas[inline]{We will encourage to use immutable objects in combination with our STM in our to avoid side effects}
+
+\section{Opacity}
+Opacity is a correctness criteria requiring transactions to only read consistent data throughout their execution\cite[p. 1]{guerraoui2007opacity}\cite[p. 29]{harris2010transactional}. This means that transactions must not read data which would cause them to abort at a later time. Consequently opacity does not require that the variable can not be changed at some later point by another transaction, only that the value read is consistent when the read occurs. Transactions must be aborted when reads can not be guaranteed to be consistent.
+
+By providing opacity programmers do not have to reason about problems that occur as a result of inconsistent reads\cite[p. 28]{harris2010transactional}, thereby simplifying the programming model. As an example of such an issue consider \bsref{lst:stm_opacity}.
+
+\begin{lstlisting}[label=lst:stm_opacity,
+  caption={Opacity example},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, using}]  % Start your code-block
+
+  using System.Threading;
+
+  public class Opacity
+  {
+      private atomic static int X = 10;
+      private atomic static int Y = 10;
+
+      public static void Main(string[] args)
+      {
+          var t1 = new Thread(() =>
+          {
+              atomic
+              {
+                X = 20;
+                Y = 20;
+              }
+          });
+
+          var t2 = new Thread(() =>
+          {
+              atomic
+              {
+                  var tmpx = X;
+                  var tmpy = Y;
+                  while (tmpx != tmpy)
+                  {
+                  }
+              }
+          });
+
+          t1.Start();
+          t2.Start();
+      }
+  }
+\end{lstlisting}
+Here we see two transactional variables \bscode{X} and \bscode{Y} defined on lines 5 and 6 as well as the two threads \bscode{t1} and \bscode{t2} defined on lines 10 and 19. \bscode{t1} simply set the value of \bscode{X} and \bscode{Y} as a transaction. \bscode{t2} enters a transaction in which it reads the values of \bscode{X} and \bscode{Y} entering a loop if the values are not equal. Consider the interleaving shown in \bsref{fig:opacity_interleaving}. The transaction executing by \bscode{t2} reads the value 10 associated with the variable X after which \bscode{t1}'s transaction updates the value both of \bscode{X} and \bscode{Y} to 20. \bscode{t2} read the value 20 associated with \bscode{Y}. In a \ac{STM} system providing opacity this would not be allowed since the transaction would read inconsistent data, that is data which has been modified since the transaction read its first value. If the \ac{STM} system does not provide opacity the read would be allowed and \bscode{t2} would go into a infinite loop as \bscode{tmpx} and \bscode{tmpy} are not equal. 
+
+\begin{figure}[htbp]
+\centering
+ \includegraphics[width=0.65\textwidth]{\rootpath/worksheets/stm_requirements/figures/opacity_interleaving} 
+ \caption{Opacity interleaving example}
+\label{fig:opacity_interleaving}
+\end{figure}
+
+In to bolster the simplicity, level of abstraction, readability and writability of concurrent implementations in \stmname, \stmnamesp is required to supply opacity.
+
+\worksheetend

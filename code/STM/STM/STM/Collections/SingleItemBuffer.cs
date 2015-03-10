@@ -9,30 +9,30 @@ namespace STM.Collections
 {
     public class SingleItemBuffer<T>
     {
-        private readonly RefLockObject<T> _item;
-        private readonly RefLockObject<bool> _full;
+        private readonly TMVar<T> _item;
+        private readonly TMVar<bool> _full;
 
         public bool IsFull => _full.GetValue();
 
         public SingleItemBuffer(T initial)
         {
-            _item = new RefLockObject<T>(initial);
-            _full = new RefLockObject<bool>(true);
+            _item = new TMVar<T>(initial);
+            _full = new TMVar<bool>(true);
         }
 
         public SingleItemBuffer()
         {
-            _item = new RefLockObject<T>(default(T));
-            _full = new RefLockObject<bool>(false);
+            _item = new TMVar<T>(default(T));
+            _full = new TMVar<bool>(false);
         }
 
         public T GetValue()
         {
-            return LockSTMSystem.Atomic(() =>
+            return STMSystem.Atomic(() =>
             {
                 if (!_full.GetValue())
                 {
-                    LockSTMSystem.Retry();
+                    STMSystem.Retry();
                 }
 
                 _full.SetValue(false);
@@ -42,11 +42,11 @@ namespace STM.Collections
 
         public void SetValue(T value)
         {
-            LockSTMSystem.Atomic(() =>
+            STMSystem.Atomic(() =>
             {
                 if (_full.GetValue())
                 {
-                    LockSTMSystem.Retry();
+                    STMSystem.Retry();
                 }
 
                 _full.SetValue(true);

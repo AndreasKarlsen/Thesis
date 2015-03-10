@@ -1,45 +1,32 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using STM.Interfaces;
 
 namespace STM.Implementation.Lockbased
 {
     public abstract class BaseLockObject
     {
-        protected readonly object StampLock  = new object();
-        protected readonly ReentrantLock ReentrantLock = new ReentrantLock();
+        protected readonly ILock ReentrantLock = new ReentrantLock();
         internal readonly IList<ManualResetEvent> WaitHandles = new List<ManualResetEvent>();
         protected readonly object WaitHandlesLock = new object();
-        internal readonly Semaphore WaitHandle = new Semaphore(0, 99);
+        //internal readonly Semaphore WaitHandle = new Semaphore(0, 99);
         protected int WaitCount = 0;
 
-        private long _stamp;
+        private volatile int _stamp;
 
-        public long GetStamp()
+        public int TimeStamp
         {
-            long tmp;
-            lock (StampLock)
-            {
-                tmp = _stamp;
-            }
-
-            return tmp;
+            get { return _stamp; }
+            internal set { _stamp = value; }
         }
 
-        public void SetStamp(long newStamp)
-        {
-            lock (StampLock)
-            {
-                _stamp = newStamp;
-            }
-        }
-
-
-        public abstract void SetValueCommit(object o);
+        public abstract void CommitValue(object o);
 
         public void Lock()
         {
@@ -53,17 +40,17 @@ namespace STM.Implementation.Lockbased
 
         public void Unlock()
         {
-            ReentrantLock.Unlock();
+            ReentrantLock.UnLock();
         }
 
         public bool IsLocked()
         {
-            return ReentrantLock.IsLocked();
+            return ReentrantLock.IsLocked;
         }
 
         public bool IsLockedByCurrentThread()
         {
-            return ReentrantLock.IsLockedByCurrentThread();
+            return ReentrantLock.IsLockedByCurrentThread;
         }
 
         internal WaitHandle RegisterWaitHandle()

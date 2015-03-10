@@ -3,7 +3,7 @@ using STM.Exceptions;
 
 namespace STM.Interfaces
 {
-    public abstract class STMSystem
+    public abstract class BaseSTMSystem
     {
         protected abstract bool OnValidate();
 

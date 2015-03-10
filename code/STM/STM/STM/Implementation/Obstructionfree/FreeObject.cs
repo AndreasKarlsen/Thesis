@@ -19,7 +19,7 @@ namespace STM.Implementation.Obstructionfree
         private readonly AtomicReference<Locator> _start;
         public FreeObject(T value) : base(value)
         {
-            _start = new AtomicReference<Locator>(new Locator(Transaction.GetLocal(),value,value));
+            _start = new AtomicReference<Locator>(new Locator(Transaction.LocalTransaction,value,value));
         }
 
         private class Locator
@@ -43,14 +43,14 @@ namespace STM.Implementation.Obstructionfree
 
         protected override T OpenRead()
         {
-            var me = Transaction.GetLocal();
-            switch (me.GetStatus())
+            var me = Transaction.LocalTransaction;
+            switch (me.Status)
             {
-                case Transaction.Status.Committed:
+                case Transaction.TransactionStatus.Committed:
                     return base.GetValue();
-                case Transaction.Status.Aborted:
+                case Transaction.TransactionStatus.Aborted:
                     throw new STMException("Open write from aborted transaction");
-                case Transaction.Status.Active:
+                case Transaction.TransactionStatus.Active:
                     var locator = _start.Value;
                     if (locator.Owner == me)
                         return locator.NewValue;
@@ -60,12 +60,12 @@ namespace STM.Implementation.Obstructionfree
                     {
                         var oldLocator = _start.Value;
                         var owner = oldLocator.Owner;
-                        switch (owner.GetStatus())
+                        switch (owner.Status)
                         {
-                            case Transaction.Status.Committed:
-                            case Transaction.Status.Aborted:
+                            case Transaction.TransactionStatus.Committed:
+                            case Transaction.TransactionStatus.Aborted:
                                 break;
-                            case Transaction.Status.Active:
+                            case Transaction.TransactionStatus.Active:
                                 //Contention manager here
                                 me.Abort();
                                 break;
@@ -93,15 +93,15 @@ namespace STM.Implementation.Obstructionfree
 
         public override void SetValue(T newValue)
         {
-            var me = Transaction.GetLocal();
-            switch (me.GetStatus())
+            var me = Transaction.LocalTransaction;
+            switch (me.Status)
             {
-                case Transaction.Status.Committed:
+                case Transaction.TransactionStatus.Committed:
                     base.SetValue(newValue);
                     return;
-                case Transaction.Status.Aborted:
+                case Transaction.TransactionStatus.Aborted:
                     throw new STMException("Open write from aborted transaction");
-                case Transaction.Status.Active:
+                case Transaction.TransactionStatus.Active:
                     var locator = _start.Value;
                     if (locator.Owner == me)
                     {
@@ -114,15 +114,15 @@ namespace STM.Implementation.Obstructionfree
                     {
                         var oldLocator = _start.Value;
                         var owner = oldLocator.Owner;
-                        switch (owner.GetStatus())
+                        switch (owner.Status)
                         {
-                            case Transaction.Status.Committed:
+                            case Transaction.TransactionStatus.Committed:
                                 newLocator.OldValue = oldLocator.NewValue;
                                 break;
-                            case Transaction.Status.Aborted:
+                            case Transaction.TransactionStatus.Aborted:
                                 newLocator.OldValue = oldLocator.OldValue;
                                 break;
-                            case Transaction.Status.Active:
+                            case Transaction.TransactionStatus.Active:
                                 //Contention manager here
                                 me.Abort();
                                 throw new STMException("Open write from aborted transaction");
@@ -145,14 +145,14 @@ namespace STM.Implementation.Obstructionfree
 
         protected override T OpenWrite()
         {
-            var me = Transaction.GetLocal();
-            switch (me.GetStatus())
+            var me = Transaction.LocalTransaction;
+            switch (me.Status)
             {
-                case Transaction.Status.Committed:
+                case Transaction.TransactionStatus.Committed:
                     return base.GetValue();
-                case Transaction.Status.Aborted:
+                case Transaction.TransactionStatus.Aborted:
                     throw new STMException("Open write from aborted transaction");
-                    case Transaction.Status.Active:
+                case Transaction.TransactionStatus.Active:
                     var locator = _start.Value;
                     if (locator.Owner == me)
                         return locator.NewValue;
@@ -162,15 +162,15 @@ namespace STM.Implementation.Obstructionfree
                     {
                         var oldLocator = _start.Value;
                         var owner = oldLocator.Owner;
-                        switch (owner.GetStatus())
+                        switch (owner.Status)
                         {
-                            case Transaction.Status.Committed:
+                            case Transaction.TransactionStatus.Committed:
                                 newLocator.OldValue = oldLocator.NewValue;
                                 break;
-                            case Transaction.Status.Aborted:
+                            case Transaction.TransactionStatus.Aborted:
                                 newLocator.OldValue = oldLocator.OldValue;
                                 break;
-                            case Transaction.Status.Active:
+                            case Transaction.TransactionStatus.Active:
                                 //Contention manager here
                                 me.Abort();
                                 throw new STMException("Open write from aborted transaction");
@@ -191,8 +191,8 @@ namespace STM.Implementation.Obstructionfree
 
         public override bool Validate()
         {
-            var me = Transaction.GetLocal();
-            return me.GetStatus() == Transaction.Status.Active;
+            var me = Transaction.LocalTransaction;
+            return me.Status == Transaction.TransactionStatus.Active;
         }
 
         

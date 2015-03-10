@@ -11,28 +11,28 @@ using STM.Interfaces;
 namespace STM.Implementation.Obstructionfree
 {
 
-    public class FreeSTMSystem : STMSystem
+    public class FreeStmSystem : BaseSTMSystem
     {
-        private static readonly Lazy<FreeSTMSystem> LazySystem = new Lazy<FreeSTMSystem>(true);
+        private static readonly Lazy<FreeStmSystem> LazySystem = new Lazy<FreeStmSystem>(true);
 
         protected override bool OnValidate()
         {
-            Transaction me = Transaction.GetLocal();
-            return me.GetStatus() != Transaction.Status.Aborted;
+            Transaction me = Transaction.LocalTransaction;
+            return me.Status != Transaction.TransactionStatus.Aborted;
         }
 
-        public static STMSystem GeInstance()
+        public static BaseSTMSystem GeInstance()
         {
             return LazySystem.Value;
         }
 
         public override  T Atomic<T>(Func<T> stmAction)
         {
-            T result = default(T);
+            var result = default(T);
             while (true)
             {
-                var me = new Transaction();
-                Transaction.SetLocal(me);
+                var me = Transaction.StartTransaction();
+                Transaction.LocalTransaction = me;
                 try
                 {
                     result = stmAction();
