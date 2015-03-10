@@ -65,8 +65,9 @@ namespace STMUnitTest
         [TestMethod]
         public void TestThreadedProducerConsumer()
         {
-            var thread1 = new Thread(() => Enqueue(100000));
-            var thread2 = new Thread(() => Dequeue(100000));
+            const int amount = 100000;
+            var thread1 = new Thread(() => Enqueue(amount));
+            var thread2 = new Thread(() => Dequeue(amount));
 
             thread1.Start();
             thread2.Start();

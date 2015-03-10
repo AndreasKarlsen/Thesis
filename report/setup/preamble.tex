@@ -164,14 +164,15 @@
 \DeclareCaptionFormat{listing}{\colorbox{gray}{\parbox{\textwidth}{#1#2#3}}}
 \captionsetup[lstlisting]{format=listing,labelfont=white,textfont=white}
 %\lstset{numbers=left}
+\usepackage{courier}
 \lstset{
-	basicstyle=\footnotesize,
+	basicstyle=\footnotesize\ttfamily,
 	tabsize=2,
 	breaklines=true,
   literate={æ}{{\ae}}1 {ø}{{\o}}1 {å}{{\aa}}1 {Æ}{{\AE}}1 {Ø}{{\O}}1 {Å}{{\AA}}1,
   keywords={typeof, new, true, false, catch, function, return, null, catch, switch, var, if, in, while, do, else, case, break},
   keywordstyle=\color{blue}\bfseries,
-  ndkeywords={class, export, boolean, throw, implements, import, this},
+  ndkeywords={class, export, boolean, throw, implements, import, using, this},
   ndkeywordstyle=\color{darkgray}\bfseries,
   identifierstyle=\color{black},
   sensitive=false,
@@ -320,9 +321,17 @@ with-meta,with-open,with-out-str,with-precision,xml-seq,zero?,zipmap
 }
 
 
-\newcommand{\bscode}{
-	\lstinline
+%\newcommand{\bscode}{
+%	\lstinline
+%}
+
+\font\fontcode=pcrr at 12pt
+
+\newcommand{\bscode}[1]{
+	{\fontcode#1}
 }
+
+
 
 \newcommand{\bscodemath}[1]{
 	\text{\lstinline|#1|}
