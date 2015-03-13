@@ -14,7 +14,7 @@ where $field$-$modifiers$ includes the new \bscode{atomic} keyword as well as ex
 
 The definition of transactional local variables follow the format:
 
-\bscode{atomic}\bscode{var} $name$ = $expr$\\
+\bscode{atomic} \bscode{var} $name$ = $expr$;\\
 \bscode{atomic} $type$ $var$-$decl$ ( , $var$-$dcl$ )+ ; 
 
 where $var$-$dcl$ is defined as $name$ or $name$ = $expr$. As with transactional fields $type$ can be any existing or user defined type including the \bscode{dynamic} keyword.
@@ -23,7 +23,7 @@ For declaration of transactional parameters the format is as follows:
 
 \bscode{atomic?} $param$-$modifier$? $type$ $name$
 
-where $param$-$modifier$ represents C\#'s \bscode{ref} and \bscode{out} keywords. Just as previously $type$ can be any existing or user defined type including the \bscode{dynamic} keyword. The \bscode{atomic} keyword can not be combined with the C\# \bs{params} parameter type or optional parameters\cite[p. 42]{sestoft2011c}.
+where $param$-$modifier$ represents C\#'s \bscode{ref} and \bscode{out} keywords. Just as previously $type$ can be any existing or user defined type including the \bscode{dynamic} keyword. The \bscode{atomic} keyword can not be combined with the C\# \bscode{params} parameter type or optional parameters\cite[p. 42]{sestoft2011c}.
 
 \bsref{lst:stm_atomic_syntax}, which is a modified version of the race condition example from our previous study\cite[p. 23]{dpt907e14trending}, presents an example of the syntax extensions. On line 6 the transactional variable number is defined and assigned an initial value of 10. The main method defines and starts two threads. \bscode{t1} checks if the value of number is equal to 10 and assigns \bscode{number} times 3 to the variable if the condition is true. These operations are executed as a transaction defined by the \bscode{atomic} keyword and associated block on line 11. \bscode{t2} assigns 20 to number inside a transaction defined on line 17. In this example \stmnamesp removes the race conditions associated with \bscode{t2} changing the value of \bscode{number} between the read on line 12 and the read on line 13. In the case such a change occurs the \ac{STM} system of \stmnamesp will abort and retry one of the implicated transactions.
  
@@ -56,12 +56,12 @@ where $param$-$modifier$ represents C\#'s \bscode{ref} and \bscode{out} keywords
               }
            });
           Thread t2 = new Thread( () => {
-              atomic{
+              atomic {
                   number = 20;
               }
           });
           t1.Start(); t2.Start();
-          t1.Join(); t2.Start();
+          t1.Join(); t2.Join();
           int result;
           atomic {
             result = number;          
@@ -105,7 +105,7 @@ As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_
                   number = 20;
           });
           t1.Start(); t2.Start();
-          t1.Join(); t2.Start();
+          t1.Join(); t2.Join();
           Console.WriteLine("Result is: " + number);
       }
   }
@@ -113,7 +113,7 @@ As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_
 Allowing access to transactional variables from outside transactions dispenses the need for defining a transaction whenever only a single read or write is to be performed. The atomic block then serves the purpose of combining multiple operations to be performed as a single atomic step.
 
 \section{Conditional Synchronization}
-As described in \bsref{sec:req_conditional} \stmnamesp supports conditional synchronization via the \bscode{retry} and \bscode{orElse} constructs. \stmnamesp extends C\# with a \bscode{retry} statement that can only be used inside atomic blocks. A retry statement takes the format \bscode{retry};. That is, the keyword is employed as a statement, much like C\#'s \bscode{break} and \bscode{continue} statements\cite[p. 102]{sestoft2011c}. \bsref{lst:stm_atomic_syntax_retry} presents the \bscode{Dequeue} method from a transactional queue. The queue is defined over a singly linked list from which items are dequeued from the front and enqueued in the back. The \bscode{Dequeue} method consists of an atomic block, defined on line 11, performing the dequeue operation as a single atomic step. On line 13 the transaction checks if the queue is empty in which case it executes the retry statement on line 14, blocking the transaction to be retried when the \bscode{\_size} variable changes. If the queue is not empty the new head of the queue is removed and the next item in the linked list becomes the new head. Finally the size of the queue is decreased and the value associated with the previous head is returned. 
+As described in \bsref{sec:req_conditional} \stmnamesp supports conditional synchronization via the \bscode{retry} and \bscode{orElse} constructs. \stmnamesp extends C\# with a \bscode{retry} statement that can only be used inside atomic blocks. A retry statement takes the format: \bscode{retry}. That is, the keyword is employed as a statement, much like C\#'s \bscode{break} and \bscode{continue} statements\cite[p. 102]{sestoft2011c}. \bsref{lst:stm_atomic_syntax_retry} presents the \bscode{Dequeue} method from a transactional queue. The queue is defined over a singly linked list from which items are dequeued from the front and enqueued in the back. The \bscode{Dequeue} method consists of an atomic block, defined on line 11, performing the dequeue operation as a single atomic step. On line 13 the transaction checks if the queue is empty in which case it executes the retry statement on line 14, blocking the transaction to be retried when the \bscode{\_size} variable changes. If the queue is not empty the new head of the queue is removed and the next item in the linked list becomes the new head. Finally the size of the queue is decreased and the value associated with the previous head is returned. 
 
 \begin{lstlisting}[label=lst:stm_atomic_syntax_retry,
   caption={Retry Syntax},
@@ -320,5 +320,55 @@ To increase the flexibility and orthogonality of the \ac{STM} implementation dyn
 %	atomic keyword for methods and properties
 % public atomic void drive (int km) { ... }
 % public atomic int wheels { get; set; }
+
+\section{Method Parameters \& Arguments}
+\subsection{}
+\subsection{Ref}
+\subsection{Out}
+\subsection{Properties}
+
+\begin{lstlisting}[label=lst:atomic_property,
+  caption={Manual Atomic Property},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  class Car {
+    private atomic int _kmDriven;
+    public int KmDriven {
+      get {
+        return _kmDriven;
+      }
+      set {
+          _kmDriven = value;
+      }
+    }
+  }
+\end{lstlisting}
+
+\begin{lstlisting}[label=lst:atomic_property,
+  caption={Automatic Atomic Properties},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  class Car {
+    public atomic int KmDriven { get; set; }
+  }
+\end{lstlisting}
 
 \worksheetend
