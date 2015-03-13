@@ -44,8 +44,24 @@ JVSTM-lock-free\cite{fernandes2011lock}\\
 \cite{herlihy2003software}\\
 \cite{hendler2011nonblocking} lockfree starve.
 
-By investigating a number of different \ac{STM} implementations the field, on which the final selection is based, was narrowed down to the
+By investigating a number of different \ac{STM} implementations the field, on which the final selection is based, was narrowed down to McRT \cite{saha2006mcrt} developed by Saha et. al., JVSTM developed by Cachopo and TL2 developed by Dice et al. McRT and TL2 are well know in the research community and JVMSTM is a newer implementation. All of these systems employ locking but in different ways. Additionally the algorithms wary greatly in other areas and will therefor provide a varied perspective.
 
+\subsubsection{TL\rom{2}}
+As briefly described in \bsref{sec:intro_related_work}, only holds locks during the commit process\cite[p. 199]{dice2006transactional}. This is known as commit time locking. TL2 uses lazy updates where writes are recorded in a write-set and written to the associated memory when the transaction commits. Additionally any reads performed by a transactions is recorded in a read-set which is used to validate the transaction before it commits the contents of its write-set\cite[p. 198]{dice2006transactional}. The accumulation of a read-set for the \bscode{retry} will therefor incur no additional overhead.
+
+TL2 uses a global version clock to ensure atomicity\cite[p. 201]{dice2006transactional}. Transaction record a time-stamp when they start. The time-stamp is used to validate the contents of the read-set before the transaction commits. Each item tracked by the \ac{STM} system, has a associated time-stamp which is updated when a transaction commits a new value. If any item in the read-set has a time-stamp which is higher than transactions time-stamp then the item has been modified while the transaction was executing. As a result the transaction must abort and restart.
+
+In order to commit, a transaction must go trough the following steps\cite[p. 200]{dice2006transactional}:
+\begin{enumerate}
+\item Acquire the lock on items in the write-set
+\item Increment and fetch the version clock
+\item Validate the read-set as described above
+\item Commit values in the write-set along with the new time-stamps
+\item Release the lock on items in the write-set
+\end{enumerate}
+As such the transaction has exclusive access to the items in the write set during the commit phase. The version clock can be a source of contention as all transactions must increment version clock as part of the commit operation\cite[p. 120]{harris2010transactional}. A number of ways of reducing contention has been proposed \cite{zhang2008commit}\cite{lev2009anatomy}\cite{avni2008maintaining}.
+
+The base TL2 algorithm can lead to false negatives when validating the read-set. If a transaction \bscode{t2} executes between transaction \bscode{t1} reading the global clock and reading its first value. \bscode{t2} will then have incremented the version clock and the time-stamp of \bscode{t1} will be invalid before it starts executing its transaction, even though the transaction would be valid if it occurred after \bscode{t2}. In \cite{riegel2007time} it is proposes to attempt to upgrade a transactions time-stamp in to eliminates such false negatives.
 
 \subsubsection{DSTM}
 By investigating a number of different \ac{STM} implementations the field, on which the final selection is based, was narrowed down to the obstruction-free DSTM presented in \cite{herlihy2003software}, the lock-free variation of JVSTM presented in \cite{fernandes2011lock} and lock based TL2 presented in \cite{dice2006transactional}. All of these implementations contribute with a \ac{STM} library intended to be used directly by the programmer\cite[p. 92]{herlihy2003software}\cite[p. 73]{cachopo2007development}\cite[p. 38]{lourencco2007testing}. DSTM was selected based on its impact on both obstruction-free \ac{STM} and  \ac{STM} in general. JVSTM was selected as it represents a lock-free \ac{STM} system build for the Java programming language, which has a number of similarities with C\#.
