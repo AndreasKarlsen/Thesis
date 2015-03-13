@@ -153,8 +153,48 @@ Another technique is to skip tokens until the parser finds a token where it agai
 \subsection{Compilation}
 \subsection{Symbols}
 
-\section{Compile Phases}\toby{tror den her titel skal slettes nu (bliver fortalt i intro og inside roslyn istedet}
-\toby[i]{Skal have det et sted, hvor jeg fortæller mere præcist en compiler line billedet om faserne der sker, ligesom beskrevet i blogpostet. Også i forhold til om de køres med en eller flere tråde}
+	%følgende sker direkte i runcore kald
+%compilation = source files, assembly references and compiler options. Main: symbol table
+	%består af symboler (Symbol klassen)
+	
+	%måske sker den semantiske analyse i analyzedriver kaldet, eller GetDeclarationDiagnostics()
+%semantic model = semantisk analyse, så som type og scope checking, 
+	%kan obtains udfra en compilation
+	%MERE:
+	%The symbols referenced at a specific location in source.
+	%The resultant type of any expression.
+	%All diagnostics, which are errors and warnings.
+	%How variables flow in and out of regions of source.
+	%The answers to more speculative questions.
+	
+%selve emitting sker også i runcore
+	%data flow analyse, Control flow analysis også en del af emit (refer til deres paper det ligger på gitten omkring data flow)
+
+\section{Compile Phases}\toby{Måske ryk den op over hvor syntax træer bliver forklaret}\toby{Måske bare være et underpunkt i Inside Roslyn - afhæning af hvor stort afsnittet bliver (evt. kan det komme som det første i inside roslyn)}
+%måske noget pre , evt. med at faserne vist i den første figur er simplicifeceret og her vi her er lidt mere uddybende
+%refer til VSadov
+
+%evt fortæl ud fra mapperne i projektet?
+
+The first phase of compilation involves doing initial work, such as parsing command line with associated parameters and setting up for compilation, as shown in \bsref{fig:roslyn_invoke_overview}. 
+
+The second phase involves parsing the source code, which is done in a traditional compiler fashion by lexing tokens and parsing them. The result of this phase is a syntax tree.
+%special type syntax tree, refer til det blvier beskrevet senere hvis det rykkes op
+%ligger i parse mappen: Lexer.cs + SyntaxParser (der er også LanguageParser.cs og DirectiveParser.cs) 
+%recursive descent parser
+%first phase on fig. 1.1
+
+The third phase 
+%secon phase on fig 1.1
+
+
+%evt. lav en figur over disse faser
+
+%sequential
+
+
+
+%\toby[i]{Skal have det et sted, hvor jeg fortæller mere præcist en compiler line billedet om faserne der sker, ligesom beskrevet i blogpostet. Evt. også i forhold til om de køres med en eller flere tråde}
 %Earlier in intro we looked at the phases of the compiler in contrast to the compiler API, howerver This does not include all phases. In this section we will explain in more detail what phases the compiler consits of and how it is build on in the code
 	%Omformuler så det lyder bedere (men noget i den stil)
 
@@ -186,4 +226,7 @@ Another technique is to skip tokens until the parser finds a token where it agai
 
 %Den primære brug der er tiltænkt at programmøren skal få adgang er gennem API laget, hvor en del kompleksitet stadig er gemt væk.
 	%Vi vil gå direkte ind og ændre i selve compileren, hvilket ikke er tiltænk som hovedtanken fra Microsoft's side.
+	
+%Evt. skriv at vi vil have fokus på syntax træet og går mest i detalje med det, fordi vores implementering har valgt at ændre i syntax træet.
+	%men alligevel kort om de andre faser.
 \worksheetend
