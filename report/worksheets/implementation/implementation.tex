@@ -3,7 +3,7 @@
 This chapter describes the implementation of the \ac{STM} system that executes transactions in \stmname. \andreas{Not final}
 \label{chap:implementation}
 \section{Selection of Algorithm}
-Various implementation algorithms have been proposed for \ac{STM} of which a few were briefly described in \bsnameref{sec:intro_related_work}. This section will cover the considerations which went into selecting an algorithm for \stmname. Specific attention is payed to the requirements and design choices made in \bsref{sec:stm_requirements} and \bsref{chap:stm_design}. Based on this overview a published algorithm will be selected.
+Various implementation algorithms have been proposed for \ac{STM} of which a few were briefly described in \bsnameref{sec:intro_related_work}. This section will cover the considerations which went into selecting an algorithm for \stmname. Specific attention is payed to the requirements and design choices made in \bsref{sec:stm_requirements} and \bsref{chap:stm_design}. Based on this overview a published algorithm will be selected. As the goal of this thesis is not to contribute with a new \ac{STM} algorithm but rather evaluate how \ac{STM} fits into the context of C\#, building on a existing algorithm is the logical choice.
 
 \subsection{Strong Atomicity}
 As described in \bsref{sec:design_strong_weak_atomicity} strong atomicity ensures atomicity between transactional and non-transactional access. As \stmnamesp is required to support strong atomicity the implementation strategy should facilitate such access.
@@ -27,22 +27,28 @@ As described in \bsref{}\kasper{HUSK REFERENCE!} the \ac{STM} system of \stmname
 	\item The least strict progress guarantee is obstruction-freedom\cite[p. 47]{harris2010transactional}\cite{herlihy2003obstruction}\cite[p. 61]{herlihy2012art}. As mentioned in \bsref{sec:intro_related_work}, obstruction-freedom guarantees that any thread which runs for long enough without encountering a synchronization conflict makes progress\cite[p. 1]{herlihy2003obstruction}. 
 \end{itemize}
 
-While all of these progress guarantees precludes deadlocks, only wait-freedom and lock-freedom precludes livelocks\cite[p. 47]{harris2010transactional}. Obstruction free algorithms have been shown to provide efficient implementations in practice\cite[p. 61]{herlihy2012art}, especially when paired with techniques such as exponential backoff\cite[p. 147]{herlihy2012art} and contention managers\cite[p. 51]{harris2010transactional}.  Whether \ac{STM} implementations need to be wait-free, lock-free, obstruction-free or even provide any of these guarantees at all is a ongoing discussion. Arguments have been made for even obstruction-freedom being too strong a guarantee and that \ac{STM} can be made faster by employing controlled locking\cite{ennals2006software}. In practice many locking-free algorithms behave as if they were wait-free\cite{alistarh2014lock}, decreasing the value of complex wait-free implementations. 
+While all of these progress guarantees precludes deadlocks, only wait-freedom and lock-freedom precludes livelocks\cite[p. 47]{harris2010transactional}. Obstruction free algorithms have been shown to provide efficient implementations in practice\cite[p. 61]{herlihy2012art}, especially when paired with techniques such as exponential backoff\cite[p. 147]{herlihy2012art} and contention managers\cite[p. 51]{harris2010transactional}.
 
-Therefore we choose to focus on lock-free, obstruction-free and blocking \ac{STM} algorithms.
-\andreas{We need an argument and a choice}
+Whether \ac{STM} implementations need to be wait-free, lock-free, obstruction-free or even provide any of these guarantees at all is a ongoing discussion. Arguments have been made for even obstruction-freedom being too strong a guarantee and that \ac{STM} can be made faster by employing controlled locking\cite{ennals2006software}. Due to the complexities associated with non-blocking algorithms\cite{al2013nonblocking} and the evidence that blocking \ac{STM} systems can perform in practice, we initially choose to focus on blocking \ac{STM} algorithms. We do however keep the option of moving to a non-blocking algorithm at a later point open, as demonstrated by,  \cite{fernandes2011lock}.
 
 %Older \ac{STM} systems tend to be either lock-free or obstruction-free\cite[p. 47]{harris2010transactional} while blocking \ac{STM} systems have emerged in an attempt to tune performance\cite[p. 51]{harris2010transactional}.
 
 
 \subsection{Final Selection}
 %Choice of implementation based on previous sections and requirements
-\cite{dice2006transactional}\\
-\cite{fernandes2011lock}\\
+TL2 \cite{dice2006transactional}\\
+TinySTM \cite{felber2008dynamic}\\
+McRT \cite{saha2006mcrt}\\
+JVSTM \cite{cachopo2007development}\\
+JVSTM-lock-free\cite{fernandes2011lock}\\
 \cite{herlihy2003software}\\
 \cite{hendler2011nonblocking} lockfree starve.
 
-By investigating a number of different \ac{STM} implementations the field, on which the final selection is based, was narrowed down to the obstruction-free DSTM presented in \cite{herlihy2003software}, the lock-free variation of JVSTM presented in \cite{fernandes2011lock} and lock based TL presented in \cite{dice2006transactional}. All of these implementations contribute with a \ac{STM} library intended to be used directly by the programmer\cite[p. 92]{herlihy2003software}\cite[p. 73]{cachopo2007development}\cite[p. 38]{lourencco2007testing}.
+By investigating a number of different \ac{STM} implementations the field, on which the final selection is based, was narrowed down to the
+
+
+\subsubsection{DSTM}
+By investigating a number of different \ac{STM} implementations the field, on which the final selection is based, was narrowed down to the obstruction-free DSTM presented in \cite{herlihy2003software}, the lock-free variation of JVSTM presented in \cite{fernandes2011lock} and lock based TL2 presented in \cite{dice2006transactional}. All of these implementations contribute with a \ac{STM} library intended to be used directly by the programmer\cite[p. 92]{herlihy2003software}\cite[p. 73]{cachopo2007development}\cite[p. 38]{lourencco2007testing}. DSTM was selected based on its impact on both obstruction-free \ac{STM} and  \ac{STM} in general. JVSTM was selected as it represents a lock-free \ac{STM} system build for the Java programming language, which has a number of similarities with C\#.
 
 As briefly described in \bsref{sec:intro_related_work}, DSTM is a obstruction-free \ac{STM} library for the Java and C++ programming languages. DSTM uses transactional objects which encapsulate regular objects and provide transactional access. Conflict detection occurs at object level which is the opposite of the requirement defined in \bsref{sec:tracking}. The value of a transactional object is represented by a locator object which is updated using a Compare-And-Swap operation\cite{herlihy2003software}[p. 95]. The locator contains a reference to the transaction which installed the locator, a new value and a old value. Based on the status of the transaction which installed the current locator a reading transaction can choose to read the old or new value. If the status is \bscode{Committed} the new value is the correct value, if the status is \bscode{Aborted} the old value is the correct value. The case where the status is \bscode{Active} indicates that a conflict is about to occur and that the involved transactions should contact the contention manager in order to resolve the conflict\cite{herlihy2003software}[p. 97]. As such the implementation employees eager updating and eager conflict detection\cite[p. 96]{herlihy2003software}. Committing and a aborting a transaction is reduced to changing the status of a transaction to \bscode{Commited} or \bscode{Aborted} using a Compare-and-Swap operation. Each transactional object will have the status associated with its locator changed by the same operation
 
@@ -51,7 +57,7 @@ Non-transactional reads can be supported by choose the correct value to read. A 
 The base algorithm has no need for a read-set as any read is communicated to other transactions by installing a new locator specifying that the transaction has accessed the transactional object. Supporting the \bscode{retry} construct requires adding support for a read-set by modifying the existing algorithm.
 %Object based conflict detection.
 
-The base DSTM algorithm does not support concurrent reads as the locator objects does not allow distinguishing a read from a write operation\cite[p. 435]{herlihy2012art}. As concurrent reads is one of the major advantages offered by \ac{STM}'s optimistic approach to shared memory concurrency, the algorithm must be modified to support such operations in order to be useful in practice. 
+The base DSTM algorithm does not support concurrent reads as the locator objects does not allow distinguishing a read from a write operation\cite[p. 435]{herlihy2012art}. As concurrent reads is one of the major advantages offered by \ac{STM}'s optimistic approach to shared memory concurrency, the algorithm must be modified to support such operations in order to be useful in practice.
 
  
 %Locking implementation simpler McRT

@@ -63,7 +63,7 @@ In \bsref{fig:roslyn_invoke_overview} an overview of the compilation call chain 
 \section{Key Concepts}
 The C\# compiler builds upon concepts from traditional compiler theory, such as lexing, parsing, declaration processing, semantic analysis and code generation\cite{sebestaProLang}\cite{fischer2009crafting}. Throughout the phases of compilation, traditional concepts such as a syntax tree, symbol table and visitor pattern are also used. In this section we describe the core concepts used in the C\# compilation phases.
 
-\subsection{Syntax trees}
+\subsection{Syntax trees}\label{sec:syntax_trees}
 Syntax trees are the primary structure used throughout the phases of compilation. Roslyn's syntax tress have three key attributes\cite[p. 6]{ng2012roslyn}: 
 \begin{enumerate}
 	\item The first attribute is that a syntax tree is a full fidelity representation of source code, which means that everything in the source code is represented as a node in the syntax tree. If programs are invalid, the syntax tree represent these errors in source code by skipped or missing tokens in the tree. 
@@ -134,15 +134,25 @@ Syntax trivia represent extra parts of source code that can appear between any t
 As trivia are not nodes in the tree, they do not have a \bscode{Parent} property. Instead the associated token for some trivia, can be accessed with the \bscode{Token} property. Additionally, like syntax tokens, trivia are also value types and have only a single \bscode{SyntaxTrivia} type to describe them all.
 
 \subsubsection{Spans}
+Every node, token and trivia knows its position in source code. This is accomplished by the use of a \bscode{TextSpan} struct type. A \bscode{TextSpan} object holds the start position of a node, token or trivia in source code and a count of how long it spans, both as 32-bit integers\cite[p. 8]{ng2012roslyn}.
+
+Every node, token and trivia has two properties to obtain spans: \bscode{Span} and \bscode{FullSpan}. The \bscode{Span} property includes only the span of the node, token or trivia and not any trivia, where the \bscode{FullSpan} property includes the normal span and any leading or trailing trivia.  
+
 \subsubsection{Kinds}
+Every node, token and trivia has an integer \bscode{RawKind} property, used to identify the syntax element type. Each language, C\# or \ac{VB}, then contains a \bscode{SyntaxKind} enumeration that contains all the nodes, tokens and trivia in the language, that the integer can be cast to. The \bscode{CSharpSyntaxKind} method does the casting automatically\cite{roslynwikiOverview}\cite[p. 9]{ng2012roslyn}.
+
+Kinds are especially important for tokens and trivia, as they have only a single type,\bscode{SyntaxToken} and \bscode{SyntaxTrivia}, for all tokens and trivia. Thus, the only way to identify the particular token or trivia at hand, is by using kinds.
+
 \subsubsection{Errors}
-%Vær sikker på at det ikke allerede det blevet beskrevet.
+If programs are invalid as a result of errors in source code, a syntax tree is still produced. These errors are represented as special tokens in the syntax tree, which are added using one of the following techniques\cite[p. 9]{ng2012roslyn}.
+
+One technique is to insert a missing token in the syntax tree when the parser scans for a particular token but does not find it. The missing token represents the expected token, but it has an empty span and has a true \bscode{IsMissing} property.
+
+Another technique is to skip tokens until the parser finds a token where it again can parse. The skipped tokens are added as a trivia node with the \bscode{SkippedTokens} kind.
+
 \subsection{Compilation}
 \subsection{Symbols}
 
-
-
-%ng2012roslyn
 \section{Compile Phases}\toby{tror den her titel skal slettes nu (bliver fortalt i intro og inside roslyn istedet}
 \toby[i]{Skal have det et sted, hvor jeg fortæller mere præcist en compiler line billedet om faserne der sker, ligesom beskrevet i blogpostet. Også i forhold til om de køres med en eller flere tråde}
 %Earlier in intro we looked at the phases of the compiler in contrast to the compiler API, howerver This does not include all phases. In this section we will explain in more detail what phases the compiler consits of and how it is build on in the code
