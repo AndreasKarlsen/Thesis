@@ -14,7 +14,7 @@ where $field$-$modifiers$ includes the new \bscode{atomic} keyword as well as ex
 
 The definition of transactional local variables follow the format:
 
-\bscode{atomic}\bscode{var} $name$ = $expr$\\
+\bscode{atomic} \bscode{var} $name$ = $expr$;\\
 \bscode{atomic} $type$ $var$-$decl$ ( , $var$-$dcl$ )+ ; 
 
 where $var$-$dcl$ is defined as $name$ or $name$ = $expr$. As with transactional fields $type$ can be any existing or user defined type including the \bscode{dynamic} keyword.
@@ -320,5 +320,55 @@ To increase the flexibility and orthogonality of the \ac{STM} implementation dyn
 %	atomic keyword for methods and properties
 % public atomic void drive (int km) { ... }
 % public atomic int wheels { get; set; }
+
+\section{Method Parameters \& Arguments}
+\subsection{}
+\subsection{Ref}
+\subsection{Out}
+\subsection{Properties}
+
+\begin{lstlisting}[label=lst:atomic_property,
+  caption={Manual Atomic Property},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  class Car {
+    private atomic int _kmDriven;
+    public int KmDriven {
+      get {
+        return _kmDriven;
+      }
+      set {
+          _kmDriven = value;
+      }
+    }
+  }
+\end{lstlisting}
+
+\begin{lstlisting}[label=lst:atomic_property,
+  caption={Automatic Atomic Properties},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  class Car {
+    public atomic int KmDriven { get; set; }
+  }
+\end{lstlisting}
 
 \worksheetend
