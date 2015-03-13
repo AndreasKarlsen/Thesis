@@ -23,7 +23,7 @@ For declaration of transactional parameters the format is as follows:
 
 \bscode{atomic?} $param$-$modifier$? $type$ $name$
 
-where $param$-$modifier$ represents C\#'s \bscode{ref} and \bscode{out} keywords. Just as previously $type$ can be any existing or user defined type including the \bscode{dynamic} keyword. The \bscode{atomic} keyword can not be combined with the C\# \bs{params} parameter type or optional parameters\cite[p. 42]{sestoft2011c}.
+where $param$-$modifier$ represents C\#'s \bscode{ref} and \bscode{out} keywords. Just as previously $type$ can be any existing or user defined type including the \bscode{dynamic} keyword. The \bscode{atomic} keyword can not be combined with the C\# \bscode{params} parameter type or optional parameters\cite[p. 42]{sestoft2011c}.
 
 \bsref{lst:stm_atomic_syntax}, which is a modified version of the race condition example from our previous study\cite[p. 23]{dpt907e14trending}, presents an example of the syntax extensions. On line 6 the transactional variable number is defined and assigned an initial value of 10. The main method defines and starts two threads. \bscode{t1} checks if the value of number is equal to 10 and assigns \bscode{number} times 3 to the variable if the condition is true. These operations are executed as a transaction defined by the \bscode{atomic} keyword and associated block on line 11. \bscode{t2} assigns 20 to number inside a transaction defined on line 17. In this example \stmnamesp removes the race conditions associated with \bscode{t2} changing the value of \bscode{number} between the read on line 12 and the read on line 13. In the case such a change occurs the \ac{STM} system of \stmnamesp will abort and retry one of the implicated transactions.
  
@@ -56,12 +56,12 @@ where $param$-$modifier$ represents C\#'s \bscode{ref} and \bscode{out} keywords
               }
            });
           Thread t2 = new Thread( () => {
-              atomic{
+              atomic {
                   number = 20;
               }
           });
           t1.Start(); t2.Start();
-          t1.Join(); t2.Start();
+          t1.Join(); t2.Join();
           int result;
           atomic {
             result = number;          
@@ -105,7 +105,7 @@ As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_
                   number = 20;
           });
           t1.Start(); t2.Start();
-          t1.Join(); t2.Start();
+          t1.Join(); t2.Join();
           Console.WriteLine("Result is: " + number);
       }
   }
