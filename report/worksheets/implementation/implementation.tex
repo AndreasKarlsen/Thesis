@@ -59,9 +59,31 @@ In order to commit, a transaction must go trough the following steps\cite[p. 200
 \item Commit values in the write-set along with the new time-stamps
 \item Release the lock on items in the write-set
 \end{enumerate}
-As such the transaction has exclusive access to the items in the write set during the commit phase. The version clock can be a source of contention as all transactions must increment version clock as part of the commit operation\cite[p. 120]{harris2010transactional}. A number of ways of reducing contention has been proposed \cite{zhang2008commit}\cite{lev2009anatomy}\cite{avni2008maintaining}.
+As such the transaction has exclusive access to the items in the write set during the commit phase and detects conflicts lazily against previously committed transactions. 
+
+The version clock can be a source of contention as all transactions must increment version clock as part of the commit operation\cite[p. 120]{harris2010transactional}. A number of ways of reducing contention has been proposed \cite{zhang2008commit}\cite{lev2009anatomy}\cite{avni2008maintaining}.
 
 The base TL2 algorithm can lead to false negatives when validating the read-set. If a transaction \bscode{t2} executes between transaction \bscode{t1} reading the global clock and reading its first value. \bscode{t2} will then have incremented the version clock and the time-stamp of \bscode{t1} will be invalid before it starts executing its transaction, even though the transaction would be valid if it occurred after \bscode{t2}. In \cite{riegel2007time} it is proposes to attempt to upgrade a transactions time-stamp in to eliminates such false negatives.
+
+\subsubsection{McRT}
+McRT employees encounter time locking, locking access to items when they are first encounter\cite[p. 189]{saha2006mcrt}. McRT supports two algorithms for synchronization. The first is based on readers-writer locks which allows multiple readers to hold the lock simultaneously, while writers must have exclusive access\cite[p. 189]{saha2006mcrt}. The second is based on versioned locks where each lock has a associated version number\cite[p. 108]{harris2010transactional}. We focus only on the second approach as this has been shown to have the best performance\cite[p. 190]{saha2006mcrt}. 
+
+McRT uses eager updates as this avoid having to check a write-set for a non-committed version of an item, when a read to that item occurs\cite[p. 109]{harris2010transactional}. Locking allows the system to guarantee that no transaction reads a value which has not yet been committed\cite[p. 108]{harris2010transactional}. Eager updates requires the system to maintain a undo list which keeps track of the old values of any items to which a given transaction has written. The undo list is used to revert any items, to which a given transaction has written, to their previous state in case of an abort\cite[p. 189]{saha2006mcrt}. Eager updating makes the commit phase faster as no writes have to be redone\cite[p. 190]{saha2006mcrt}. The versioned lock algorithm of McRT requires maintaining a read-set which must be validated as part of the commit process, just as it was the case for TL2. The read-set contains a record of every item that was read as well as the version number of the item at the time of reading. During the commit phase the read-set of a transaction is validated, ensuring that no read item has a higher version number that the version number which was present when the item was read\cite[p. 190]{saha2006mcrt}.
+
+McRT detects conflicts only against active transactions\cite[p. 189]{saha2006mcrt}. Aborting transactions due to a conflict with a active transaction can lead to cases where a transaction \bscode{t1} is aborted due to a conflict with a \ac{t2} transaction, but \bscode{t2} is aborted before it can commit due a conflict with some transaction \bscode{t3}\cite[p. 2084]{herlihy2011tm}. As such \bs{t1} could have been allowed to continue as the transaction with which it conflicted never committed. 
+
+Conflicts between transactions appear as contention on the locks in the system. If multiple transactions attempt to acquire a lock on the same item a conflict is about to occur. In such cases McRT prefers letting transaction wait for the lock over aborting one of the involved transactions, in order to increase throughput\cite[p. 189]{saha2006mcrt}.
+
+\subsubsection{JVSTM}
+JVSTM uses \ac{MVCC}\cite[p. 1]{fernandes2011lock}, as known of databases\cite[p. 791]{elmasri2011fundamentals}. \ac{MVCC} requires the \ac{STM} system to keep a record of the old values for any item that is tracked\cite[p. 791]{elmasri2011fundamentals}. Reads that would be invalid in a system maintaining only the most recent value for each item, can be redirected to read an older value, allowing the associated transaction to continue\cite[p. 791]{elmasri2011fundamentals}. As a result JVSTM guarantees that read only transaction will always be able to commit\cite[p. 97]{cachopo2007development}.
+
+To keep track of a the values associated with an item JVSTM uses what original designer calls a versioned box\cite[p. 63]{cachopo2007development}. A version box is abstraction for a item that is to be tracked, such as a variable. Each version box keeps a ordered sequence of values, called the history of the versioned box This ordered sequence represents the values that have been committed to the item. Each transaction and item in a version in the history of a versioned box is assgined a version number indicating when the transaction started and when the value was created.
+
+JVSTM uses lazy updates, buffering writes in a transaction local write-set\cite[p. 64]{cachopo2007development}. As with TL2 writes are written to the tracked item when the transaction commits. Reads from a versioned box first checks if the transactions write-set contains a non committed value of the versioned box, returning it if that is the case\cite[p. 64]{cachopo2007development}. If no such item exists the history of the versioned box is searched for a suitable value. The first value that has a version number less than or equal to the transactions versioned number is returned\cite[p. 64]{cachopo2007development}.
+
+Keeping the old values for each tracked item takes up additional space and the space consumption keeps increasing as new versions are added.  Over time some old values might no longer be needed and can therefor be removed. To handle this JVSTM implements a thread responsible for this task\cite[p. 70]{cachopo2007development}\cite[p. 88]{cachopo2007development}, not unlike a garbage collector\cite[p. 472]{fischer2009crafting}.
+
+
 
 \subsubsection{DSTM}
 By investigating a number of different \ac{STM} implementations the field, on which the final selection is based, was narrowed down to the obstruction-free DSTM presented in \cite{herlihy2003software}, the lock-free variation of JVSTM presented in \cite{fernandes2011lock} and lock based TL2 presented in \cite{dice2006transactional}. All of these implementations contribute with a \ac{STM} library intended to be used directly by the programmer\cite[p. 92]{herlihy2003software}\cite[p. 73]{cachopo2007development}\cite[p. 38]{lourencco2007testing}. DSTM was selected based on its impact on both obstruction-free \ac{STM} and  \ac{STM} in general. JVSTM was selected as it represents a lock-free \ac{STM} system build for the Java programming language, which has a number of similarities with C\#.
@@ -74,9 +96,6 @@ The base algorithm has no need for a read-set as any read is communicated to oth
 %Object based conflict detection.
 
 The base DSTM algorithm does not support concurrent reads as the locator objects does not allow distinguishing a read from a write operation\cite[p. 435]{herlihy2012art}. As concurrent reads is one of the major advantages offered by \ac{STM}'s optimistic approach to shared memory concurrency, the algorithm must be modified to support such operations in order to be useful in practice.
-
- 
-%Locking implementation simpler McRT
 
 \section{STM Algorithm}
 Description of selected algorithm.
