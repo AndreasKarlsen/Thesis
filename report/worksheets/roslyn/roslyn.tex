@@ -13,7 +13,7 @@ The compiler \acp{API} available are illustrated in \bsref{fig:api_vs_compiler_p
 \begin{figure}[htbp]
 \centering
  \includegraphics[width=1\textwidth]{\rootpath/worksheets/roslyn/figures/compiler_pipeline_vs_api} 
- \caption{Compiler pipeline in contrast to compiler \acp{API}s\cite[p. 4]{ng2012roslyn}.}
+ \caption{Compiler pipeline in contrast to compiler \acp{API}\cite[p. 4]{ng2012roslyn}.}
 \label{fig:api_vs_compiler_pipeline}
 \end{figure}
 
@@ -153,6 +153,7 @@ Another technique is to skip tokens until the parser finds a token where it agai
 \subsection{Compilation}
 \subsection{Symbols}
 
+%semantic model evt. (tror kun det er i forhold til api)
 	%følgende sker direkte i runcore kald
 %compilation = source files, assembly references and compiler options. Main: symbol table
 	%består af symboler (Symbol klassen)
@@ -176,15 +177,50 @@ Another technique is to skip tokens until the parser finds a token where it agai
 
 %evt fortæl ud fra mapperne i projektet?
 
-The first phase of compilation involves doing initial work, such as parsing command line with associated parameters and setting up for compilation, as shown in \bsref{fig:roslyn_invoke_overview}. 
+The first phase of compilation entails initial work, such as parsing the command line with associated parameters and setting up for compilation, as shown in \bsref{fig:roslyn_invoke_overview}.\toby{bedre slutning på sætning}
 
-The second phase involves parsing the source code, which is done in a traditional compiler fashion by lexing tokens and parsing them. The result of this phase is a syntax tree.
+The second phase involves parsing the source code, which is done in a traditional compiler fashion by lexing source code into tokens and parsing them into a syntax tree, which represents the syntactic structure of the source code. This phase will check for syntax errors in source code, but does not have enough information to check for semantic errors, such as scope or type errors.
 %special type syntax tree, refer til det blvier beskrevet senere hvis det rykkes op
 %ligger i parse mappen: Lexer.cs + SyntaxParser (der er også LanguageParser.cs og DirectiveParser.cs) 
 %recursive descent parser
 %first phase on fig. 1.1
 
-The third phase 
+%Syntax trees represent the lexical and syntactic structure of source code. Although this information alone is enough to describe all the declarations and logic in the source, it is not enough information to identify what is being referenced.
+
+%a semantic model encapsulates the language rules, giving you an easy way to make these distinctions.
+
+In order to obtain more information, IN BLA creates a declaration table, which takes the form of a tree, that holds where namespaces and types are declared in source code.
+	%åbenbart en del af en compilation
+	
+%Compilation object, which is 
+
+%types and namespaces
+%namespaces, classes, interfaces, structs, and delegate declarations
+
+%second phase on fig 1.1 (tror jeg) - skal være sikker på hvad symbols er
+%forklaret mere om den i CSharp > CSharpCodeAnalysis (Portable) > Declarations > Declaration.cs og DeclarationTable.cs (Table indeholder forskellige typer af Declaration, såsom SingleTypeDeclaration)
+
+%second, declration phase: declarations from source and imported metadata are analyzed to form named symbols.
+	%the declaration phase as a hierarchical symbol table
+	%åbenbart både declaraiton og symbol table?
+
+%***Mangler hvad fase 2 er i fig.1.1, eller hvor det sker præcist.
+
+The fourth phase declaration diagnostics (fase 3 i fig 1.1)
+%third phase of fig 1.1 (fully bind)
+%resultatet er et bound træ, hvilket er en internal repræsentation for Roslyn (som ikke er tilgængelig igennemt API'et)
+%symbol visitor sker heri (men den tager et symbol, så det må ske før)
+
+The fifth IL emitting
+%the fourth
+
+The sixth serialization of portable executable file and pdb file (used for debugging).
+
+%pdb info:
+	%http://www.wintellect.com/devcenter/jrobbins/pdb-files-what-every-developer-must-know
+
+%et sted skal scope og type tjek checkes
+
 %secon phase on fig 1.1
 
 
