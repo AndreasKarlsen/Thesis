@@ -12,7 +12,7 @@ namespace STM.Collections
         private readonly TMVar<T> _item;
         private readonly TMVar<bool> _full;
 
-        public bool IsFull => _full.GetValue();
+        public bool IsFull { get { return _full.GetValue(); } }
 
         public SingleItemBuffer(T initial)
         {
