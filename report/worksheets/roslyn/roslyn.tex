@@ -177,9 +177,13 @@ Another technique is to skip tokens until the parser finds a token where it agai
 
 %evt fortæl ud fra mapperne i projektet?
 
+%sequential
 The first phase of compilation entails initial work, such as parsing the command line with associated parameters and setting up for compilation, as shown in \bsref{fig:roslyn_invoke_overview}.\toby{bedre slutning på sætning}
 
-The second phase involves parsing the source code, which is done in a traditional compiler fashion by lexing source code into tokens and parsing them into a syntax tree, which represents the syntactic structure of the source code. This phase will check for syntax errors in source code, but does not have enough information to check for semantic errors, such as scope or type errors.
+%sequential
+The second phase involves parsing the source code, which is done in a traditional compiler fashion by lexing source code into tokens and parsing them into a syntax tree, which represents the syntactic structure of the source code. This phase will check for syntax errors in source code, but does not have enough information to check for semantic errors, such as scope or type errors.\toby{Refer til syntax træ sektion}
+%evt. begrund med at programs can also refer to previously compiled libraries, packaged in assembly files. Although no source code is available for assemblies and therefore no syntax nodes or trees, programs can still refer to elements inside them.
+
 %special type syntax tree, refer til det blvier beskrevet senere hvis det rykkes op
 %ligger i parse mappen: Lexer.cs + SyntaxParser (der er også LanguageParser.cs og DirectiveParser.cs) 
 %recursive descent parser
@@ -189,13 +193,30 @@ The second phase involves parsing the source code, which is done in a traditiona
 
 %a semantic model encapsulates the language rules, giving you an easy way to make these distinctions.
 
-In order to obtain more information, IN BLA creates a declaration table, which takes the form of a tree, that holds where namespaces and types are declared in source code.
-	%åbenbart en del af en compilation
-	
-%Compilation object, which is 
+%sequnetially
+The third phase involves creating a \bscode{Compilation} type object, specifically a \bscode{CSharpCompilation} type as we focus on the C\# compiler, which contains information that is necessary for further compilation e.g. all assembly references, compiler options and source code. In the creation of a \bscode{CSharpCompilation} object, a declaration table is created which keeps track of type and namespace declarations in source code\cite{sadovRoslynPerf}. Additionally the \bscode{Compilation} object contains a symbol table, which holds all symbols declared in source code or imported assemblies. That is, each namespace, type, method, property, field, event, parameter and local variable is represented as a symbol and stored in the symbol table\cite[p. 14]{ng2012roslyn}. Each type of symbol has its own symbol class f.x. \bscode{MethodSymbol} that derives from the base \bscode{Symbol} class. The symbol table can be accessed by the \bscode{GlobalNamespace} property, as a tree of symbols, rooted by the global namespace symbol. Furthermore there also exists a range of methods and properties to obtain symbols.\toby{Er ikke helt sikker på om symbol tabellen først bliver udfylt i næste fase, men den ligger i hvert fald på Compilation}
+%compilation is immutable, like syntax trees
 
-%types and namespaces
-%namespaces, classes, interfaces, structs, and delegate declarations
+In order to enable semantic analysis, the fourth phase entails fully binding all symbols. That is, determining what each symbol actually refers to, e.g. what namespace and overloaded method, a particular method refers to. If there are any problems with symbol binding, like inheritance loops, they will be reported. Additionally, the binding phase also creates a bound tree, which is Roslyn's internal tree used for emitting. In \cite{roslynBinder} they state their reason for not exposing bound tree through an \ac{API}; ``\textit{it has been a long standing design decision not to expose the bound tree. The shape of the bound nodes is actually pretty fragile compared to the shape of the syntax nodes and can be changed around a lot depending on what scenarios need to be addressed. We might store something somewhere one day for performance and remove it the next for compatibility or vice versa}''.\toby{Skal vi have det med eller ej? Mest for at fortælle det er der, men det er ikke noget vi vil pille i.}
+%concurrent stage
+
+%errors 
+Finally, in the last phase all the information built up so far is emitted as an assembly.
+
+%dataflow og controlflow analyse sker også heri (nævn evt.)
+%codegen, emitter og flowanalysis folders
+%og i core: codegen og emitter (evt. skriv noget om corresponding i core, når jeg beskriver de to i csharp folderen. Eller deres corresponding base classes in core (hvilket ligger i de folere))
+
+%***HUSK:
+%også methodcompiler.cs i Compiler folder (sker faktisk inden endelig emitting)
+	%bruger visitor pattern
+%herefter controlflow pass (visistere bound tree)
+%herefter dataflow pass
+
+	
+%CSharpCompilation GlobalNamespace
+
+%Binder =  A Binder converts names in to symbols and syntax nodes into bound trees. It is context dependent, relative to a location in source code.
 
 %second phase on fig 1.1 (tror jeg) - skal være sikker på hvad symbols er
 %forklaret mere om den i CSharp > CSharpCodeAnalysis (Portable) > Declarations > Declaration.cs og DeclarationTable.cs (Table indeholder forskellige typer af Declaration, såsom SingleTypeDeclaration)
@@ -206,15 +227,15 @@ In order to obtain more information, IN BLA creates a declaration table, which t
 
 %***Mangler hvad fase 2 er i fig.1.1, eller hvor det sker præcist.
 
-The fourth phase declaration diagnostics (fase 3 i fig 1.1)
+%*The fourth phase declaration diagnostics (fase 3 i fig 1.1)
 %third phase of fig 1.1 (fully bind)
 %resultatet er et bound træ, hvilket er en internal repræsentation for Roslyn (som ikke er tilgængelig igennemt API'et)
 %symbol visitor sker heri (men den tager et symbol, så det må ske før)
 
-The fifth IL emitting
+%The fifth IL emitting
 %the fourth
 
-The sixth serialization of portable executable file and pdb file (used for debugging).
+%The sixth serialization of portable executable file and pdb file (used for debugging).
 
 %pdb info:
 	%http://www.wintellect.com/devcenter/jrobbins/pdb-files-what-every-developer-must-know
