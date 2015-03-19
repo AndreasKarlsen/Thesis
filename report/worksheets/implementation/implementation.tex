@@ -115,6 +115,54 @@ Description of selected algorithm.
 %Avoiding deadlocks.
 
 \section{Implementation Description}
+The \ac{STM} system which executes transactions in \stmnamesp is implemented in as a C\# library. Transactions are started by using the one of the overloads of the static \bscode{Atomic} method on the \bscode{STMSystem} class. The static \bscode{Atomic} is overloaded with support for transaction with and without return values as well as specification of a zero to many \bscode{orelse} blocks.
+
+\begin{lstlisting}[label=lst:library_atomic,
+  caption={Library Transaction Definition},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  public class Program {
+    
+    public static void Main(string[] args)
+    {
+      STMSystem.Atomic(() =>
+      {
+        //Transaction body
+      });
+
+      var result = STMSystem.Atomic<int>(() =>
+      {
+        //Transaction body
+        return 1;
+      });
+      
+      STMSystem.Atomic(() =>
+      {
+        //Transaction body
+      },
+      () =>
+      {
+        //orelse body
+      });
+    }
+  }
+\end{lstlisting}
+
+%TMVars
+%TMVar operations
+
+%Retry
+%Nesting
+
 Key parts of the implementation including code examples.
 
 \kasper[inline]{obstruction freedom useful in practice}

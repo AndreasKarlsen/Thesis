@@ -37,6 +37,7 @@ namespace STMTester
             Console.ReadKey();
         }
 
+
         private static void DynamicTest()
         {
             var dyna =  new TMVar<dynamic>(0);
