@@ -1,15 +1,19 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
+\worksheetstart{\stmnamesp Design and Integration}{0}{Februar 10, 2015}{}{../../}
+This chapter describes the design decisions of \stmname, the integration with existing language features and its syntax \& semantics. The design of \stmnamesp impacts the way it can be integrated with C\#. Thus we will make the design, so it can adhere to the requirements made in \bsref{sec:stm_requirements} while integrating seamlessly with existing language features. We introduce the atomic block and transactional variables in \bsref{sec:stm_design}. The different kinds of parameters and their integration with transaction is described in \bsref{sec:parameter_design}. This is followed by an example of the new syntax, demonstrated in \bsref{sec:example_design}. The \bscode{retry} and \bscode{orelse} keywords are introduced in \bsref{sec:sync_design} for supporting conditional synchronization. \bsref{sec:nesting_design} shows how \stmnamesp supports nesting of transactions. The decisions made in this chapter, will be the requirements of the implementation of \stmnamesp, which will be described in \bsref{chap:implementation}.
+\worksheetstart{\stmnamesp Design and Integration}{0}{Februar 10, 2015}{}{../../}
+This chapter describes the design decisions of \stmname, the integration with existing language features as wells \stmname's syntax \& semantics. The design of \stmnamesp impacts the way it can be integrated with C\#. Thus we will make the design, so it can adhere to the requirements made in \bsref{sec:stm_requirements} while integrating seamlessly with existing language features. We introduce the atomic block and transactional variables in \bsref{sec:stm_design}. The different kinds of parameters and their integration with transaction is described in \bsref{sec:parameter_design}. This is followed by an example of the new syntax, demonstrated in \bsref{sec:example_design}. The \bscode{retry} and \bscode{orelse} keywords are introduced in \bsref{sec:sync_design} for supporting conditional synchronization. \bsref{sec:nesting_design} shows how \stmnamesp supports nesting of transactions. The decisions made in this chapter, will be the requirements for the implementation of \stmnamesp, which will be described in \bsref{chap:implementation}.
 \worksheetstart{Design and Integration}{0}{Februar 10, 2015}{}{../../}
-This chapter describes the design decisions of \stmname, the integration with existing language features and its syntax \& semantics. The design of \stmnamesp impacts the way it can be integrated with C\#. Thus we will make the design, so it can adhere to the requirements made in \bsref{sec:stm_requirements} while integrating seamlessly with existing language features. We introduce the atomic block and transactional variables in \bsref{sec:stm_design}. The different kinds of parameters and their integration with transaction is described in \bsref{sec:parameter_design}. This is followed by an example of the new syntax, demonstrated in \bsref{sec:example_design}. The \bscode{retry} and \bscode{orelse} keywords are introduced in \bsref{sec:sync_design} for supporting conditional synchronization. \bsref{sec:nesting_design} shows how \stmnamesp supports nesting of transactions. The decisions made in this chapter, will be the requirements of the implementation of \stmname, which will be described in \bsref{chap:implementation}.
+This chapter describes the design decisions of \stmname, the integration with existing language features as well as \stmname's syntax \& semantics. The design of \stmnamesp impacts the way it can be integrated with C\#. Thus we will make the design, so it can adhere to the requirements made in \bsref{sec:stm_requirements} while integrating seamlessly with existing language features. We introduce the atomic block and transactional variables in \bsref{sec:stm_design}. The different kinds of parameters and their integration with transaction is described in \bsref{sec:parameter_design}. This is followed by an example of the new syntax, demonstrated in \bsref{sec:example_design}. The \bscode{retry} and \bscode{orelse} keywords are introduced in \bsref{sec:sync_design} for supporting conditional synchronization. \bsref{sec:nesting_design} shows how \stmnamesp supports nesting of transactions. The decisions made in this chapter, will be the requirements for the implementation of \stmname, which will be described in \bsref{chap:implementation}.
 
-Throughout this chapter, we will make use of a notation similar to Extended Bacus-Naur Form. It is used for descriptions of the proposed syntax extensions, with ? signaling 0 or 1 and + signaling 0 or more. Parentheses used for grouping as such ( item1, item2 ). Items formatted as \bscode{Non-Term} are non terminals, usually keywords, while terminals are formatted as such, $terminal$. 
+Throughout this chapter, we will make use of a notation similar to Extended Bacus-Naur Form. It is used for descriptions of the proposed syntax extensions, with ? signaling 0 or 1 occurrences and + signaling 0 or more occurrences. Parentheses used for grouping as such ( item1, item2 ). Items formatted as \bscode{Non-Term} are non terminals, usually keywords, while terminals are formatted as such, $terminal$. 
 \label{chap:stm_design}
 
 \section{Atomic Block \& Transactional Variables}\label{sec:stm_design}
 As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply language integrated support for defining transaction scopes as well as declaration of transactional variables. For this purpose \stmnamesp extends C\# with the \bscode{atomic} keyword. The \bscode{atomic} keyword will serve as both a statement denoting a transaction scope as well a modifier applicable to the definition of variables. 
 
 \subsection{Transactional Block}
-The definition of a transaction takes the format \bscode{atomic} \{ $S$ \}, where $S$ is the general class of C\# statements. All statements inside the atomic block will be perceived as executed in one atomic step, by other transactions and non-transactional code.
+The definition of a transaction takes the format \bscode{atomic} \{ $S$ \}, where $S$ is the general class of C\# statements. Any assignments to transactional variable inside an atomic block will be perceived as executed in one atomic step, by other transactions and non-transactional code.
 
 \subsection{Transactional Field}
 The definition of a transactional field takes the format:
@@ -19,7 +23,26 @@ $field$-$modifiers$ $type$ $name$ ( , $name$ )+ ;
 
 where $field$-$modifiers$ includes the new \bscode{atomic} keyword as well as existing C\# modifiers such as \bscode{public}, \bscode{private} and \bscode{static} but not the \bscode{readonly} and \bscode{const} modifiers. 
 
-The $type$ can be any existing or user-defined type including the \bscode{dynamic} keyword. The calculation of \bscode{initial-value} follows the same rules as standard C\# field initializers\cite[p. 40]{sestoft2011c}. 
+The $type$ can be any existing or user-defined type including the \bscode{dynamic} keyword. The calculation of \bscode{initial-value} follows the same rules as standard C\# field initializers\cite[p. 40]{sestoft2011c}.
+
+\bsref{lst:design_transactional_fields} presents an example of atomic field declarations.
+
+\begin{lstlisting}[label=lst:design_transactional_fields,
+  caption={Local Transactional Variable},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  private atomic string s = "abc";
+  public atomic static int x, y, z;
+\end{lstlisting}
 
 \subsection{Transactional Properties}
 C\# facilitates a language feature which eases the encapsulation of fields typically used in \ac{OOP}. The feature is known as properties, and can be in an automatic or manual form. The formats in mentioned order are\cite[p. 65]{sestoft2011c}:
@@ -31,7 +54,7 @@ where $field$-$modifiers$ includes the new \bscode{atomic} keyword, and $method$
 
 The automatic properties generates a backing field automatically, but the getter and setter cannot have specialized functionality. Whereas the manual property lets the programmer specify the backing field manually, allowing him to specialize the functionality of the getter and setter, i.e. used for implementing the observer pattern.
 
-We want to the keep option of automatic property in \stmnamesp even though the backing field should be atomic. This can be done, by using the \bscode{atomic} keyword as exemplified in \bsref{lst:auto_atomic_property}. If the programmer wants to use the manual property, he can denote the backing field as \bscode{atomic} manually, as seen in \bsref{lst:atomic_property}. 
+Atomic automatic properties simplifies the simplifies the implementation whenever the property serves as a simple getter and setter. An example of such a property is shown in \bsref{lst:auto_atomic_property}. If the programmer wishes to supply additional logic for the get and set operations the manual property can be made atomic by accessing a atomic backing field as demonstrated in \bsref{lst:atomic_property}. 
 
 \begin{lstlisting}[label=lst:auto_atomic_property,
   caption={Automatic Transactional Properties},
@@ -99,22 +122,9 @@ where $var$-$dcl$ is defined as $name$ or $name$ = $expr$. As with transactional
   stringstyle=\color{redstrings},
   morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
 
-  class Point {
-    public atomic int X { get; set; }
-    public atomic int Y { get; set; }
-    public int SwapPosition(Point other) {
-      atomic var tmpX = other.X;
-      atomic var tmpY = other.Y;
-      atomic { 
-        other.X = this.X;
-        other.Y = this.Y;
-        this.X = tmpX;
-        this.Y = tmpY;
-      }
-    }    
-  }
+  atomic var s = "abc";
+  atomic int i = 12;  
 \end{lstlisting}
-\andreas[inline]{Needs a new example, the other coordinates could changes before entering the atomic block. Probably use threads locally inside the method}
 
 \section{Transactional Parameters}\label{sec:parameter_design}
 A parameter is a special kind of variable, used to pass values or variable references to methods (and constructors). The actual value of the parameter, is determined by the arguments passed to the method\cite[p. 16]{csharp2013specificaiton}\cite[p. 14]{sestoft2011c}. In C\# there exist four different kinds of parameters. Their semantics and integration with \stmnamesp will be discussed in the following sections.
@@ -133,10 +143,36 @@ For declaration of transactional parameters the format is as follows:
 
 where $param$-$modifier$ represents C\#'s \bscode{ref} and \bscode{out} keywords. Just as previously $type$ can be any existing or user defined type including the \bscode{dynamic} keyword. The \bscode{atomic} keyword can not be combined with the C\# \bscode{params} parameter type or optional parameters\cite[p. 42]{sestoft2011c}.
 
+\bsref{lst:design_value_parameter} presents a example of a atomic value parameter declaration.
+
+\begin{lstlisting}[label=lst:design_value_parameter,
+  caption={Value Parameter},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  public void Method(atomic int x, atomic string s)
+  {
+  	//Work with transactional parameters
+  }
+    
+\end{lstlisting}
+
+
+
 \subsection{Transactional Reference Parameters}
 According to \cite[p. 97]{csharp2013specificaiton}: ``A parameter declared with a ref modifier is a reference parameter.'' As opposed to a value parameter, a reference parameter uses call-by-reference semantics, thus it is the actual reference used as argument, not a copy. Consequently, changes to the argument will affect outside the method scope, regards of the parameter being a value or reference type. Changes to the parameter will take effect immediately, both in and outside of the method scope\cite[p. 42]{sestoft2011c}. Additionally, a variable is required to be instantiated before it is passed in as a reference parameter\cite[p. 97]{csharp2013specificaiton}.
 
 In \stmnamesp, a reference parameter can be marked as atomic, and becomes a \ac{TRP}. A \ac{TRP} differs from a reference parameter by being tracked in transactions. Assignments to a \ac{TRP} will not take effect outside of the transaction immediately, but when the transaction commits. This is a design choice made to enforce atomicity, as immediate changes to a \ac{TRP} would enable reading intermediate transaction states. A note worthy detail is, that changes made to a \ac{TRP} through side-effects will be immediate, as we do not track side-effects.
+
+\bsref{lst:atomic_ref} presents a example of a \bscode{Point} class declaring two \ac{TRP}'s as parameters for the \bscode{ChangeMe} method.
 
 \begin{lstlisting}[label=lst:atomic_ref,
   caption={Transactional Reference Parameter},
@@ -154,7 +190,7 @@ In \stmnamesp, a reference parameter can be marked as atomic, and becomes a \ac{
   class Point {
     public atomic int X { get; set; }
     public atomic int Y { get; set; }
-    public int ChangeMe(atomic ref int x, atomic ref int y) {
+    public void ChangeMe(atomic ref int x, atomic ref int y) {
       atomic { 
         x = this.X;
         y = this.Y;
@@ -164,7 +200,7 @@ In \stmnamesp, a reference parameter can be marked as atomic, and becomes a \ac{
 \end{lstlisting}
 
 \subsection{Transactional Output Parameters}
-According to \cite[p. 97]{csharp2013specificaiton}: ``A parameter declared with an out modifier is an output parameter.'' An output parameter behaves as a reference parameter, except that it does not need to be instantiated before being passed in as an argument. Additionally, every execution path in the method must assign a value to the variable\cite[p. 42]{sestoft2011c}. 
+According to \cite[p. 97]{csharp2013specificaiton}: ``A parameter declared with an out modifier is an output parameter.'' An output parameter behaves as a reference parameter, except that it does not need to be instantiated before being passed as an argument. Additionally, every execution path in the method must assign a value to the variable\cite[p. 42]{sestoft2011c}. 
 
 In \stmnamesp, an output parameter can be marked as atomic, and it becomes a \ac{TOP}. Similar to \ac{TRP}, a \ac{TOP} will be tracked in transactions, and assignments made to it in transactions will take effect outside of the transaction when it commits. The reasoning for this, is the same as for \ac{TRP}.
 
@@ -185,7 +221,7 @@ In \stmnamesp, an output parameter can be marked as atomic, and it becomes a \ac
   class Point {
     public atomic int X { get; set; }
     public atomic int Y { get; set; }
-    public int AssignMe(atomic out int x, atomic out int y) {
+    public void AssignMe(atomic out int x, atomic out int y) {
       atomic { 
         x = this.X;
         y = this.Y;
