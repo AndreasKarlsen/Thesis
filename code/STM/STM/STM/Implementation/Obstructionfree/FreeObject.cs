@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Schema;
 using Spring.Threading.AtomicTypes;
-using STM.Exceptions;
+using STM.Implementation.Exceptions;
 using STM.Interfaces;
 using ThreadState = System.Threading.ThreadState;
 

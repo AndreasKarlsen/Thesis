@@ -49,12 +49,13 @@
     <Compile Include="Collections\Queue.cs" />
     <Compile Include="Collections\SingleItemBuffer.cs" />
     <Compile Include="Collections\SkipList.cs" />
-    <Compile Include="Exceptions\STMAbortException.cs" />
-    <Compile Include="Exceptions\STMAccessViolationException.cs" />
-    <Compile Include="Exceptions\STMException.cs" />
-    <Compile Include="Exceptions\STMInvalidRetryException.cs" />
-    <Compile Include="Exceptions\STMRetryException.cs" />
+    <Compile Include="Implementation\Exceptions\STMAbortException.cs" />
+    <Compile Include="Implementation\Exceptions\STMAccessViolationException.cs" />
+    <Compile Include="Implementation\Exceptions\STMException.cs" />
+    <Compile Include="Implementation\Exceptions\STMInvalidRetryException.cs" />
+    <Compile Include="Implementation\Exceptions\STMRetryException.cs" />
     <Compile Include="Implementation\Lockbased\AtomicLock.cs" />
+    <Compile Include="Implementation\Lockbased\TMInt.cs" />
     <Compile Include="Interfaces\ILock.cs" />
     <Compile Include="Implementation\Lockbased\LockObject.cs" />
     <Compile Include="Implementation\Lockbased\STMSystem.cs" />
@@ -73,6 +74,9 @@
     <Compile Include="Implementation\Obstructionfree\FreeStmSystem.cs" />
     <Compile Include="Transaction.cs" />
     <Compile Include="Util\IDGenerator.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="TODO.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

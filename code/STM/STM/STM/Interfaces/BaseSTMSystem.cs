@@ -1,5 +1,5 @@
 using System;
-using STM.Exceptions;
+using STM.Implementation.Exceptions;
 
 namespace STM.Interfaces
 {

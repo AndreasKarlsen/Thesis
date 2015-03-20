@@ -4,19 +4,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace STM.Exceptions
+namespace STM.Implementation.Exceptions
 {
-    public class STMAbortException : STMException
+    public class STMRetryException : STMException
     {
-        public STMAbortException()
+        public STMRetryException()
         {
-            
+
         }
 
-        public STMAbortException(string message)
+        public STMRetryException(string message)
             : base(message)
         {
-
+                
         }
     }
 }

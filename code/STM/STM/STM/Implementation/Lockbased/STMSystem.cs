@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using STM.Interfaces;
 using System.Threading;
-using STM.Exceptions;
+using STM.Implementation.Exceptions;
 using System.Diagnostics;
 
 namespace STM.Implementation.Lockbased

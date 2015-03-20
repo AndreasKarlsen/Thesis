@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Schema;
 using Spring.Threading.AtomicTypes;
-using STM.Exceptions;
+using STM.Implementation.Exceptions;
 
 namespace STM.Interfaces
 {

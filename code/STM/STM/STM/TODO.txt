@@ -1,0 +1,2 @@
+﻿Commit non-transactional write
+Use valdate method for commit validation

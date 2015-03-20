@@ -13,42 +13,42 @@ namespace STM.Implementation.Lockbased
     public abstract class BaseLockObject
     {
         protected readonly ILock ReentrantLock = new ReentrantLock();
-        internal readonly IList<ManualResetEvent> WaitHandles = new List<ManualResetEvent>();
+        protected readonly IList<ManualResetEvent> WaitHandles = new List<ManualResetEvent>();
         protected readonly object WaitHandlesLock = new object();
         //internal readonly Semaphore WaitHandle = new Semaphore(0, 99);
         protected int WaitCount = 0;
 
         private volatile int _stamp;
 
-        public int TimeStamp
+        internal int TimeStamp
         {
             get { return _stamp; }
-            internal set { _stamp = value; }
+            set { _stamp = value; }
         }
 
-        public abstract void CommitValue(object o);
+        internal abstract void CommitValue(object o);
 
-        public void Lock()
+        internal void Lock()
         {
             ReentrantLock.Lock();
         }
 
-        public bool TryLock(int milisecs)
+        internal bool TryLock(int milisecs)
         {
             return ReentrantLock.TryLock(milisecs);
         }
 
-        public void Unlock()
+        internal void Unlock()
         {
             ReentrantLock.UnLock();
         }
 
-        public bool IsLocked()
+        internal bool IsLocked()
         {
             return ReentrantLock.IsLocked;
         }
 
-        public bool IsLockedByCurrentThread()
+        internal bool IsLockedByCurrentThread()
         {
             return ReentrantLock.IsLockedByCurrentThread;
         }

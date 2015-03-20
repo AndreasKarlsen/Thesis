@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using STM.Interfaces;
-using STM.Exceptions;
+using STM.Implementation.Exceptions;
 
 namespace STM.Implementation.Lockbased
 {
@@ -117,5 +117,6 @@ namespace STM.Implementation.Lockbased
             }
         }
 
+        
     }
 }

@@ -4,17 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace STM.Exceptions
+namespace STM.Implementation.Exceptions
 {
-    public class STMRetryException : STMException
+    public class STMException : Exception
     {
-        public STMRetryException()
+        public STMException()
         {
-
+            
         }
 
-        public STMRetryException(string message)
-            : base(message)
+        public STMException(string message) : base(message)
         {
                 
         }

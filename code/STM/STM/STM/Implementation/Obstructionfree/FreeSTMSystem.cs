@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using STM.Exceptions;
+using STM.Implementation.Exceptions;
 using STM.Interfaces;
 
 namespace STM.Implementation.Obstructionfree

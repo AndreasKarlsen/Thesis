@@ -197,10 +197,10 @@ The library supports the \bscode{retry} construct via the static \bscode{Retry} 
   }
 \end{lstlisting}
 
-The \ac{STM} library supports both lexical and dynamic nesting of transactions. Lexical nesting is achieved simply by specifying a transaction within the body of another transaction while dynamic nesting is achieved trough calling methods defined using transactions within the body of another transactions.
+The \ac{STM} library supports both lexical and dynamic nesting of transactions. Lexical nesting is achieved simply by specifying a transaction within the body of another transaction while dynamic nesting is achieved trough calling methods defined using transactions within the body of another transactions. Nesting is done under closed nesting semantics as described in \bsref{sec:stm_req_nesting}. A example of nesting using the C\# library is shown in \bsref{lst:library_nesting}. Here lines two 6-15 shows a lexically nested transaction while lines lines 20-24 show two dynamically nested transactions as the \bscode{Enqueue} and \bscode{Dequeue} methods are themselves defined using a transactions. 
 %Nesting
-\begin{lstlisting}[label=lst:library_retry,
-  caption={Library \bscode{Retry}},
+\begin{lstlisting}[label=lst:library_nesting,
+  caption={Library Nesting},
   language=Java,  
   showspaces=false,
   showtabs=false,
@@ -239,8 +239,6 @@ The \ac{STM} library supports both lexical and dynamic nesting of transactions. 
     }
   }
 \end{lstlisting}
-
-Key parts of the implementation including code examples.
 
 \kasper[inline]{obstruction freedom useful in practice}
 \kasper[inline]{pending commit, permissiveness}

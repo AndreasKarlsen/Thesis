@@ -27,11 +27,6 @@ namespace STM.Implementation.Lockbased
             set { SetValue(value); }
         }
 
-        public static implicit operator T(LockObject<T> tmObject)
-        {
-            return tmObject.Value;
-        }
-
         public virtual void SetValue(T value)
         {
             _version = value;
@@ -46,15 +41,19 @@ namespace STM.Implementation.Lockbased
             return tmp;
         }
 
-        public virtual bool Validate()
+        public override string ToString()
         {
-            var me = Transaction.LocalTransaction;
-            switch (me.Status)
+            return _version.ToString();
+        }
+
+        internal virtual bool Validate(Transaction transaction)
+        {
+            switch (transaction.Status)
             {
                 case Transaction.TransactionStatus.Committed:
                     return true;
                 case Transaction.TransactionStatus.Active:
-                    return TimeStamp <= me.ReadStamp;
+                    return TimeStamp <= transaction.ReadStamp;
                 case Transaction.TransactionStatus.Aborted:
                     return false;
                 default:
@@ -62,9 +61,8 @@ namespace STM.Implementation.Lockbased
             }
         }
 
-        public override void CommitValue(object o)
+        internal override void CommitValue(object o)
         {
-
 #if DEBUG
             Transaction me = Transaction.LocalTransaction;
             Console.WriteLine("Transaction: " + me.ID + " commited:" + o);
@@ -79,5 +77,53 @@ namespace STM.Implementation.Lockbased
                 ClearWaitHandles();
             }
         }
+
+        #region Operators
+
+        public static bool operator ==(LockObject<T> tmvar, T other)
+        {
+            return (dynamic)tmvar.Value == (dynamic)other;
+        }
+
+        public static bool operator !=(LockObject<T> tmvar, T other)
+        {
+            return (dynamic)tmvar.Value != (dynamic)other;
+        }
+
+        public static bool operator ==(LockObject<T> tmvar, LockObject<T> other)
+        {
+            return (dynamic)tmvar.Value == (dynamic)other.Value;
+        }
+
+        public static bool operator !=(LockObject<T> tmvar, LockObject<T> other)
+        {
+            return (dynamic)tmvar.Value != (dynamic)other.Value;
+        }
+
+        public static implicit operator T(LockObject<T> tmObject)
+        {
+            return tmObject.Value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is LockObject<T>)
+            {
+                return this == (LockObject<T>)obj;
+            }
+            else if (obj is T)
+            {
+                return this == (T)obj;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return _version.GetHashCode();
+        }
+
+        #endregion Operators
     }
 }
