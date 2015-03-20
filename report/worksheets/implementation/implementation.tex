@@ -115,7 +115,8 @@ Description of selected algorithm.
 %Avoiding deadlocks.
 
 \section{Implementation Description}
-The \ac{STM} system which executes transactions in \stmnamesp is implemented in as a C\# library. Transactions are started by using the one of the overloads of the static \bscode{Atomic} method on the \bscode{STMSystem} class. The static \bscode{Atomic} is overloaded with support for transaction with and without return values as well as specification of a zero to many \bscode{orelse} blocks.
+\kasper[inline]{Description of examples}
+The \ac{STM} system which executes transactions in \stmnamesp is implemented as a C\# library. Transactions are started by using the one of the overloads of the static \bscode{Atomic} method on the \bscode{STMSystem} class. The static \bscode{Atomic} is overloaded with support for transaction with and without return values as well as specification of a zero to many \bscode{orelse} blocks. \bsref{lst:library_atomic} presents a example of transaction definitions. On lines 5-8 the simple transaction definition corresponding to the \bscode{atomic} block is shown. Lines 10-14 depicts the definition of a transaction with a return value. Finally lines 16-23 depict the definition of a transaction with a associated \bscode{orelse} block. 
 
 \begin{lstlisting}[label=lst:library_atomic,
   caption={Library Transaction Definition},
@@ -130,9 +131,9 @@ The \ac{STM} system which executes transactions in \stmnamesp is implemented in 
   stringstyle=\color{redstrings},
   morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
 
-  public class Program {
+  public class TransactionExamples {
     
-    public static void Main(string[] args)
+    public static void AtomicExample
     {
       STMSystem.Atomic(() =>
       {
@@ -157,11 +158,87 @@ The \ac{STM} system which executes transactions in \stmnamesp is implemented in 
   }
 \end{lstlisting}
 
-%TMVars
-%TMVar operations
+Transactional variables are created by declaring instances of the generic \bscode{TMVar} class. Instances of the \bscode{TMVar} class wraps a object to which transaction transactional access is provided.  The constructor of the \bscode{TMVar} class takes a type parameter specifying the type which the \bscode{TMVar} instance wraps.
 
-%Retry
+The \bscode{TMVar} class exposes methods and properties for getting and setting the wrapped object. Any access trough these operations is tracked by the \ac{STM} system, both transactional and non-transactional. Furthermore the \bscode{TMVar} class uses C\#'s implicit conversion feature to allow a \bscode{TMVar} to implicit be converted to the enclosed value whenever the \bscode{TMVar} occurs as an r-value. Special types, deriving from \bscode{TMVar}, is supplied for the common types \bscode{int}, \bscode{long}, \bscode{float} and \bscode{double}. These types supply transactional support for common operations such as \bscode{+}, \bscode{-}, \bscode{*}, \bscode{/}, \bscode{++} and \bscode{--} which are executed on the enclosed object.
+\kasper[inline]{Example here}
+
+The library supports the \bscode{retry} construct via the static \bscode{Retry} method on the \bscode{STMSystem} class. The retry method can be called from both in and outside transactions but will only have an effect when called inside transactions. \bsref{lst:library_retry} presents the example of how the \bscode{Retry} method can be used. Lines 5-11 shows a transactions dequeing and item from a shared buffer. On line 8 the \bscode{Retry} method is used to initiate a retry in case the queue is empty. The cell on line 15 has no effect as it is not enclosed in a transaction.
+
+\begin{lstlisting}[label=lst:library_retry,
+  caption={Library \bscode{Retry}},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  public class TransactionExamples {
+    
+    public static void RetryExample(Queue<Person> buffer)
+    {
+      Person result = STMSystem.Atomic(() =>
+      {
+        if (buffer.Count == 0)
+          STMSystem.Retry(); //Initiates retry
+
+        return buffer.Dequeue();
+      });
+      
+      //Work with the result
+
+      STMSystem.Retry(); //Has no effect
+    }
+  }
+\end{lstlisting}
+
+The \ac{STM} library supports both lexical and dynamic nesting of transactions. Lexical nesting is achieved simply by specifying a transaction within the body of another transaction while dynamic nesting is achieved trough calling methods defined using transactions within the body of another transactions.
 %Nesting
+\begin{lstlisting}[label=lst:library_retry,
+  caption={Library \bscode{Retry}},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  public class TransactionExamples {
+    
+    public static void NestingExample()
+    {
+      TMVar<string> s = new TMVar<string>(string.Empty);
+      var result = STMSystem.Atomic(() =>
+      {
+        s.Value = "abc";
+        STMSystem.Atomic(() =>
+        {
+          s.Value = s + "def";
+        });
+
+        return s.Value;
+      });
+
+      Queue<Person> buffer1 = new Queue<Person>();
+      Queue<Person> buffer2 = new Queue<Person>();
+
+      STMSystem.Atomic(() =>
+      {
+        var item = buffer1.Dequeue();
+        buffer2.Enqueue(item);
+      });
+    }
+  }
+\end{lstlisting}
 
 Key parts of the implementation including code examples.
 

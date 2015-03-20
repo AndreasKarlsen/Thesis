@@ -12,6 +12,12 @@ namespace STM.Implementation.Lockbased
     public class TMVar<T> : LockObject<T>
     {
 
+        public TMVar()
+            : base()
+        {
+
+        }
+
         public TMVar(T value)
             : base(value)
         {

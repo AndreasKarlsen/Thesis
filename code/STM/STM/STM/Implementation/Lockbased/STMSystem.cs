@@ -216,6 +216,10 @@ namespace STM.Implementation.Lockbased
 
         public static void Retry()
         {
+            var transaction = Transaction.LocalTransaction;
+            if (transaction.Status == Transaction.TransactionStatus.Committed)
+                return;
+
             throw new STMRetryException();
         }
 

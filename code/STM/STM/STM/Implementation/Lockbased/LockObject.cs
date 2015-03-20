@@ -11,6 +11,11 @@ namespace STM.Implementation.Lockbased
     {
         private T _version;
 
+        public LockObject()
+        {
+            _version = default(T);
+        }
+
         public LockObject(T value)
         {
             _version = value;

@@ -92,5 +92,23 @@ namespace STMUnitTest
 
             Assert.IsTrue(tm2.Value == 2500);
         }
+
+        [TestMethod]
+        public void NestingEnclosingWriteTest()
+        {
+            TMVar<string> s = new TMVar<string>(string.Empty);
+            var result = STMSystem.Atomic(() =>
+            {
+                s.Value = "abc";
+                STMSystem.Atomic(() =>
+                {
+                    s.Value = s + "def";
+                });
+
+                return s.Value;
+            });
+
+            Assert.AreEqual<string>(result, "abcdef");
+        }
     }
 }
