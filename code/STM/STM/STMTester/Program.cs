@@ -398,7 +398,7 @@ namespace STMTester
         private static void Test3()
         {
             STMObject<ValueHolder> result = new FreeObject<ValueHolder>(new ValueHolder(10));
-            var system = FreeStmSystem.GeInstance();
+            var system = FreeStmSystem.GetInstance();
 
             var t1 = new Thread(() =>
             {
@@ -429,7 +429,7 @@ namespace STMTester
 
         private static void Test2()
         {
-            var system = FreeStmSystem.GeInstance();
+            var system = FreeStmSystem.GetInstance();
             STMObject<ValueHolder> fo = new FreeObject<ValueHolder>(new ValueHolder(5));
             var result = system.Atomic(() =>
             {
@@ -441,7 +441,7 @@ namespace STMTester
 
         private static void Test1()
         {
-            var system = FreeStmSystem.GeInstance();
+            var system = FreeStmSystem.GetInstance();
             STMObject<ValueHolder> fo = new FreeObject<ValueHolder>(new ValueHolder(15));
 
             var t1 = new Thread(() =>
