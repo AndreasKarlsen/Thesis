@@ -1,14 +1,13 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Roslyn}{0}{Februar 10, 2015}{}{../../}
-This chapter presents a conceptual overview of the Roslyn project. In BLA we describe BLA\toby{Ændre dette når vi ved hvad der skal være i kapitlet}
+This chapter presents an overview of the Microsoft Roslyn project. In \bsref{sec:intro} we give an introduction to the Roslyn project. In \bsref{sec:inside_ros} we describe the inside of Roslyn, which includes the inner architecture and compilation phases. Lastly in \bsref{sec:syntax_trees} we give a detailed description of Roslyn's syntax trees, as that is where we will integrate \stmnamesp in C\#.\toby{Det skal vi enten skrive før hvorfor vil gør det, eller refere til længere nede hvor vi skriver hvorfor vi gør.}
 
-\section{Introduction}
+\section{Introduction}\label{sec:intro}
 Project Roslyn is Microsoft's initiative of completely rewriting the C\# and \ac{VB} compilers, using their own managed code language. That is, the C\# compiler is written in C\# and the \ac{VB} compiler in \ac{VB}. Roslyn was released as open source at the Microsoft Build Conference 2014\cite{csharpBuild}.
 
 Beyond changing the languages the compilers are written in, Roslyn provides a new approach to compiler interaction and usage. Traditionally a compiler is treated as a black box where it is given source files as input, magic happens in the middle, and out comes objects files or assemblies\cite[p. 3]{ng2012roslyn}. During compilation the compiler builds a deep knowledge about the code, unavailable to the programmer, which is discarded once the compilation is done. This is where Roslyn differs, as it exposes the code analysis of the compiler by providing an \ac{API}, which allows the programmer to obtain information about the different compilation phases\cite[p. 3]{ng2012roslyn}. 
 
-The compiler \acp{API} available are illustrated in \bsref{fig:api_vs_compiler_pipeline} where each \ac{API} corresponds to a phase in the compiler pipeline. In the first phase the source code is turned into tokens and parsed according to the language grammar. This phase is exposed through an \ac{API} as a syntax tree. In the second phase declarations, i.e. namespaces and types from code and imported metadata, are analyzed to form named symbols. This phase is exposed as a hierarchical symbol table. In the third phase identifiers in the code are matched to symbols.\toby{Det inkluderer type check og scope check også?} This phase is exposed as a model which exposes the result of the semantic analysis. In the last phase, information gathered throughout compilation is used to emit an assembly. This phase is exposed as an \ac{API} that produces IL bytecode\cite[p. 3-4]{ng2012roslyn}.
-%second phase:  a kind of an index to the sources that tells where namespaces and types are declared
+The compiler \acp{API} available are illustrated in \bsref{fig:api_vs_compiler_pipeline} where each \ac{API} corresponds to a phase in the compiler pipeline. In the first phase the source code is turned into tokens and parsed according to the language grammar. This phase is exposed through an \ac{API} as a syntax tree. In the second phase declarations, i.e. namespaces and types from code and imported metadata, are analyzed to form named symbols. This phase is exposed as a hierarchical symbol table. In the third phase identifiers in the code are matched to symbols. This phase is exposed as a model which exposes the result of the semantic analysis. In the last phase, information gathered throughout compilation is used to emit an assembly. This phase is exposed as an \ac{API} that produces IL bytecode\cite[p. 3-4]{ng2012roslyn}.
 
 \begin{figure}[htbp]
 \centering
@@ -19,8 +18,8 @@ The compiler \acp{API} available are illustrated in \bsref{fig:api_vs_compiler_p
 
 Knowledge obtained through the \acp{API} can be valuable in order to create tools that analyze and transform C\# or \ac{VB} code. Furthermore Roslyn allows interactive use of the languages using a \acs{REPL}\footnote{\url{http://blogs.msdn.com/b/csharpfaq/archive/2012/01/30/roslyn-ctp-introduces-interactive-code-for-c.aspx}}, and embedding of  C\# and \ac{VB} in a \ac{DSL}\cite[p. 3]{ng2012roslyn}.
 
-\section{Inside Roslyn}
-In this section we will describe the inner architecture of Roslyn's source code and further elaborate on the compiler phases from \bsref{fig:api_vs_compiler_pipeline}.
+\section{Inside Roslyn}\label{sec:inside_ros}
+In this section we will describe the inner architecture of Roslyn's source code and further elaborate on the compiler phases from \bsref{fig:api_vs_compiler_pipeline}. 
 
 \begin{figure}[htbp]
 \centering
@@ -40,7 +39,8 @@ The Roslyn solution available on github\footnote{\url{https://github.com/dotnet/
 
 The projects contained in the \bscode{CSharp} folder are shown on \bsref{fig:roslyn_csharp_overview}. The important projects are \bscode{csc}, \bscode{CSharpCodeAnalysis.Portable} and \bscode{CSharpCodeAnalysis.Desktop}. The \bscode{csc} project is the C\# command line compiler, which is the starting point of a C\# compilation. The two other projects contain the actual code required for compilation. The rest of the projects in the \bscode{CSharp} folder mainly involves tests for the C\# compiler.
 
-In \bsref{fig:roslyn_invoke_overview} an overview of the compilation call chain is shown. Compilation starts with \bscode{csc's} main method being invoked, which calls the static \bscode{Run} method on the \bscode{Csc} class. This method creates a new \bscode{compiler} object of type \bscode{Csc}. \bscode{Csc} is a subtype of \bscode{CSharpCompiler}, located in the \bscode{CSharp.CSharpCodeAnalysis.Desktop} project, which again is a subtype of \bscode{CommonCompiler}, located in \bscode{Core.CodeAnalysis}. This means that the creation of the \bscode{compiler} object, calls the constructors of \bscode{Csc}, \bscode{CSharpCompiler} and \bscode{CommonCompiler}. Afterwards the \bscode{Run} method is invoked on the \bscode{compiler} object, which further invokes its parents \bscode{Run} method, which again invokes its parent \bscode{Run} method. Finally the \bscode{RunCore} method in \bscode{CommonCompiler} is invoked, which contains the general code that controls the overall flow of the compiler pipeline, that was illustrated in \bsref{fig:api_vs_compiler_pipeline}. The \bscode{RunCore} method will for the phases at run time call the actual compiler logic for C\# in \bscode{CSharp.CSharpCodeAnalysis.Portable} or \ac{VB} in \bscode{VisualBasic.BasicCodeAnalysis.Portable} through dynamic dispatch.\toby{Er det helt rigtigt? Muligvis kalder den også i noget generelt, som kun er defineret i core, der ikke kalder videre. Tror måske IL emitting, kun har kode i Core - men er også noget i CSharpCodeAnalysis med kodegenerering. Andet eksempel: SemanticModel ligger i Core.}
+\subsection{Overview of Compilation Call Chain}\label{ssec:overview_chain}
+In \bsref{fig:roslyn_invoke_overview} an overview of the compilation call chain is shown. Compilation starts with \bscode{csc's} main method being invoked, which calls the static \bscode{Run} method on the \bscode{Csc} class. This method creates a new \bscode{compiler} object of type \bscode{Csc}. \bscode{Csc} is a subtype of \bscode{CSharpCompiler}, located in the \bscode{CSharp.CSharpCodeAnalysis.Desktop} project, which again is a subtype of \bscode{CommonCompiler}, located in \bscode{Core.CodeAnalysis}. This means that the creation of the \bscode{compiler} object, calls the constructors of \bscode{Csc}, \bscode{CSharpCompiler} and \bscode{CommonCompiler}. Afterwards the \bscode{Run} method is invoked on the \bscode{compiler} object, which further invokes its parents \bscode{Run} method, which again invokes its parent \bscode{Run} method. Finally the \bscode{RunCore} method in \bscode{CommonCompiler} is invoked, which contains the general code that controls the overall flow of the compiler pipeline, that was illustrated in \bsref{fig:api_vs_compiler_pipeline}. The \bscode{RunCore} method will for the phases, at run time, call the specific compiler logic for C\# in \bscode{CSharp.CSharpCodeAnalysis.Portable} or \ac{VB} in \bscode{VisualBasic.BasicCodeAnalysis.Portable} through dynamic dispatch.
 
 \begin{sidewaysfigure}[htbp]
 \centering
@@ -49,8 +49,8 @@ In \bsref{fig:roslyn_invoke_overview} an overview of the compilation call chain 
 \label{fig:roslyn_invoke_overview}
 \end{sidewaysfigure}
 
-\subsection{CSharpCodeAnalysis}
-%fortæl om CSharpCodeAnalysis projekterne
+\subsection{Compile Phases}
+The C\# compiler builds upon concepts from traditional compiler theory, such as lexing, parsing, declaration processing, semantic analysis and code generation\cite{sebestaProLang}\cite{fischer2009crafting}. Throughout the phases of compilation, traditional concepts such as a syntax tree, symbol table and visitor pattern are also used. In this section we will elaborate on the compiler phases in the compiler pipeline shown in \bsref{fig:api_vs_compiler_pipeline}. In \bsref{fig:roslyn_csharpanalysis_overview} an overview of the folders inside the C\# code analysis is shown.
 
 \begin{figure}[htbp]
 \centering
@@ -58,27 +58,35 @@ In \bsref{fig:roslyn_invoke_overview} an overview of the compilation call chain 
  \caption{Overview of the \bscode{CSharp.CSharpCodeAnalysis.Portable} project.}
 \label{fig:roslyn_csharpanalysis_overview}
 \end{figure}
-\toby[i]{Ved ikke om jeg vil have den her figur med}
 
-\section{Key Concepts}
-The C\# compiler builds upon concepts from traditional compiler theory, such as lexing, parsing, declaration processing, semantic analysis and code generation\cite{sebestaProLang}\cite{fischer2009crafting}. Throughout the phases of compilation, traditional concepts such as a syntax tree, symbol table and visitor pattern are also used. In this section we describe the core concepts used in the C\# compilation phases.
+\toby[i]{Er det klart, at det er faserne fra figur med compiler pipeline, vi referer til?}
+The initial phase of compilation entails initial work, such as parsing the command line with associated parameters and setting up for compilation, as described in \bsref{ssec:overview_chain}. This phase is sequential\cite{sadovRoslynPerf}.
 
-\subsection{Syntax trees}\label{sec:syntax_trees}
-Syntax trees are the primary structure used throughout the phases of compilation. Roslyn's syntax tress have three key attributes\cite[p. 6]{ng2012roslyn}: 
+The first phase involves parsing the source code, which is done in a traditional compiler fashion by lexing source code into tokens and parsing them into a syntax tree, which represents the syntactic structure of source code. This phase will check for syntax errors in source code, but does not have enough information to check for semantic errors, such as scope or type errors. This phase is concurrent, as each file is parsed sequentially, but several files may be parsed at the same time\cite{sadovRoslynPerf}. The logic for this phase is mainly located within the \bscode{Parser} and \bscode{Symbols} folder. We will describe the syntax tree and its contents in more detail in \bsref{sec:syntax_trees}.
+
+The second phase involves creating a \bscode{Compilation} type object, specifically a \bscode{CSharpCompilation} type as we focus on the C\# compiler, which contains information that is necessary for further compilation e.g. all assembly references, compiler options and source code. In the creation of a \bscode{CSharpCompilation} object, a declaration table is created which keeps track of type and namespace declarations in source code\cite{sadovRoslynPerf}. This is done sequentially\cite{sadovRoslynPerf}. Additionally the \bscode{Compilation} object contains a symbol table, which holds all symbols declared in source code or imported assemblies.\toby{Tror den er lazy, så først når den bruges laves den} That is, each namespace, type, method, property, field, event, parameter and local variable is represented as a symbol and stored in the symbol table\cite[p. 14]{ng2012roslyn}. Each type of symbol has its own symbol class f.x. \bscode{MethodSymbol} that derives from the base \bscode{Symbol} class. The symbol table can be accessed by the \bscode{GlobalNamespace} property, as a tree of symbols, rooted by the global namespace symbol. Furthermore there also exists a range of methods and properties to obtain symbols.\toby{Er ikke helt sikker på om symbol tabellen først bliver udfylt i næste fase, men den ligger i hvert fald på Compilation objektet} The logic for this phase is mainly located within the \bscode{Declarations} and \bscode{Symbols} folders.
+%compilation is immutable, like syntax trees
+
+In order to enable semantic analysis, the third phase entails fully binding all symbols. That is, determining what each symbol actually refers to, e.g. what namespace and overloaded method, a particular method refers to. If there are any problems with symbol binding, like inheritance loops, they will be reported. This binding is  done concurrently, however there is implicit partial ordering\toby{skal vi fjerne det udtryk?}, where binding members of a type will force base types to be bound. For unrelated symbols, they can be bound in any order\cite{sadovRoslynPerf}. Additionally, the binding phase also creates a bound tree, which is Roslyn's internal tree used for flow analysis and emitting. In \cite{roslynBinder} they state they do not want to expose the bound tree through the \ac{API}: ``\textit{it has been a long standing design decision not to expose the bound tree. The shape of the bound nodes is actually pretty fragile compared to the shape of the syntax nodes and can be changed around a lot depending on what scenarios need to be addressed. We might store something somewhere one day for performance and remove it the next for compatibility or vice versa}''.\toby{Skal vi have det med eller ej? Mest for at fortælle det er der, men det er ikke noget vi vil pille i.} Data flow and control flow analysis is employed, which uses the bound tree to e.g. to check if statements are reachable, as the C\# specification states that an unreachable statement should produce a warning\cite{gafter2011}. The logic for this phase is mainly located in the \bscode{Binder}, \bscode{BoundTree} and \bscode{FlowAnalysis} folders.
+
+Finally, in the last and fourth phase all information built up so far is emitted as an assembly. Method bodies are compiled and emitted as IL concurrently, however methods within the same type is compiled sequentially in a fixed order, typically lexical order. The final emitting to the assembly is done sequentially\cite{sadovRoslynPerf}. The logic for this phase is mainly located in the \bscode{CodeGen} and \bscode{Emitter} folders.
+
+\section{Syntax trees}\label{sec:syntax_trees}\toby{Evt. skriv hvorfor vi beskriver det her mere detaljeret (fordi det er her vi vil lave compiler ændringer)}
+Syntax trees are the primary structure used throughout compilation. Roslyn's syntax tress have three key attributes\cite[p. 6]{ng2012roslyn}: 
 \begin{enumerate}
 	\item The first attribute is that a syntax tree is a full fidelity representation of source code, which means that everything in the source code is represented as a node in the syntax tree. If programs are invalid, the syntax tree represent these errors in source code by skipped or missing tokens in the tree. 
 	\item The first attribute enables the second attribute, which is that a syntax tree produced from parsing must be round-trippable back to the original source code.
 	\item The third attribute is that syntax trees are immutable and thread-safe. This enables multiple users to use the same syntax tree at the same time in different threads without concurrency issues. As syntax trees are immutable, factory methods exists in order to help create and modify trees. This might seem inefficient, as one would expect a copy of the tree is required, however syntax tress are efficient as they reuse underlying nodes. This means that trees can be modified fast and with a low memory overhead. In fact a syntax tree in Roslyn consists of two trees, the red and green tree, which we will now describe.
 \end{enumerate}
 
-\subsubsection{Red And Green Trees}\toby{Hvad med boundtree? Eller evt. fortæl om det i et uddybende compiler fase afsnit}
+\subsection{Red And Green Trees}
 The Roslyn team wanted a primary data structure for compilation with the following characteristics\cite{lippert2012redgreen}:
 \begin{itemize}
 	\item Immutable.
 	\item Form of a tree.
 	\item Cheap access to parent nodes from child nodes.
 	\item Possible to map from a node in the tree to a character offset in the source code.
-	\item Ability to reuse most nodes in the original tree when modifying trees.\toby{måske brug ordet persistent}
+	\item Ability to reuse most nodes in the original tree when modifying trees.\toby{måske brug ordet persistent(gør det i artiklen}
 \end{itemize}
 However fitting all those characteristics into a single data structure is problematic\cite{lippert2012redgreen}. One problem is simply constructing a tree node, as the child and parent must refer to each other, and are immutable, it is not possible to create one before the other. Another problem is reusing nodes for another parent when modifying the tree, as nodes are immutable and it is therefore not allowed to change the parent of a node. A last problem is inserting a new character into the source code, as the position of all nodes after that point changes. This is problematic in relation to adhering to the characteristic of reusing nodes, because a modification to source code can change the character offset of many nodes.
 %til den sidste, husk at de selv bruger roslyn til at udvikle interne værktøjer, derfor er det vigtigt at når man skrive et nyt tegn i starten af source koden, at de ikke skal bygge træet helt på nyt.
@@ -150,9 +158,6 @@ One technique is to insert a missing token in the syntax tree when the parser sc
 
 Another technique is to skip tokens until the parser finds a token where it again can parse. The skipped tokens are added as a trivia node with the \bscode{SkippedTokens} kind.
 
-\subsection{Compilation}
-\subsection{Symbols}
-
 %semantic model evt. (tror kun det er i forhold til api)
 	%følgende sker direkte i runcore kald
 %compilation = source files, assembly references and compiler options. Main: symbol table
@@ -171,31 +176,21 @@ Another technique is to skip tokens until the parser finds a token where it agai
 %selve emitting sker også i runcore
 	%data flow analyse, Control flow analysis også en del af emit (refer til deres paper det ligger på gitten omkring data flow)
 
-\section{Compile Phases}\toby{Måske ryk den op over hvor syntax træer bliver forklaret}\toby{Måske bare være et underpunkt i Inside Roslyn - afhæning af hvor stort afsnittet bliver (evt. kan det komme som det første i inside roslyn)}
-%måske noget pre , evt. med at faserne vist i den første figur er simplicifeceret og her vi her er lidt mere uddybende
-%refer til VSadov
+%***EKSTRAAAA***
+%dataflow og controlflow analyse sker også heri (nævn evt.)
+%codegen, emitter og flowanalysis folders
+%og i core: codegen og emitter (evt. skriv noget om corresponding i core, når jeg beskriver de to i csharp folderen. Eller deres corresponding base classes in core (hvilket ligger i de folere))
 
-%evt fortæl ud fra mapperne i projektet?
+%***HUSK:
+%også methodcompiler.cs i Compiler folder (sker faktisk inden endelig emitting)
+	%bruger visitor pattern
+%herefter controlflow pass (visistere bound tree)
+%herefter dataflow pass
 
-The first phase of compilation entails initial work, such as parsing the command line with associated parameters and setting up for compilation, as shown in \bsref{fig:roslyn_invoke_overview}.\toby{bedre slutning på sætning}
-
-The second phase involves parsing the source code, which is done in a traditional compiler fashion by lexing source code into tokens and parsing them into a syntax tree, which represents the syntactic structure of the source code. This phase will check for syntax errors in source code, but does not have enough information to check for semantic errors, such as scope or type errors.
-%special type syntax tree, refer til det blvier beskrevet senere hvis det rykkes op
-%ligger i parse mappen: Lexer.cs + SyntaxParser (der er også LanguageParser.cs og DirectiveParser.cs) 
-%recursive descent parser
-%first phase on fig. 1.1
-
-%Syntax trees represent the lexical and syntactic structure of source code. Although this information alone is enough to describe all the declarations and logic in the source, it is not enough information to identify what is being referenced.
-
-%a semantic model encapsulates the language rules, giving you an easy way to make these distinctions.
-
-In order to obtain more information, IN BLA creates a declaration table, which takes the form of a tree, that holds where namespaces and types are declared in source code.
-	%åbenbart en del af en compilation
 	
-%Compilation object, which is 
+%CSharpCompilation GlobalNamespace
 
-%types and namespaces
-%namespaces, classes, interfaces, structs, and delegate declarations
+%Binder =  A Binder converts names in to symbols and syntax nodes into bound trees. It is context dependent, relative to a location in source code.
 
 %second phase on fig 1.1 (tror jeg) - skal være sikker på hvad symbols er
 %forklaret mere om den i CSharp > CSharpCodeAnalysis (Portable) > Declarations > Declaration.cs og DeclarationTable.cs (Table indeholder forskellige typer af Declaration, såsom SingleTypeDeclaration)
@@ -206,15 +201,15 @@ In order to obtain more information, IN BLA creates a declaration table, which t
 
 %***Mangler hvad fase 2 er i fig.1.1, eller hvor det sker præcist.
 
-The fourth phase declaration diagnostics (fase 3 i fig 1.1)
+%*The fourth phase declaration diagnostics (fase 3 i fig 1.1)
 %third phase of fig 1.1 (fully bind)
 %resultatet er et bound træ, hvilket er en internal repræsentation for Roslyn (som ikke er tilgængelig igennemt API'et)
 %symbol visitor sker heri (men den tager et symbol, så det må ske før)
 
-The fifth IL emitting
+%The fifth IL emitting
 %the fourth
 
-The sixth serialization of portable executable file and pdb file (used for debugging).
+%The sixth serialization of portable executable file and pdb file (used for debugging).
 
 %pdb info:
 	%http://www.wintellect.com/devcenter/jrobbins/pdb-files-what-every-developer-must-know
