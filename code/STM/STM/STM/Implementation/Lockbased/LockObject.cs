@@ -90,38 +90,9 @@ namespace STM.Implementation.Lockbased
             return (dynamic)tmvar.Value != (dynamic)other;
         }
 
-        public static bool operator ==(LockObject<T> tmvar, LockObject<T> other)
-        {
-            return (dynamic)tmvar.Value == (dynamic)other.Value;
-        }
-
-        public static bool operator !=(LockObject<T> tmvar, LockObject<T> other)
-        {
-            return (dynamic)tmvar.Value != (dynamic)other.Value;
-        }
-
         public static implicit operator T(LockObject<T> tmObject)
         {
             return tmObject.Value;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj is LockObject<T>)
-            {
-                return this == (LockObject<T>)obj;
-            }
-            else if (obj is T)
-            {
-                return this == (T)obj;
-            }
-
-            return false;
-        }
-
-        public override int GetHashCode()
-        {
-            return _version.GetHashCode();
         }
 
         #endregion Operators
