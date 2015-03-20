@@ -12,19 +12,16 @@ namespace STMUnitTest
         public void TestRetry()
         {
             var result = new TMVar<int>(10);
-            var t1 = new Thread(() =>
+            var t1 = new Thread(() => STMSystem.Atomic(() =>
             {
-                var r1 = STMSystem.Atomic(() =>
+                var tmp = result.Value;
+                if (tmp != 12)
                 {
-                    var tmp = result.Value;
-                    if (tmp != 12)
-                    {
-                        STMSystem.Retry();
-                    }
-                    result.Value = tmp * 10;
-                    return result.Value;
-                });
-            });
+                    STMSystem.Retry();
+                }
+                result.Value = tmp*10;
+                return result.Value;
+            }));
 
             var t2 = new Thread(() => STMSystem.Atomic(() =>
             {
@@ -36,7 +33,9 @@ namespace STMUnitTest
             t2.Start();
 
             t1.Join();
-            t2.Join(); 
+            t2.Join();
+
+            Assert.AreEqual(120, result.Value);
         }
     }
 }

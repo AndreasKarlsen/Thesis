@@ -10,12 +10,14 @@ using STM.Interfaces;
 using STM.Implementation.Obstructionfree;
 using STM.Implementation.Lockbased;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace STMTester
 {
     class Program
     {
-        private static readonly int MAX_EAT_COUNT = 1000;
+        private const int MAX_EAT_COUNT = 1000;
+        
 
         static void Main(string[] args)
         {
@@ -33,17 +35,11 @@ namespace STMTester
             //OrElseTest();
             //OrElseNestingTest2();
             //OrElseNestingTest3();
-            DynamicTest();
             Console.ReadKey();
         }
 
 
-        private static void DynamicTest()
-        {
-            var dyna =  new TMVar<dynamic>(0);
-            STMSystem.Atomic(() => dyna.Value = "abc");
-            Console.WriteLine(dyna.Value);
-        }
+
 
         private static void OrElseTest()
         {

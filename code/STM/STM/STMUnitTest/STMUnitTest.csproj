@@ -35,6 +35,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
   </ItemGroup>
   <Choose>
@@ -56,6 +57,7 @@
     <Compile Include="RetryTest.cs" />
     <Compile Include="RaceConditionTests.cs" />
     <Compile Include="NestingTest.cs" />
+    <Compile Include="DynamicTest.cs" />
     <Compile Include="VariousTest.cs" />
   </ItemGroup>
   <ItemGroup>
