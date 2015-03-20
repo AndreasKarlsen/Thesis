@@ -10,12 +10,14 @@ using STM.Interfaces;
 using STM.Implementation.Obstructionfree;
 using STM.Implementation.Lockbased;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace STMTester
 {
     class Program
     {
-        private static readonly int MAX_EAT_COUNT = 1000;
+        private const int MAX_EAT_COUNT = 1000;
+        
 
         static void Main(string[] args)
         {
@@ -33,17 +35,11 @@ namespace STMTester
             //OrElseTest();
             //OrElseNestingTest2();
             //OrElseNestingTest3();
-            DynamicTest();
             Console.ReadKey();
         }
 
 
-        private static void DynamicTest()
-        {
-            var dyna =  new TMVar<dynamic>(0);
-            STMSystem.Atomic(() => dyna.Value = "abc");
-            Console.WriteLine(dyna.Value);
-        }
+
 
         private static void OrElseTest()
         {
@@ -398,7 +394,7 @@ namespace STMTester
         private static void Test3()
         {
             STMObject<ValueHolder> result = new FreeObject<ValueHolder>(new ValueHolder(10));
-            var system = FreeStmSystem.GeInstance();
+            var system = FreeStmSystem.GetInstance();
 
             var t1 = new Thread(() =>
             {
@@ -429,7 +425,7 @@ namespace STMTester
 
         private static void Test2()
         {
-            var system = FreeStmSystem.GeInstance();
+            var system = FreeStmSystem.GetInstance();
             STMObject<ValueHolder> fo = new FreeObject<ValueHolder>(new ValueHolder(5));
             var result = system.Atomic(() =>
             {
@@ -441,7 +437,7 @@ namespace STMTester
 
         private static void Test1()
         {
-            var system = FreeStmSystem.GeInstance();
+            var system = FreeStmSystem.GetInstance();
             STMObject<ValueHolder> fo = new FreeObject<ValueHolder>(new ValueHolder(15));
 
             var t1 = new Thread(() =>

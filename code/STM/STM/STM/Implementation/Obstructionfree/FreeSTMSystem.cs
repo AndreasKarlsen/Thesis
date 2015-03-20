@@ -21,7 +21,7 @@ namespace STM.Implementation.Obstructionfree
             return me.Status != Transaction.TransactionStatus.Aborted;
         }
 
-        public static BaseSTMSystem GeInstance()
+        public static BaseSTMSystem GetInstance()
         {
             return LazySystem.Value;
         }
