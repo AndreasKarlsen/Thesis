@@ -80,13 +80,14 @@ namespace STM.Implementation.Lockbased
                 throw new STMAbortException("Failed validation");
             }*/
         }
+
         private void SetValueInternal(T value)
         {
             var me = Transaction.LocalTransaction;
             switch (me.Status)
             {
                 case Transaction.TransactionStatus.Committed:
-                    base.SetValue(value);
+                    SetValueNonTransactional(value);
                     break;
                 case Transaction.TransactionStatus.Active:
                     var writeset = me.WriteSet;
@@ -115,6 +116,13 @@ namespace STM.Implementation.Lockbased
                 default:
                     throw new Exception("Shits on fire yo!");
             }
+        }
+
+        private void SetValueNonTransactional(T value)
+        {
+            Lock();
+            Commit(value,VersionClock.IncrementClock());
+            Unlock();
         }
 
         

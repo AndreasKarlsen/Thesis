@@ -19,6 +19,11 @@ namespace STM.Implementation.Lockbased
             _map = new Dictionary<BaseLockObject, object>();
         }
 
+        internal WriteSet(WriteSet other)
+        {
+            _map = new Dictionary<BaseLockObject, object>(other._map);
+        }
+
         public bool Contains(BaseLockObject stmObject)
         {
             return _map.ContainsKey(stmObject);

@@ -32,7 +32,7 @@ namespace STM
 
         internal static Transaction StartTransaction()
         {
-            var transaction = new Transaction(TransactionStatus.Active) {ReadStamp = VersionClock.TimeStamp};
+            var transaction = new Transaction(TransactionStatus.Active, VersionClock.TimeStamp);
           
 #if DEBUG
             Console.WriteLine("STARTED: "+transaction.ID);
@@ -43,11 +43,7 @@ namespace STM
 
         internal static Transaction StartNestedTransaction(Transaction parent)
         {
-            var transaction = new Transaction(TransactionStatus.Active)
-            {
-                ReadStamp = VersionClock.TimeStamp,
-                Parent = parent
-            };
+            var transaction = new Transaction(TransactionStatus.Active, VersionClock.TimeStamp, parent);
 #if DEBUG
             Console.WriteLine("STARTED NESTED: " + transaction.ID);
 #endif
@@ -55,19 +51,28 @@ namespace STM
             return transaction;
         }
 
-        private Transaction(TransactionStatus status)
+        private Transaction(TransactionStatus status, int readStmp)
         {
-            Init(status);
+            Init(status, readStmp);
+            WriteSet = new WriteSet();
         }
 
-        private void Init(TransactionStatus status)
+        private Transaction(TransactionStatus status,  int readStmp, Transaction parent)
+        {
+            Init(status, readStmp);
+            Parent = parent;
+            WriteSet = new WriteSet(parent.WriteSet);
+        }
+
+
+        private void Init(TransactionStatus status, int readStmp)
         {
 #if DEBUG
             ID = IDGenerator.NextID;
 #endif
             _transactionStatus = status;
+            ReadStamp = readStmp;
             ReadSet = new ReadSet();
-            WriteSet = new WriteSet();
         }
 
         #endregion Construction
@@ -89,7 +94,7 @@ namespace STM
         /// <summary>
         /// Thread local storage. Each thread gets has its own value
         /// </summary>
-        private static readonly ThreadLocal<Transaction> Local = new ThreadLocal<Transaction>(() => new Transaction(TransactionStatus.Committed));
+        private static readonly ThreadLocal<Transaction> Local = new ThreadLocal<Transaction>(() => new Transaction(TransactionStatus.Committed,VersionClock.TimeStamp));
 
         public static Transaction LocalTransaction
         {

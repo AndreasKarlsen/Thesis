@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using STM;
 using STM.Collections;
@@ -38,15 +39,31 @@ namespace STMTester.LibraryExamples
 
         public static void TMVarExample()
         {
-            TMVar<string> s = new TMVar<string>("abc");
-            TMVar<bool> b = new TMVar<bool>();
-            TMVar<Person> p = new TMVar<Person>(new Person { Name = "Bo Hansen", Age = 57 });
+            TMVar<string> tmString = new TMVar<string>("abc");
+            TMVar<bool> tmBool = new TMVar<bool>();
+            TMVar<Person> tmPerson = new TMVar<Person>(new Person("Bo Hansen", 57));
+            TMInt tmInt = new TMInt(12);
+           
+
+            STMSystem.Atomic(() =>
+            {
+                if (tmBool && tmString == "abc")
+                {
+                    tmInt++;
+                }
+            });
         }
 
         public class Person
         {
             public string Name { get; set; }
             public int Age { get; set; }
+
+            public Person(string name, int age)
+            {
+                Name = name;
+                Age = age;
+            }
         }
 
         public static void RetryExample(STM.Collections.Queue<Person> buffer)
@@ -86,6 +103,53 @@ namespace STMTester.LibraryExamples
                 var item = buffer1.Dequeue();
                 buffer2.Enqueue(item);
             });
+        }
+
+        private static void DinningPhilosophersTest()
+        {
+            var fork1 = new TMVar<bool>(true);
+            var fork2 = new TMVar<bool>(true);
+            var fork3 = new TMVar<bool>(true);
+            var fork4 = new TMVar<bool>(true);
+            var fork5 = new TMVar<bool>(true);
+
+            StartPhilosopher(fork1, fork2);
+            StartPhilosopher(fork2, fork3);
+            StartPhilosopher(fork3, fork4);
+            StartPhilosopher(fork4, fork5);
+            StartPhilosopher(fork5, fork1);
+        }
+
+        private static void StartPhilosopher( TMVar<bool> left, TMVar<bool> right)
+        {
+            var t1 = new Thread(() =>
+            {
+                while (true)
+                {
+                    STMSystem.Atomic(() =>
+                    {
+                        if (!left || !right)
+                        {
+                            STMSystem.Retry();
+                        }
+
+                        left.Value = false;
+                        right.Value = false;
+                    });
+
+                    Thread.Sleep(100);
+
+                    STMSystem.Atomic(() =>
+                    {
+                        left.Value = true;
+                        right.Value = true;
+                    });
+
+                    Thread.Sleep(100);
+                }
+            });
+
+            t1.Start();
         }
     }
 }

@@ -12,7 +12,6 @@ namespace STM.Implementation.Lockbased
     {
         private readonly HashSet<BaseLockObject> _lockObjects;
 
-
         internal ReadSet()
         {
             _lockObjects = new HashSet<BaseLockObject>();

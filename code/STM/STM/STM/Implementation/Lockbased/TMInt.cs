@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using STM.Interfaces;
 
 namespace STM.Implementation.Lockbased
 {
-    public class TMInt : TMVar<int>
+    public class TMInt : TMVar<int>, Incrementable
     {
 
         public TMInt() : base()
@@ -43,8 +44,10 @@ namespace STM.Implementation.Lockbased
         }
 
         #endregion Inc Dec
-        /*
+
+       
         #region Binary
+        /*
         public static int operator +(TMInt tmint, int i)
         {
             return tmint.Value + i;
@@ -69,12 +72,7 @@ namespace STM.Implementation.Lockbased
         {
             return tmint.Value % i;
         }
-
-        #endregion Binary
-        //==, !=, <, >, <=, >=
-
-        #region BinaryBool
-
+         
         public static bool operator <(TMInt tmint, int i)
         {
             return tmint.Value < i;
@@ -94,8 +92,8 @@ namespace STM.Implementation.Lockbased
         {
             return tmint.Value <= i;
         }
-
-        #endregion BinaryBool
         */
+        #endregion Binary
+
     }
 }

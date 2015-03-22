@@ -26,7 +26,7 @@ namespace STM.Implementation.Lockbased
             set { _stamp = value; }
         }
 
-        internal abstract void CommitValue(object o);
+        internal abstract void Commit(object o, int timestamp);
 
         internal void Lock()
         {
@@ -70,6 +70,26 @@ namespace STM.Implementation.Lockbased
             lock (WaitHandlesLock)
             {
                 WaitHandles.Clear();
+            }
+        }
+
+        internal virtual bool Validate(Transaction transaction)
+        {
+            switch (transaction.Status)
+            {
+                case Transaction.TransactionStatus.Committed:
+                    return true;
+                case Transaction.TransactionStatus.Active:
+                    if (IsLocked() && !IsLockedByCurrentThread())
+                    {
+                        return false;
+                    }
+
+                    return TimeStamp <= transaction.ReadStamp;
+                case Transaction.TransactionStatus.Aborted:
+                    return false;
+                default:
+                    throw new Exception("Shits on fire yo!");
             }
         }
     }

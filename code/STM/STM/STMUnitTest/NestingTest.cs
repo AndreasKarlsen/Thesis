@@ -74,7 +74,7 @@ namespace STMUnitTest
 
                 STMSystem.Atomic(() =>
                 {
-                    if (tm1.Value == 1)
+                    if (tm1.Value == 10)
                     {
                         STMSystem.Retry();
                     }

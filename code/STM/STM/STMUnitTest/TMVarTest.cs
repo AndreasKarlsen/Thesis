@@ -34,6 +34,7 @@ namespace STMUnitTest
             Assert.IsTrue(_tmString != "def");
         }
 
+        /*
         [TestMethod]
         public void TMVarEqTest2()
         {
@@ -51,5 +52,6 @@ namespace STMUnitTest
             Assert.IsFalse(_tmString != tmvar2);
             Assert.IsTrue(_tmString != tmvar3);
         }
+        */
     }
 }

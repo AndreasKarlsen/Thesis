@@ -30,7 +30,7 @@ namespace STMTester
             //SingleItemBufferTest();
             //QueueTest();
             //AtomicLockTest();
-            //DinningPhilosophersTest();
+            DinningPhilosophersTest();
             //OrElseNestingTest();
             //OrElseTest();
             //OrElseNestingTest2();

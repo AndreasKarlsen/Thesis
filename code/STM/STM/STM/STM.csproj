@@ -53,9 +53,15 @@
     <Compile Include="Implementation\Exceptions\STMAccessViolationException.cs" />
     <Compile Include="Implementation\Exceptions\STMException.cs" />
     <Compile Include="Implementation\Exceptions\STMInvalidRetryException.cs" />
+    <Compile Include="Implementation\Exceptions\STMMaxAttemptException.cs" />
     <Compile Include="Implementation\Exceptions\STMRetryException.cs" />
     <Compile Include="Implementation\Lockbased\AtomicLock.cs" />
+    <Compile Include="Implementation\Lockbased\TMDouble.cs" />
+    <Compile Include="Implementation\Lockbased\TMFloat.cs" />
     <Compile Include="Implementation\Lockbased\TMInt.cs" />
+    <Compile Include="Implementation\Lockbased\TMLong.cs" />
+    <Compile Include="Implementation\Lockbased\TMUInt.cs" />
+    <Compile Include="Implementation\Lockbased\TMUlong.cs" />
     <Compile Include="Interfaces\ILock.cs" />
     <Compile Include="Implementation\Lockbased\LockObject.cs" />
     <Compile Include="Implementation\Lockbased\STMSystem.cs" />
@@ -68,6 +74,7 @@
     <Compile Include="Implementation\Lockbased\VersionClock.cs" />
     <Compile Include="Interfaces\BaseSTMObject.cs" />
     <Compile Include="Interfaces\ICopyable.cs" />
+    <Compile Include="Interfaces\Incrementable.cs" />
     <Compile Include="Interfaces\STMObject.cs" />
     <Compile Include="Interfaces\BaseSTMSystem.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

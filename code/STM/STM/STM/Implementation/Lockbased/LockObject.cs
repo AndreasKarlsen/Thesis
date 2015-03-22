@@ -29,7 +29,9 @@ namespace STM.Implementation.Lockbased
 
         public virtual void SetValue(T value)
         {
+            Lock();
             _version = value;
+            Unlock();
         }
 
         public virtual T GetValue()
@@ -46,28 +48,14 @@ namespace STM.Implementation.Lockbased
             return _version.ToString();
         }
 
-        internal virtual bool Validate(Transaction transaction)
-        {
-            switch (transaction.Status)
-            {
-                case Transaction.TransactionStatus.Committed:
-                    return true;
-                case Transaction.TransactionStatus.Active:
-                    return TimeStamp <= transaction.ReadStamp;
-                case Transaction.TransactionStatus.Aborted:
-                    return false;
-                default:
-                    throw new Exception("Shits on fire yo!");
-            }
-        }
-
-        internal override void CommitValue(object o)
+        internal override void Commit(object o, int timestamp)
         {
 #if DEBUG
             Transaction me = Transaction.LocalTransaction;
             Console.WriteLine("Transaction: " + me.ID + " commited:" + o);
 #endif
             _version = (T)o;
+            TimeStamp = timestamp;
             lock (WaitHandlesLock)
             {
                 foreach (var waitHandle in WaitHandles)
@@ -79,17 +67,7 @@ namespace STM.Implementation.Lockbased
         }
 
         #region Operators
-
-        public static bool operator ==(LockObject<T> tmvar, T other)
-        {
-            return (dynamic)tmvar.Value == (dynamic)other;
-        }
-
-        public static bool operator !=(LockObject<T> tmvar, T other)
-        {
-            return (dynamic)tmvar.Value != (dynamic)other;
-        }
-
+        
         public static implicit operator T(LockObject<T> tmObject)
         {
             return tmObject.Value;

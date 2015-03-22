@@ -13,6 +13,10 @@ namespace STM.Implementation.Lockbased
     public static class STMSystem
     {
         internal static readonly int TIME_OUT = 100;
+        /// <summary>
+        /// Max attempts. Set to same as Clojure
+        /// </summary>
+        internal static readonly int MAX_ATTEMPTS = 10000;
 
         #region Atomic
 
@@ -100,6 +104,7 @@ namespace STM.Implementation.Lockbased
             var result = default(T);
             var index = 0;
             var overAllReadSet = new ReadSet();
+            var nrAttempts = 0;
             while (true)
             {
                 var stmAction = stmActions[index];
@@ -129,24 +134,30 @@ namespace STM.Implementation.Lockbased
                         return result;
                     }
 
-                    me.Abort();
                 }
                 catch (STMAbortException)
                 {
-                    me.Abort();
+                    //Skips straight to abort a reexecute
                 }
                 catch (STMRetryException)
                 {
                     index = HandleRetry(stmActions, me, index, overAllReadSet);
                 }
-                catch (STMException)
-                { }
+
+                nrAttempts++;
+                me.Abort();
 
                 //If the transaction is nested restore the parent as current transaction before retrying
                 if (me.IsNested)
                 {
                     Transaction.LocalTransaction = me.Parent;
                 }
+
+                if (nrAttempts == MAX_ATTEMPTS)
+                {
+                    throw new STMMaxAttemptException("Fatal error: max attempts reached");
+                }
+                
             }
         }
 
@@ -161,8 +172,7 @@ namespace STM.Implementation.Lockbased
             {
                 var lo = entry.Key;
                 var value = entry.Value;
-                lo.CommitValue(value);
-                lo.TimeStamp = writeStamp;
+                lo.Commit(value, writeStamp);
             }
 
             transaction.WriteSet.Unlock();
@@ -196,6 +206,11 @@ namespace STM.Implementation.Lockbased
         {
             foreach (var lo in readSet)
             {
+                if (!lo.Validate(transaction))
+                {
+                    return false;
+                }
+                /*
                 if (lo.IsLocked() && !lo.IsLockedByCurrentThread())
                 {
                     return false;
@@ -204,7 +219,7 @@ namespace STM.Implementation.Lockbased
                 if (lo.TimeStamp > transaction.ReadStamp)
                 {
                     return false;
-                }
+                }*/
             }
 
             return true;
@@ -244,7 +259,6 @@ namespace STM.Implementation.Lockbased
                 index++;
             }
 
-            me.Abort();
             return index;
         }
 
