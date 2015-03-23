@@ -1,5 +1,14 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Evaluation}{1}{Marts 2, 2015}{Andreas}{../../}
+This chapter evaluates \stmnamesp, its associated \ac{STM} library and locking in C\# according to the characteristics defined in \cite[p. 15-21]{dpt907e14trending}. The evaluation will facilitate a conclusion on whether or not language integrated \ac{STM} is a valid alternative to locking as well as discerning whether language integration of \ac{STM} provides any advantages over library based \ac{STM} in terms of usability.
 \label{chap:evaluation}
+\section{Selected Problems}
+As described in \bsref{sec:problem_statement} the evaluation will be conducted by comparing the characteristics of each approach based on a number of concurrent implementations. For this purpose these know concurrent problems have been selected:
+\begin{enumerate}
+\item The dinning philosophers problem\cite[p. 673]{hoare1978communicating}.
+\item The santa clause problem\cite{trono1994new}
+\item Concurrency hashmap
+\end{enumerate} 
+\section{Evaluation of Characteristics}
 
 \worksheetend
