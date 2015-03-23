@@ -1,11 +1,14 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Evaluation}{1}{Marts 2, 2015}{Andreas}{../../}
+This chapter evaluates \stmnamesp, its associated \ac{STM} library and locking in C\# according to the characteristics defined in \cite[p. 15-21]{dpt907e14trending}. The evaluation will facilitate a conclusion on whether or not language integrated \ac{STM} is a valid alternative to locking as well as discerning whether language integration of \ac{STM} provides any advantages over library based \ac{STM} in terms of usability.
 \label{chap:evaluation}
+\section{Selected Problems}
+As described in \bsref{sec:problem_statement} the evaluation will be conducted by comparing the characteristics of each approach based on a number of concurrent implementations. For this purpose these know concurrent problems have been selected:
+\begin{enumerate}
+\item The dinning philosophers problem\cite[p. 673]{hoare1978communicating}.
+\item The santa clause problem\cite{trono1994new}
+\item Concurrency hashmap
+\end{enumerate} 
+\section{Evaluation of Characteristics}
 
-\section{Preliminary Investigation}
-In order to mitigate the risk bound with uncertainty of implementing an \ac{STM} system and the Roslyn compiler, a preliminary investigation was conducted. 
-
-A number of papers describing \ac{STM} system implementations were investigated. This gave us a better understanding of the known approaches for implementing \ac{STM} systems. To get some hands on experience, a prototype \ac{STM} system based on the two implementations described in \cite{herlihy2012art}[p. 424] was developed\andreas{Should we include those on the CD?}. Developing such a prototype system furthered our understanding of the different implementation strategies.
-
-As the Roslyn compiler was only released 10 months prior to the time of writing, the amount of available literature on the subject is limited, consisting of mostly: a white paper\cite{ng2012roslyn}, documentation associated with the Roslyn Github repository\cite{roslynwiki}, sample implementations and walkthroughs\cite{roslynsamples}, as well as blog posts. Most of these sources describe the compiler \ac{API} as opposed to the structure of the compiler. To further our understanding of the Roslyn compiler we have investigated these sources. In addition, an exploratory modification of the compiler was done to investigating its structure. The lexer and parser of the compiler was modified to handle the syntax of an \bscode{atomic} block. The exploratory implementation furthered our knowledge of the compilers structure and \ac{API} design.
 \worksheetend
