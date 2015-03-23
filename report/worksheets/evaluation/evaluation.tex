@@ -2,10 +2,4 @@
 \worksheetstart{Evaluation}{1}{Marts 2, 2015}{Andreas}{../../}
 \label{chap:evaluation}
 
-\section{Preliminary Investigation}
-In order to mitigate the risk bound with uncertainty of implementing an \ac{STM} system and the Roslyn compiler, a preliminary investigation was conducted. 
-
-A number of papers describing \ac{STM} system implementations were investigated. This gave us a better understanding of the known approaches for implementing \ac{STM} systems. To get some hands on experience, a prototype \ac{STM} system based on the two implementations described in \cite{herlihy2012art}[p. 424] was developed\andreas{Should we include those on the CD?}. Developing such a prototype system furthered our understanding of the different implementation strategies.
-
-As the Roslyn compiler was only released 10 months prior to the time of writing, the amount of available literature on the subject is limited, consisting of mostly: a white paper\cite{ng2012roslyn}, documentation associated with the Roslyn Github repository\cite{roslynwiki}, sample implementations and walkthroughs\cite{roslynsamples}, as well as blog posts. Most of these sources describe the compiler \ac{API} as opposed to the structure of the compiler. To further our understanding of the Roslyn compiler we have investigated these sources. In addition, an exploratory modification of the compiler was done to investigating its structure. The lexer and parser of the compiler was modified to handle the syntax of an \bscode{atomic} block. The exploratory implementation furthered our knowledge of the compilers structure and \ac{API} design.
 \worksheetend

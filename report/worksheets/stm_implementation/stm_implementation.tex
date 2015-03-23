@@ -1,5 +1,5 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
-\worksheetstart{Implementation}{0}{Februar 10, 2015}{}{../../}
+\worksheetstart{STM Implementation}{0}{Februar 10, 2015}{}{../../}
 This chapter describes the implementation of the \ac{STM} system that executes transactions in \stmname. Various implementation algorithms have been proposed for \ac{STM} of which a few were briefly described in \bsnameref{sec:intro_related_work}. This chapter will cover the considerations which went into selecting an algorithm for \stmname. Specific attention is payed to the requirements and design choices made in \bsref{sec:stm_requirements} and \bsref{chap:stm_design}. Based on this overview a published algorithm will be selected. As the goal of this thesis is not to contribute with a new \ac{STM} algorithm but rather evaluate how \ac{STM} fits into the context of C\#\andreas{How stm is an alternative to locks?}, building on a existing algorithm is the logical choice. \andreas{Should we have the: in 6.1 bla bla, 6.2 bla?}
 \label{chap:implementation}
 \section{Implementation Criteria}
