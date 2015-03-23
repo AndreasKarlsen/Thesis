@@ -3,12 +3,13 @@
 This chapter describes the requirements for the \ac{STM} system powering \stmname. The requirements are based on known \ac{STM} constructs as well as the criteria for which the final system must be evaluated. Implementation details are described in \bsref{chap:implementation}.
 \label{sec:stm_requirements}
 \kasper[inline]{Refer to work last semester}
+\toby[i]{Describe what we will describe in the sections in this chapter}
 
 \section{Tracking Granularity}\label{sec:tracking}
 A variable tracked by the \ac{STM} system can be tracked with different granularity: by tracking assignments to the variable, or tracking changes to the object referenced by the variable. These different approaches affect the semantics of the \ac{STM} system, and will be discussed in the subsequent sections.
 
 \subsection{Tracking of Variables} 
-Tracking changes to the variable directly limits the effect of the \ac{STM} system only to the variable, and not internal changes inside of the referenced object. This is the approach used in the \ac{STM} system in Clojure\cite{clojureConcurrent}. It offers a simple mental model for the programmer, as only changes visible in the transaction scope will be provided with the transactional guarantees of atomicity and isolation.  \bsref{lst:tracking_variable} shows an example, where the field \bscode{\_car} is assigned to a new modified version of a car on line 10. This assignment is tracked by the \ac{STM} system, as opposed to the example in \bsref{lst:tracking_object}, where the internals of the object are not tracked, when a method with a side-effect is called on line 7. The discussion of side-effects is expanded in \bsref{sec:side-effects}.
+Tracking changes to the variable directly limits the effect of the \ac{STM} system only to the variable, and not internal changes inside of the referenced object. This is the approach used in the \ac{STM} system in Clojure\cite{clojureConcurrent}. It offers a simple mental model for the programmer, as only changes visible in the transaction scope will be provided with the transactional guarantees of atomicity and isolation.  \bsref{lst:tracking_variable} shows an example, where the field \bscode{\_car} is assigned to a new modified version of a car on line 11. This assignment is tracked by the \ac{STM} system, as opposed to the example in \bsref{lst:tracking_object}, where the internals of the object are not tracked, when a method with a side-effect is called on line 12. The discussion of side-effects is expanded in \bsref{sec:side-effects}.
 
 This approach can be used in combination with code where the internals are available, such as libraries shipped as binaries, but changes to their internals will not be traced, and therefore the reusability is limited. Should the programmer want transactional support for the side-effects, the internals must be rewritten using the \ac{STM} system.
 
