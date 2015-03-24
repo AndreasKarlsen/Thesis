@@ -279,7 +279,7 @@ Flat nesting is the simplest to implement, but closed and especially open nestin
 
 \section{Opacity}
 \label{sec:stm_req_opacity}
-Opacity is a correctness criteria requiring transactions to only read consistent data throughout their execution\cite[p. 1]{guerraoui2007opacity}\cite[p. 29]{harris2010transactional}. This means that transactions must not read data which would cause them to later\toby{der mangler et ord, måske abort?}. Consequently opacity requires that the value read is consistent when the read occurs, but allows the variable to be changed at some later point by another transaction. Transactions must be aborted when reads can not be guaranteed to be consistent.
+Opacity is a correctness criteria requiring transactions to only read consistent data throughout their execution\cite[p. 1]{guerraoui2007opacity}\cite[p. 29]{harris2010transactional}. This means that transactions must not read data which would cause them to abort at a later time. Consequently opacity requires that the value read is consistent when the read occurs, but allows the variable to be changed at some later point by another transaction. Transactions must be aborted when reads can not be guaranteed to be consistent.
 
 By providing opacity programmers do not have to reason about problems that occur as a result of inconsistent reads\cite[p. 28]{harris2010transactional}, thereby simplifying the programming model. As an example, consider \bsref{lst:stm_opacity}.
 
