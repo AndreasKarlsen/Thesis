@@ -5,10 +5,11 @@ This chapter evaluates \stmnamesp, its associated \ac{STM} library and locking i
 \section{Selected Problems}
 As described in \bsref{sec:problem_statement} the evaluation will be conducted by comparing the characteristics of each approach based on a number of concurrent implementations. For this purpose these know concurrent problems have been selected:
 \begin{enumerate}
-\item The dinning philosophers problem\cite[p. 673]{hoare1978communicating}.
+\item The dinning philosophers problem\cite[p. 673]{hoare1978communicating}
 \item The santa clause problem\cite{trono1994new}
-\item Concurrency hashmap
-\end{enumerate} 
+\item A concurrency hashmap implementation
+\end{enumerate}
+The dinning philosophers problem represents a well known concurrency problem which highlights some of the pitfalls associated with locking. The santa clause problem encompasses a high degree of modeling as well as requiring complex synchronization. As such, employing this problem helps investigate whether \ac{STM} provides any advantages over locking in such scenarios. Finally a concurrent hashmap implementation represents a real world problem used in many concurrent implementations. Together these problems provide a varied perspective by exerting different aspects of each approach such as: waiting on one of multiple conditions and fine grained synchronization.
 \section{Evaluation of Characteristics}
 
 \worksheetend

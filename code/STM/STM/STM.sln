@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.22512.0
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "STM", "STM\STM.csproj", "{7F2C2267-8643-451A-B8C1-8552BE152475}"
 EndProject
@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "STMUnitTest", "STMUnitTest\
 	ProjectSection(ProjectDependencies) = postProject
 		{7F2C2267-8643-451A-B8C1-8552BE152475} = {7F2C2267-8643-451A-B8C1-8552BE152475}
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Evaluation", "Evaluation\Evaluation.csproj", "{5A821C27-792A-44CF-B7CD-A6647BB65CC0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,6 +32,10 @@ Global
 		{C23B35B1-A837-40E4-80B7-67AE029AEE54}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C23B35B1-A837-40E4-80B7-67AE029AEE54}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C23B35B1-A837-40E4-80B7-67AE029AEE54}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A821C27-792A-44CF-B7CD-A6647BB65CC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A821C27-792A-44CF-B7CD-A6647BB65CC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A821C27-792A-44CF-B7CD-A6647BB65CC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A821C27-792A-44CF-B7CD-A6647BB65CC0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
