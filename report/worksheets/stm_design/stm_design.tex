@@ -198,7 +198,7 @@ In \stmnamesp, a reference parameter can be marked as atomic, and becomes a \ac{
 \subsection{Transactional Output Parameters}
 According to \cite[p. 97]{csharp2013specificaiton}: ``A parameter declared with an out modifier is an output parameter.'' An output parameter behaves as a reference parameter, except that it does not need to be instantiated before being passed as an argument. Additionally, every execution path in the method must assign a value to the variable\cite[p. 42]{sestoft2011c}. 
 
-In \stmnamesp, an output parameter can be marked as atomic, and it becomes a \ac{TOP}. Similar to \ac{TRP}, a \ac{TOP} will be tracked in transactions, and assignments made to it in transactions will take effect outside of the transaction when it commits. The reasoning for this, is the same as for \ac{TRP}.
+In \stmname, an output parameter can be marked as atomic, and it becomes a \ac{TOP}. Similar to \ac{TRP}, a \ac{TOP} will be tracked in transactions, and assignments made to it in transactions will take effect outside of the transaction when it commits. The reasoning for this, is the same as for \ac{TRP}.
 
 \begin{lstlisting}[label=lst:atomic_out,
   caption={Transactional Output Parameter},
@@ -250,7 +250,7 @@ In \stmnamesp, a parameter array can be marked as atomic, making assignments to 
     
 \end{lstlisting}
 \section{Example of New Syntax}\label{sec:example_design}
-\bsref{lst:stm_atomic_syntax}, which is a modified version of the race condition example from our previous study\cite[p. 23]{dpt907e14trending}, presents an example of the syntax extensions. On line 6 the transactional variable number is defined and assigned an initial value of 10. The main method defines and starts two threads. \bscode{t1} checks if the value of number is equal to 10 and assigns \bscode{number} times 3 to the variable if the condition is true. These operations are executed as a transaction defined by the \bscode{atomic} keyword and associated block on line 11. \bscode{t2} assigns 20 to number inside a transaction defined on line 17. In this example \stmnamesp removes the race conditions associated with \bscode{t2} changing the value of \bscode{number} between the read on line 12 and the read on line 13. In the case such a change occurs the \ac{STM} system of \stmnamesp will abort and retry one of the implicated transactions.
+\bsref{lst:stm_atomic_syntax}, which is a modified version of the race condition example from our previous study\cite[p. 23]{dpt907e14trending}, presents an example of the syntax extensions. On line 6 the transactional field \bscode{number} is defined and assigned an initial value of 10. The main method defines and starts two threads. \bscode{t1} checks if the value of \bscode{number} is equal to 10 and assigns \bscode{number} times 3 to the field if the condition is true. These operations are executed as a transaction defined by the \bscode{atomic} keyword and associated block on line 11. \bscode{t2} assigns 20 to \bscode{number} inside a transaction defined on line 17. In this example \stmnamesp removes the race conditions associated with \bscode{t2} changing the value of \bscode{number} between the read on line 12 and the read on line 13. In the case such a change occurs the \ac{STM} system of \stmnamesp will abort and retry one of the implicated transactions.
  
 \begin{lstlisting}[label=lst:stm_atomic_syntax,
   caption={Transaction Syntax},
@@ -275,7 +275,7 @@ In \stmnamesp, a parameter array can be marked as atomic, making assignments to 
       public static void Main(string[] args)
       {
           Thread t1 = new Thread ( () => {
-              atomic ={
+              atomic {
                   if (number == 10 )           
                       number = number * 3;
               }
@@ -412,12 +412,12 @@ where $S$ is the general class of C\# statements. As an example of the \bscode{o
 
       public T ConsumeItem()
       {
-          atomic{
+          atomic {
               if(_buffer1.Count == 0)
                   retry;
 
               return _buffer1.Get();
-          }orelse{
+          } orelse {
               if(_buffer2.Count == 0)
                   retry;
 
@@ -497,6 +497,23 @@ To increase the flexibility and orthogonality of the \ac{STM} implementation dyn
 	}
        
 \end{lstlisting}
+
+\section{Summary of Design}
+In order to establish an overview, the design requirements for \stmnamesp will be summarized in the following section. A transactional block can be declared by using the \bscode{atomic} statement, to denote a scope for a transaction. Within such a transaction, any assignments to transactional variables, fields, or properties, will be perceived as executed in one atomic step, by other transactions and non-transactional code. 
+
+To minimize the impact on existing language features, the \bscode{atomic} keyword can be used for making a variable, field, property, or parameter trackable in transactions. This enables continues use of these common C\# features, within a transactional context, including reference parameter, output parameter, and parameter array.
+
+In \stmnamesp we also introduce the keywords \bscode{retry} and \bscode{orElse}, which can be used for conditional synchronization. \bscode{retry} can only be used inside an \bscode{atomic} block, and if encountered, will block execution until a variable in the \bscode{atomic} block has changed. The \bscode{orElse} keyword is associating a block, with an \bscode{atomic} block containing a \bscode{retry} statement. The \bscode{orElse} block will change the initial behavior of the \bscode{retry} statement in the \bscode{atomic} block. Instead of blocking execution when encountering a \bscode{retry} statement, the \bscode{orElse} block will be executed.
+
+Additionally, \stmnamesp allows nesting of transactions, both lexically and dynamically. Nesting uses closed-nesting semantics, thus inner transactions commits into the outer transaction. The inner and outer transactions are not isolated from each other, thus changes made inside the transaction are visible. They are however isolated to all other transactions and non-transactional code.
+
+%Transactional Block
+%Transactional Field
+%Transactional Properties
+%Transactional Local Variables
+%Transactional Parameters (value, reference, output, params)
+%Conditional Synchronization
+%Nesting
 
 %atomic {
 %  if ( booleanexpression ) {
