@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading;
+using STM.Implementation.Lockbased;
 
 namespace STMUnitTest
 {
@@ -96,6 +97,28 @@ namespace STMUnitTest
             threads.ForEach(thread => thread.Start());
             threads.ForEach(thread => thread.Join());
             Assert.AreEqual(0, _queue.Count);
+        }
+
+        [TestMethod]
+        public void TestMultiEnqueueDequeue()
+        {
+            STMSystem.Atomic(() =>
+            {
+                _queue.Enqueue(1);
+                _queue.Enqueue(2);
+                _queue.Enqueue(3);
+            });
+
+            Assert.AreEqual(_queue.Count, 3);
+
+            STMSystem.Atomic(() =>
+            {
+                _queue.Dequeue();
+                _queue.Dequeue();
+            });
+
+            Assert.AreEqual(_queue.Count, 1);
+            Assert.AreEqual(_queue.Dequeue(), 3);
         }
     }
 }

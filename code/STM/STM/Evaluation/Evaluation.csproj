@@ -41,11 +41,26 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\IStartable.cs" />
+    <Compile Include="Common\SCStats.cs" />
+    <Compile Include="Library\DiningPhilosophers.cs" />
+    <Compile Include="Library\SantaClausImpl\Elf.cs" />
+    <Compile Include="Library\SantaClausImpl\Reindeer.cs" />
+    <Compile Include="Library\SantaClausImpl\Santa.cs" />
+    <Compile Include="Library\SantaClausProblem.cs" />
+    <Compile Include="Locking\LockingDiningPhilosophers.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\STM\STM.csproj">
+      <Project>{7f2c2267-8643-451a-b8c1-8552be152475}</Project>
+      <Name>STM</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
