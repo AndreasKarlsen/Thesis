@@ -5,7 +5,7 @@ This chapter describes the implementation of the \ac{STM} system that executes t
 \label{chap:implementation}
 \section{Implementation Criteria}
 \label{sec:stm_impl_criteria}
-This section describes a number of criteria which influences on the choice of \ac{STM} algorithm.
+This section describes a number of criteria which have an influence on the choice of \ac{STM} algorithm.
 
 \subsection{Strong Atomicity}
 As described in \bsref{sec:design_strong_weak_atomicity} strong atomicity ensures atomicity between transactional and non-transactional access. As \stmnamesp is required to support strong atomicity the implementation strategy should facilitate such access.
@@ -58,18 +58,20 @@ McRT detects conflicts only against active transactions\cite[p. 189]{saha2006mcr
 Conflicts between transactions appear as contention on the locks in the system. If multiple transactions attempt to acquire a lock on the same item a conflict is about to occur. In such cases McRT prefers letting transaction wait for the lock over aborting one of the involved transactions, in order to increase throughput\cite[p. 189]{saha2006mcrt}.
 
 \subsection{TL\rom{2}}
+\label{sec:stm_impl_tl2}
 As briefly described in \bsref{sec:intro_related_work}, TL2 only hold locks during the commit process\cite[p. 199]{dice2006transactional}. This is known as commit time locking. TL2 uses lazy updates where writes are recorded in a write-set and written to the associated memory when the transaction commits. Additionally, any reads performed by a transaction is recorded in a read-set which is used to validate the transaction before it commits the content of its write-set\cite[p. 198]{dice2006transactional}. The accumulation of a read-set for the \bscode{retry} will therefore incur no additional overhead.
 
 TL2 uses a global version clock to ensure atomicity\cite[p. 201]{dice2006transactional}. Transaction record a time-stamp when they start. The time-stamp is used to validate the contents of the read-set before the transaction commits. Each item tracked by the \ac{STM} system, has an associated time-stamp which is updated when a transaction commits a new value. If any item in the read-set has a time-stamp which is higher than transactions time-stamp then the item has been modified while the transaction was executing. As a result the transaction must abort and restart.
 
 In order to commit, a transaction must go through the following steps\cite[p. 200]{dice2006transactional}:
 \begin{enumerate}
-\item Acquire the lock on items in the write-set
+\item Acquire the lock on each item in the write-set
 \item Increment and fetch the version clock
 \item Validate the read-set as described above
 \item Commit values in the write-set along with the new time-stamps
-\item Release the lock on items in the write-set
+\item Release the lock on each item in the write-set
 \end{enumerate}
+
 As such the transaction has exclusive access to the items in the write set during the commit phase and detects conflicts lazily against previously committed transactions. 
 
 The version clock can be a source of contention as all transactions must increment version clock as part of the commit operation\cite[p. 120]{harris2010transactional}. A number of ways of reducing contention has been proposed \cite{zhang2008commit}\cite{lev2009anatomy}\cite{avni2008maintaining}.
@@ -278,6 +280,7 @@ The \ac{STM} library supports both lexical and dynamic nesting of transactions. 
 \end{lstlisting}
 \subsubsection{Final Example}
 As a final example employing many of the library features in conjunction \bsref{lst:library_dinning} presents a implementation of the dinning philosophers problem\cite[p. 673]{hoare1978communicating}.  The \bscode{DinningPhilosophers} method on line 3 set up the required forks and philosophers. The \bscode{StartPhilosopher} method starts a new thread representing a philosopher. The philosopher will first attempt to acquire both forks as defined if the transaction on lines 24-31. If one of the forks is not available the transaction will execute a retry on line 27 blocking until this state changes. When the philosophers acquires both forks she will eat represented by the sleep on line 33, following by putting back the forks in the transaction defined on line 36-40.
+
 \begin{lstlisting}[label=lst:library_dinning,
   caption={Library Dinning Philosophers},
   language=Java,  
@@ -342,7 +345,76 @@ As a final example employing many of the library features in conjunction \bsref{
 
 \subsection{Internal Details}
 \label{sec:stm_impl_internal_detials}
+\subsubsection{Writing a Value}
+As described in \bsref{sec:stm_impl_tl2} TL2 uses a write-set to collect any written values to be written to the actual locations when the transaction commits. Therefore any writes to transactional variables must be redirected to the write-set instead of the actual location. \bsref{lst:library_write_value} shows how this is accomplished in the \ac{STM} library. Line 3 gets the currently executing transaction from threadlocal storage. That is each thread gets its own transaction instance when accessing the \bscode{LocalTransaction} property. Based on the status of the transaction different actions are taken. Each thread access a transaction that has the status \bscode{Committed} whenever no transaction is currently executing on that specific thread. Therefore the case on line 6 covers writing a value to a transactional variable from outside a transaction scope. How this is accomplished is explained in \bsref{sec:stm_impl_providing_strong_atomicity}. The case on line 9 covers writing a value as part of a transaction. Here the value to be written is put into the write-set of the transaction performing the write. When the given transaction commits the value will be written back to the transactional variable.
+
+\begin{lstlisting}[label=lst:library_write_value,
+  caption={Writing to a Transactional Variable},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+  
+  private void SetValueInternal(T value)
+  {
+    var me = Transaction.LocalTransaction;
+    switch (me.Status)
+    {
+      case Transaction.TransactionStatus.Committed:
+        SetValueNonTransactional(value);
+        break;
+      case Transaction.TransactionStatus.Active:
+        me.WriteSet.Put(this, value);
+        break;
+    }
+  }
+\end{lstlisting}
+
+\subsubsection{Reading a Value}
+How the value of a transactional variable is read depends on the context in which the read occurs. Reading a the value of a transactional variable from non transactional code simply amounts to reading the value contained within the variable, as this is value is guaranteed to be the most recently committed value. On the other hand a read from transactional code has to read a uncommitted value which was previously written by the same transaction, if such a value exists. Only if no such value is present should the transaction read the value currently contained in the transactional variable. \bsref{lst:library_read_value} shows how reading the value of a transactional variable is implemented in the \ac{STM} library. The case on line 6 corresponds to a non transactional read and is forwarded directly to the base class in order to read retrieve the value of the transactional variable. The case on line 8 corresponds to a transactional write. Line 10-11 retrieves a previously written value from the transactions write-set if such a value is presents. If no such value is present the value contained in  of the current transaction is read instead. Finally, on line 15, the transactional variable is added to the active transactions read-set so that the read can be validated before the transaction commits.
+\begin{lstlisting}[label=lst:library_read_value,
+  caption={Reading a Transactional Variable},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+  
+  private T GetValueInternal()
+  {
+    var me = Transaction.LocalTransaction;
+    switch (me.Status)
+    {
+      case Transaction.TransactionStatus.Committed:
+        return base.GetValue();
+      case Transaction.TransactionStatus.Active:
+        T value;
+        if (!me.WriteSet.Contains(this))
+          value = base.GetValue();
+        else
+          value = (T)me.WriteSet.Get(this);
+
+        me.ReadSet.Add(this);
+        return value;
+    }
+  }
+\end{lstlisting}
+\subsubsection{Committing a Transaction}
+
 \subsubsection{Providing Strong Atomicity}
+\label{sec:stm_impl_providing_strong_atomicity}
+As described in \bsref{sec:stm_requirements} the \ac{STM} system must support strong atomicity. To that end the \ac{STM} system is able to detect whether or not read and write operations occur as transactional or non-transactional and the take the appropriate actions.
 \subsubsection{Providing Opacity}
 
 
