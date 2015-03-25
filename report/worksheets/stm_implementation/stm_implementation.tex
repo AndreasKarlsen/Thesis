@@ -116,7 +116,10 @@ Description of selected algorithm.
 %Avoiding deadlocks.
 
 \section{Implementation Description}
-\kasper[inline]{Description of examples}
+This section describes the \ac{STM} library which executes transactions in \stmnamesp. \bsref{sec:stm_library_interface} describes the library interface while \bsref{sec:stm_impl_internal_detials} describes the most important details of the implementation.
+
+\subsection{Library Interface} 
+\label{sec:stm_library_interface}
 The \ac{STM} system which executes transactions in \stmnamesp is implemented as a C\# library. Transactions are started by using the one of the overloads of the static \bscode{Atomic} method on the \bscode{STMSystem} class. The static \bscode{Atomic} is overloaded with support for transaction with and without return values as well as specification of a zero to many \bscode{orelse} blocks. \bsref{lst:library_atomic} presents a example of transaction definitions. On lines 5-8 the simple transaction definition corresponding to the \bscode{atomic} block is shown. Lines 10-14 depicts the definition of a transaction with a return value. Finally lines 16-23 depict the definition of a transaction with a associated \bscode{orelse} block. 
 
 \begin{lstlisting}[label=lst:library_atomic,
@@ -159,6 +162,7 @@ The \ac{STM} system which executes transactions in \stmnamesp is implemented as 
   }
 \end{lstlisting}
 
+\subsubsection{Transactional Variables}
 Transactional variables are created by declaring instances of the generic \bscode{TMVar} class. Instances of the \bscode{TMVar} class wraps a object to which transaction transactional access is provided.  The constructor of the \bscode{TMVar} class takes a type parameter specifying the type which the \bscode{TMVar} instance wraps.
 
 The \bscode{TMVar} class exposes methods and properties for getting and setting the wrapped object. Any access trough these operations is tracked by the \ac{STM} system, both transactional and non-transactional. Furthermore the \bscode{TMVar} class uses C\#'s implicit conversion feature to allow a \bscode{TMVar} to implicit be converted to the enclosed value whenever the \bscode{TMVar} occurs as an r-value. Special types, deriving from \bscode{TMVar}, is supplied for the common types \bscode{int}, \bscode{long}, \bscode{float}, \bscode{double} \bscode{uint} and \bscode{ulong}. These types supply transactional support for common operations such as \bscode{++} and \bscode{--} which are executed on the enclosed object. \bsref{lst:library_tmvar}  shows the declaration of a number of transactional variables. Lines 5-7 uses the generic \bscode{TMVar} class to wrap objects of various types. Line 8 declares a \bscode{TMInt}, which is the specialized type for transaction integers. Lines 11-17 declares a transaction that on line 13 check if the boolean value wrapped by \bscode{tmBool} is true and the string value wrapped by \bscode{tmString} is equal to the string \bscode{"abc"}. \bscode{tmBool} and \bscode{tmString} is implicitly converted to the wrapped value while preserving transnational access, allowing the transactional variable to be used as if they where and instance of the type which they are wrapping. Line 15 uses the \bscode{++} operator supported by the \bscode{TMInt} type.
@@ -195,7 +199,7 @@ The \bscode{TMVar} class exposes methods and properties for getting and setting 
     }
   }
 \end{lstlisting}
-
+\subsubsection{Retry}
 The library supports the \bscode{retry} construct via the static \bscode{Retry} method on the \bscode{STMSystem} class. The retry method can be called from both in and outside transactions but will only have an effect when called inside transactions. \bsref{lst:library_retry} presents the example of how the \bscode{Retry} method can be used. Lines 5-11 shows a transactions dequeing and item from a shared buffer. On line 8 the \bscode{Retry} method is used to initiate a retry in case the queue is empty. The cell on line 15 has no effect as it is not enclosed in a transaction.
 
 \begin{lstlisting}[label=lst:library_retry,
@@ -229,7 +233,7 @@ The library supports the \bscode{retry} construct via the static \bscode{Retry} 
     }
   }
 \end{lstlisting}
-
+\subsubsection{Nesting}
 The \ac{STM} library supports both lexical and dynamic nesting of transactions. Lexical nesting is achieved simply by specifying a transaction within the body of another transaction while dynamic nesting is achieved trough calling methods defined using transactions within the body of another transactions. Nesting is done under closed nesting semantics as described in \bsref{sec:stm_req_nesting}. A example of nesting using the C\# library is shown in \bsref{lst:library_nesting}. Here lines two 6-15 shows a lexically nested transaction while lines lines 20-24 show two dynamically nested transactions as the \bscode{Enqueue} and \bscode{Dequeue} methods are themselves defined using a transactions. 
 %Nesting
 \begin{lstlisting}[label=lst:library_nesting,
@@ -272,7 +276,7 @@ The \ac{STM} library supports both lexical and dynamic nesting of transactions. 
     }
   }
 \end{lstlisting}
-
+\subsubsection{Final Example}
 As a final example employing many of the library features in conjunction \bsref{lst:library_dinning} presents a implementation of the dinning philosophers problem\cite[p. 673]{hoare1978communicating}.  The \bscode{DinningPhilosophers} method on line 3 set up the required forks and philosophers. The \bscode{StartPhilosopher} method starts a new thread representing a philosopher. The philosopher will first attempt to acquire both forks as defined if the transaction on lines 24-31. If one of the forks is not available the transaction will execute a retry on line 27 blocking until this state changes. When the philosophers acquires both forks she will eat represented by the sleep on line 33, following by putting back the forks in the transaction defined on line 36-40.
 \begin{lstlisting}[label=lst:library_dinning,
   caption={Library Dinning Philosophers},
@@ -335,6 +339,12 @@ As a final example employing many of the library features in conjunction \bsref{
     }
   }
 \end{lstlisting}
+
+\subsection{Internal Details}
+\label{sec:stm_impl_internal_detials}
+\subsubsection{Providing Strong Atomicity}
+\subsubsection{Providing Opacity}
+
 
 \kasper[inline]{obstruction freedom useful in practice}
 \kasper[inline]{pending commit, permissiveness}
