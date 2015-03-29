@@ -23,37 +23,6 @@ namespace STM.Implementation.Lockbased
         public static T Atomic<T>(Func<T> stmAction)
         {
             return AtomicInternal(new List<Func<T>> {stmAction});
-
-            /*
-            var result = default(T);
-            while (true)
-            {
-
-                var me = Transaction.StartTransaction();
-                try
-                {
-                    result = stmAction();
-
-                    if (OnValidate(me) && me.Commit())
-                    {
-                        OnCommit(me);
-                        return result;
-                    }
-
-                    me.Abort();
-                }
-                catch (STMAbortException)
-                {
-                    me.Abort();
-                }
-                catch (STMRetryException)
-                {
-                    WaitOnReadset(me);
-                    me.Abort();
-                }
-                catch (STMException) { }
-
-            }*/
         }
 
         public static T Atomic<T>(Func<T> stmAction, params Func<T>[] orElses)
@@ -109,6 +78,7 @@ namespace STM.Implementation.Lockbased
             {
                 var stmAction = stmActions[index];
 
+                //Start new or nested transaction
                 var prevTransaction = Transaction.LocalTransaction;
                 var me = prevTransaction.Status == Transaction.TransactionStatus.Active ? 
                     Transaction.StartNestedTransaction(prevTransaction) : 
@@ -116,21 +86,11 @@ namespace STM.Implementation.Lockbased
 
                 try
                 {
+                    //Execute transaction body
                     result = stmAction();
 
-                    if (OnValidate(me) && me.Commit())
+                    if (me.Commit())
                     {
-                        if (me.IsNested)
-                        {
-                            me.WriteSet.Unlock();
-                            me.MergeWithParent();
-                            Transaction.LocalTransaction = me.Parent;
-                        }
-                        else
-                        {
-                            OnCommit(me);
-                        }
-
                         return result;
                     }
 
@@ -142,6 +102,15 @@ namespace STM.Implementation.Lockbased
                 catch (STMRetryException)
                 {
                     index = HandleRetry(stmActions, me, index, overAllReadSet);
+                }
+                catch (Exception) //Catch non stm related exceptions which occurs in transactions
+                {
+                    //Throw exception of transaction can commit
+                    //Else abort and rerun transaction
+                    if (me.Commit())
+                    {
+                        throw;
+                    }
                 }
 
                 nrAttempts++;
@@ -162,70 +131,6 @@ namespace STM.Implementation.Lockbased
         }
 
         #endregion Atomic   
-
-        #region Commit
-
-        private static void OnCommit(Transaction transaction)
-        {
-            var writeStamp = VersionClock.IncrementClock();
-            foreach (var entry in transaction.WriteSet)
-            {
-                var lo = entry.Key;
-                var value = entry.Value;
-                lo.Commit(value, writeStamp);
-            }
-
-            transaction.WriteSet.Unlock();
-            transaction.WriteSet.Clear();
-            transaction.ReadSet.Clear();
-        }
-
-        private static bool OnValidate(Transaction transaction)
-        {
-
-            if (transaction.Status == Transaction.TransactionStatus.Aborted)
-            {
-                return false;
-            }
-
-            if (!transaction.WriteSet.TryLock(TIME_OUT))
-            {
-                return false;
-            }
-
-            if (ValidateReadset(transaction, transaction.ReadSet))
-            {
-                return true;
-            }
-
-            transaction.WriteSet.Unlock();
-            return false;
-        }
-
-        private static bool ValidateReadset(Transaction transaction, ReadSet readSet)
-        {
-            foreach (var lo in readSet)
-            {
-                if (!lo.Validate(transaction))
-                {
-                    return false;
-                }
-                /*
-                if (lo.IsLocked() && !lo.IsLockedByCurrentThread())
-                {
-                    return false;
-                }
-
-                if (lo.TimeStamp > transaction.ReadStamp)
-                {
-                    return false;
-                }*/
-            }
-
-            return true;
-        }
-
-        #endregion Commit
 
         #region Retry
 
@@ -283,7 +188,7 @@ namespace STM.Implementation.Lockbased
                 i++;
             }
 
-            if (!ValidateReadset(me, readSet))
+            if (!readSet.Validate(me))
             {
                 return;
             }
@@ -295,36 +200,6 @@ namespace STM.Implementation.Lockbased
 #if DEBUG
             Console.WriteLine("WAIT ON RETRY: " + me.ID);
 #endif
-            /*
-                //Attempt to block the transaction waiting for some value to change
-                //If unable simply return and rerun the transaction from the start
-                if (readset.TryLock(TIME_OUT))
-                {
-                    if (!ValidateReadset(readset))
-                    {
-                        readset.UnLock();
-                        return true;
-                    }
-
-                    var waiton = new WaitHandle[readset.Count()];
-
-                    var i = 0;
-                    foreach (var item in readset.LockObjects)
-                    {
-                        waiton[i] = item.RegisterWaitHandle();
-                        i++;
-                    }
-                    readset.UnLock();
-#if DEBUG
-                    Console.WriteLine("Transaction: " + me.ID + " waiting for retry.");
-#endif
-                    WaitHandle.WaitAny(waiton);               
-#if DEBUG
-                    Console.WriteLine("Transaction: " + me.ID + " awoken from retry.");
-#endif
-                }*/
-
-
         }
 
         #endregion Retry

@@ -1,22 +1,30 @@
 ﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
 	<s:Boolean x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=15F3C48B7E944FE1A74C125C283D6F13/@KeyIndexDefined">True</s:Boolean>
 	<s:Int64 x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=15F3C48B7E944FE1A74C125C283D6F13/GroupingIndex/@EntryValue">4</s:Int64>
+	
 	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=15F3C48B7E944FE1A74C125C283D6F13/Name/@EntryValue">DynamicTest</s:String>
 	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=15F3C48B7E944FE1A74C125C283D6F13/XmlSerializedElements/@EntryValue">&lt;Session&gt;&lt;Elements /&gt;&lt;/Session&gt;</s:String>
 	
 	<s:Boolean x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=3EC8A4AC5ADD45CA8A8D25CFE3668A43/@KeyIndexDefined">True</s:Boolean>
 	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=3EC8A4AC5ADD45CA8A8D25CFE3668A43/Filter/@EntryValue">Success, Failed</s:String>
 	<s:Int64 x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=3EC8A4AC5ADD45CA8A8D25CFE3668A43/GroupingIndex/@EntryValue">4</s:Int64>
+	
 	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=3EC8A4AC5ADD45CA8A8D25CFE3668A43/Name/@EntryValue">TestEnqueue</s:String>
+	
 	
 	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=3EC8A4AC5ADD45CA8A8D25CFE3668A43/XmlSerializedElements/@EntryValue">&lt;Session&gt;&lt;Elements /&gt;&lt;/Session&gt;</s:String>
 	<s:Boolean x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=4C99C98A7A2A4179909F60811F4792A8/@KeyIndexDefined">True</s:Boolean>
 	<s:Int64 x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=4C99C98A7A2A4179909F60811F4792A8/GroupingIndex/@EntryValue">4</s:Int64>
 	
 	
+	
+	
 	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=4C99C98A7A2A4179909F60811F4792A8/Name/@EntryValue">TestThreadedEnqueuing</s:String>
-	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=4C99C98A7A2A4179909F60811F4792A8/XmlSerializedElements/@EntryValue">&lt;Session&gt;&lt;Elements&gt;&lt;UnitTestElement Provider="MSTest" Id="MsTest:STMUnitTest.NestingTest" type="MsTestTestClassElement" TypeName="STMUnitTest.NestingTest" Project="C23B35B1-A837-40E4-80B7-67AE029AEE54" /&gt;&lt;UnitTestElement Provider="MSTest" Id="MsTest:STMUnitTest.RaceConditionTests" type="MsTestTestClassElement" TypeName="STMUnitTest.RaceConditionTests" Project="C23B35B1-A837-40E4-80B7-67AE029AEE54" /&gt;&lt;UnitTestElement Provider="MSTest" Id="MsTest:STMUnitTest.VariousTest" type="MsTestTestClassElement" TypeName="STMUnitTest.VariousTest" Project="C23B35B1-A837-40E4-80B7-67AE029AEE54" /&gt;&lt;UnitTestElement Provider="MSTest" Id="MsTest:STMUnitTest.VariousTest.MaxAttemptsTest" ParentId="MsTest:STMUnitTest.VariousTest" type="MsTestTestMethodElement" MethodName="MaxAttemptsTest" TypeName="STMUnitTest.VariousTest" Project="C23B35B1-A837-40E4-80B7-67AE029AEE54" /&gt;&lt;UnitTestElement Provider="MSTest" Id="MsTest:STMUnitTest.NestingTest.NestingOrElseTest3" ParentId="MsTest:STMUnitTest.NestingTest" type="MsTestTestMethodElement" MethodName="NestingOrElseTest3" TypeName="STMUnitTest.NestingTest" Project="C23B35B1-A837-40E4-80B7-67AE029AEE54" /&gt;&lt;UnitTestElement Provider="MSTest" Id="MsTest:STMUnitTest.RaceConditionTests.NonTransactionalWriteTest" ParentId="MsTest:STMUnitTest.RaceConditionTests" type="MsTestTestMethodElement" MethodName="NonTransactionalWriteTest" TypeName="STMUnitTest.RaceConditionTests" Project="C23B35B1-A837-40E4-80B7-67AE029AEE54" /&gt;&lt;/Elements&gt;&lt;/Session&gt;</s:String>
+	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=4C99C98A7A2A4179909F60811F4792A8/XmlSerializedElements/@EntryValue">&lt;Session&gt;&lt;Elements /&gt;&lt;/Session&gt;</s:String>
 	<s:Boolean x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=CB0B54B0F7164A65938FF20E9094E89E/@KeyIndexDefined">True</s:Boolean>
 	<s:Int64 x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=CB0B54B0F7164A65938FF20E9094E89E/GroupingIndex/@EntryValue">4</s:Int64>
+	
+	
+	
 	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=CB0B54B0F7164A65938FF20E9094E89E/Name/@EntryValue">LockTest</s:String>
-	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=CB0B54B0F7164A65938FF20E9094E89E/XmlSerializedElements/@EntryValue">&lt;Session&gt;&lt;/Session&gt;</s:String></wpf:ResourceDictionary>
+	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=CB0B54B0F7164A65938FF20E9094E89E/XmlSerializedElements/@EntryValue">&lt;Session&gt;&lt;Elements /&gt;&lt;/Session&gt;</s:String></wpf:ResourceDictionary>

@@ -1,5 +1,4 @@
 ﻿TODO:
-Exceptions
 
 
 DONE:
@@ -9,4 +8,6 @@ Use validate method for commit validation
 Commit non-transactional write
 Create test for non-transactional write
 Max attempts
+Exceptions
+non-transactional ++ --
 

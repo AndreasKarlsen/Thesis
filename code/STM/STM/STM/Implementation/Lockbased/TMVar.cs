@@ -41,11 +41,12 @@ namespace STM.Implementation.Lockbased
                     T value;
                     if (!me.WriteSet.Contains(this))
                     {
+                        var preStamp = TimeStamp;
                         value = base.GetValue();
-
-                        if (IsLocked() || me.ReadStamp < TimeStamp)
+                        
+                        if (IsLocked() || preStamp != TimeStamp ||  me.ReadStamp < preStamp)
                         {
-                            throw new STMAbortException("Aborted due to read from locked object");
+                            throw new STMAbortException("Aborted due to inconsistent read");
                         }
                     }
                     else
@@ -69,11 +70,6 @@ namespace STM.Implementation.Lockbased
         public override void SetValue(T value)
         {
             SetValueInternal(value);
-            /*
-            if (!Validate())
-            {
-                throw new STMAbortException("Failed validation");
-            }*/
         }
 
         private void SetValueInternal(T value)

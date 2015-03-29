@@ -111,48 +111,64 @@ namespace STM
             set { _transactionStatus = value; }
         }
 
+        #endregion Status
 
+        #region Commit
 
         public bool Commit()
-        {  
-            /*
-            bool commited = false;
-            lock (LockObject)
+        {
+            if (!IsNested)
             {
-                if (_transactionStatus == TransactionStatus.Active)
-                {
-                    _transactionStatus = TransactionStatus.Committed;
-#if DEBUG
-                    Console.WriteLine("Transaction: " + ID + " commited");
-#endif
-                    commited = true;
-                }
+                int writeStamp;
+                if (!Validate(out writeStamp))
+                    return false;
+
+                HandleCommit(writeStamp);
+
             }
-            //Interlocked.CompareExchange(ref _transactionStatus, Status.Committed, Status.Active);
-            return commited;
-             * 
-             */
+            else
+            {
+                if (!ValidateReadset())
+                    return false;
+
+                MergeWithParent();
+                Transaction.LocalTransaction = Parent;
+            }
 
 #if DEBUG
-                    Console.WriteLine("COMMITTED: "+ID);
+            Console.WriteLine("COMMITTED: "+ID);
 #endif
 
-            _transactionStatus = TransactionStatus.Committed;
+            Status = TransactionStatus.Committed;
+            return true;
 
+            
+            if (!Validate(out writeStamp)) 
+                return false;
+            
+            
+            if (IsNested)
+            {
+                WriteSet.Unlock();
+                MergeWithParent();
+                Transaction.LocalTransaction = Parent;
+            }
+            else
+            {
+                HandleCommit(writeStamp);
+            }
+
+
+#if DEBUG
+            Console.WriteLine("COMMITTED: "+ID);
+#endif
+
+            Status = TransactionStatus.Committed;
             return true;
         }
 
         public void Abort()
         {
-            /*
-            lock (LockObject)
-            {
-                _transactionStatus = TransactionStatus.Aborted;
-#if DEBUG
-                Console.WriteLine("Transaction: " + ID + " aborted");
-#endif
-            }*/
-
             _transactionStatus = TransactionStatus.Aborted;
 #if DEBUG
             Console.WriteLine("ABORTED: "+ID);
@@ -162,7 +178,44 @@ namespace STM
 
         }
 
-        #endregion Status
+        private void HandleCommit(int writeStamp)
+        {
+            foreach (var entry in WriteSet)
+            {
+                var lo = entry.Key;
+                var value = entry.Value;
+                lo.Commit(value, writeStamp);
+            }
 
+            WriteSet.Unlock();
+        }
+
+
+        public bool Validate(out int writeStamp)
+        {
+            writeStamp = -1;
+
+            if (Status == TransactionStatus.Aborted 
+                || !WriteSet.TryLock(STMSystem.TIME_OUT))
+                return false;
+
+            if (ValidateReadset())
+            {
+                writeStamp = VersionClock.IncrementClock();
+                return true;
+            }
+
+            WriteSet.Unlock();
+            return false;
+        }
+
+
+        public bool ValidateReadset()
+        {
+            return ReadSet.Validate(this);
+        }
+
+
+        #endregion Commit
     }
 }

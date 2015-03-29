@@ -345,7 +345,9 @@ As a final example employing many of the library features in conjunction \bsref{
 
 \subsection{Internal Details}
 \label{sec:stm_impl_internal_detials}
+This section highlights the most important aspects of the \ac{STM} libraries internal implementation.
 \subsubsection{Writing a Value}
+\label{sec:stm_imple_internal_detials_write}
 As described in \bsref{sec:stm_impl_tl2} TL2 uses a write-set to collect any written values to be written to the actual locations when the transaction commits. Therefore any writes to transactional variables must be redirected to the write-set instead of the actual location. \bsref{lst:library_write_value} shows how this is accomplished in the \ac{STM} library. Line 3 gets the currently executing transaction from threadlocal storage. That is each thread gets its own transaction instance when accessing the \bscode{LocalTransaction} property. Based on the status of the transaction different actions are taken. Each thread access a transaction that has the status \bscode{Committed} whenever no transaction is currently executing on that specific thread. Therefore the case on line 6 covers writing a value to a transactional variable from outside a transaction scope. How this is accomplished is explained in \bsref{sec:stm_impl_providing_strong_atomicity}. The case on line 9 covers writing a value as part of a transaction. Here the value to be written is put into the write-set of the transaction performing the write. When the given transaction commits the value will be written back to the transactional variable.
 
 \begin{lstlisting}[label=lst:library_write_value,
@@ -377,6 +379,7 @@ As described in \bsref{sec:stm_impl_tl2} TL2 uses a write-set to collect any wri
 \end{lstlisting}
 
 \subsubsection{Reading a Value}
+\label{sec:stm_imple_internal_detials_read}
 How the value of a transactional variable is read depends on the context in which the read occurs. Reading a the value of a transactional variable from non transactional code simply amounts to reading the value contained within the variable, as this is value is guaranteed to be the most recently committed value. On the other hand a read from transactional code has to read a uncommitted value which was previously written by the same transaction, if such a value exists. Only if no such value is present should the transaction read the value currently contained in the transactional variable. \bsref{lst:library_read_value} shows how reading the value of a transactional variable is implemented in the \ac{STM} library. The case on line 6 corresponds to a non transactional read and is forwarded directly to the base class in order to read retrieve the value of the transactional variable. The case on line 8 corresponds to a transactional write. Line 10-11 retrieves a previously written value from the transactions write-set if such a value is presents. If no such value is present the value contained in  of the current transaction is read instead. Finally, on line 15, the transactional variable is added to the active transactions read-set so that the read can be validated before the transaction commits.
 \begin{lstlisting}[label=lst:library_read_value,
   caption={Reading a Transactional Variable},
@@ -411,17 +414,123 @@ How the value of a transactional variable is read depends on the context in whic
   }
 \end{lstlisting}
 \subsubsection{Committing a Transaction}
+Committing a transaction follows the steps described in \bsref{sec:stm_impl_tl2}. \bsref{lst:library_commit} shows the implementations of these steps. The \bscode{Commit} method declared on line 3 drives the commit process and returns \bscode{true} if the commit succeeds. If the transactions is not nested within another transaction the body of the if statement on line 6 is entered. Here call to the \bscode{Validate} method on line 8 acquires the lock on each object in the transactions write-set, validates the read-set and increments the version-clock acquiring the new writestamp. The \bscode{Validate} method returns true if the read-set could be validated correctly and returns the new writestamp using a \bscode{out} parameter. All locks are acquired using a timeout in order to prevent deadlocks and all acquired locks are released if validation of the read-set fails. If validation succeeds the \bscode{HandleCommit} method commits all buffered writes to their respective transactional variables after which all acquired locks are released. 
 
+If the transaction is nested within another transaction the else case on line 13 is executed. Need not acquire the lock on items in their read-set or increment the version clock as they will not be responsible for committing the values under closed nested semantics. As such a validation of the read-set, as seen on line 15, is sufficient. If the validation succeeds the transaction merges its read and write sets with those of the outer transaction in order for the outer transaction to commit any written values when its reaches its commit stage. On line 19 the outer transaction is restored as the currently active transaction so that i can be resumed. Finally on line 22 the status of the transaction is changed to committed before returning on line 23.
+
+
+\begin{lstlisting}[label=lst:library_commit,
+  caption={Committing a Transaction},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set, bool}]  % Start your code-block
+  
+  public bool Commit()
+  {
+    if (!IsNested)
+    {
+      int writeStamp;
+      if (!Validate(out writeStamp))
+        return false;
+
+      HandleCommit(writeStamp);
+    }
+    else
+    {
+      if (!ValidateReadset())
+        return false;
+
+      MergeWithParent();
+      Transaction.LocalTransaction = Parent;
+    }
+
+    Status = TransactionStatus.Committed;
+    return true;
+  }
+\end{lstlisting}
 \subsubsection{Providing Strong Atomicity}
 \label{sec:stm_impl_providing_strong_atomicity}
-As described in \bsref{sec:stm_requirements} the \ac{STM} system must support strong atomicity. To that end the \ac{STM} system is able to detect whether or not read and write operations occur as transactional or non-transactional and the take the appropriate actions.
+As described in \bsref{sec:stm_requirements} the \ac{STM} system must support strong atomicity. In \bsref{sec:stm_imple_internal_detials_write} it is described how the \ac{STM} system is able to detect whether or not read and write operations occur inside or outside a transaction and take different actions based on this information. In the case of a non-transactional read the system simply reads the most recently committed value as described in \bsref{sec:stm_imple_internal_detials_read}, ensuring that no uncommitted values can be read. A non-transnational write is slightly more complicated as the \ac{STM} system must ensure atomicty between both non-transactional access and transactional access. To that extend the approach described by Hindman et al. in \cite{hindman2006atomicity} of executing non-transactional access as optimized mini transaction. As no value are read during a non-transactional write a non transactional write in the context of the TL2 algorithm consist only of 
+\begin{inparaenum}[(1)]
+\item Acquiring the lock on the transactional variable to which the write occurs
+\item Incrementing and getting the value of the version clock
+\item Committing the new value and timestamp
+\item Releasing the acquired lock,
+\end{inparaenum}
+any access to the read-set can be optimized away. The \ac{STM} library implements this approach in the \bscode{SetValueNonTransactional} of the \bscode{TMVar<T>} class shown in \bsref{lst:library_non_trans_write}.
+\begin{lstlisting}[label=lst:library_non_trans_write,
+  caption={Non-transactional Write},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+  
+  private void SetValueNonTransactional(T value)
+  {
+    Lock();
+    Commit(value,VersionClock.IncrementClock());
+    Unlock();
+  }
+\end{lstlisting}
+
 \subsubsection{Providing Opacity}
+As described in \bsref{sec:stm_req_opacity} providing opacity requires ensuring that transactions do not read invalid data throughout their execution. Therefor a transaction must validate a read when it occurs, ensuring that the transaction is not allowed to continue when the read is inconsistent. For this purpose the \ac{STM} library uses the approach shown by \cite[p. 117]{harris2010transactional} and extends the reading of values to the implementation depicted in \bsref{label=lst:library_opacity}. As seen on lines 12-16 reading a value directly from the transactional variable has been extended with validation ensuring that the transaction aborts if the variable has been changed the transaction recorded its timestamp.
+\begin{lstlisting}[label=lst:library_opacity,
+  caption={Providing Opacity},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+  
+  private T GetValueInternal()
+  {
+    var me = Transaction.LocalTransaction;
+    switch (me.Status)
+    {
+      case Transaction.TransactionStatus.Committed:
+        return base.GetValue();
+      case Transaction.TransactionStatus.Active:
+        T value;
+        if (!me.WriteSet.Contains(this))
+        {
+          var preStamp = TimeStamp;
+          value = base.GetValue();
 
+          if (IsLocked() || preStamp != TimeStamp ||  me.ReadStamp < preStamp)
+            throw new STMAbortException("Aborted due to inconsistent read");
+        }
+        else
+          value = (T)me.WriteSet.Get(this);
 
-\kasper[inline]{obstruction freedom useful in practice}
-\kasper[inline]{pending commit, permissiveness}
-\andreas[inline]{Analysis of privatization techniques is done by \cite{spear2007privatization}. Strong atomicity is the technique with less restrictions, but worst performance}
-\andreas[inline]{Strong atomicity can be optimized via compile time optimizations and obtain good performance. Key is removing barriers cite \cite{hindman2006atomicity}}
-\andreas[inline]{In some cases, the order of reading values must be enforced. The compiler will reorder the value readings, and the volatile keyword must be used to enforce no optimizations from the compiler. Example \cite[p. 35]{harris2010transactional}}.
-\andreas[inline]{We must handle interoperation with binaries using our library. They will be translated, and not annotated with atomic keywords. We must accommodate this when designing the compiler, to ensure interaction with atomicsharp works.}
+        me.ReadSet.Add(this);
+        return value;
+    }
+  }
+\end{lstlisting}
+
+%\kasper[inline]{obstruction freedom useful in practice}
+%\kasper[inline]{pending commit, permissiveness}
+%\andreas[inline]{Analysis of privatization techniques is done by \cite{spear2007privatization}. Strong atomicity is the technique with less restrictions, but worst performance}
+%\andreas[inline]{Strong atomicity can be optimized via compile time optimizations and obtain good performance. Key is removing barriers cite \cite{hindman2006atomicity}}
+%\andreas[inline]{In some cases, the order of reading values must be enforced. The compiler will reorder the value readings, and the volatile keyword must be used to enforce no optimizations from the compiler. Example \cite[p. 35]{harris2010transactional}}.
+%\andreas[inline]{We must handle interoperation with binaries using our library. They will be translated, and not annotated with atomic keywords. We must accommodate this when designing the compiler, to ensure interaction with atomicsharp works.}
 \worksheetend
