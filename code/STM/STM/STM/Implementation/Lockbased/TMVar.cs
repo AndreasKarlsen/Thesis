@@ -33,37 +33,33 @@ namespace STM.Implementation.Lockbased
         private T GetValueInternal()
         {
             var me = Transaction.LocalTransaction;
-           // var readset = ReadSet.GetLocal();
             switch (me.Status)
             {
                 case Transaction.TransactionStatus.Committed:
                     return base.GetValue();
                 case Transaction.TransactionStatus.Active:
-                    var writeset = me.WriteSet;
-                    if (!writeset.Contains(this))
+                    T value;
+                    if (!me.WriteSet.Contains(this))
                     {
-                        var value = base.GetValue();
-#if DEBUG
-                        Console.WriteLine("Transaction: " + me.ID + " read:" + value);
-#endif
+                        var preStamp = TimeStamp;
+                        value = base.GetValue();
                         
-                        if (IsLocked() || me.ReadStamp < TimeStamp)
+                        if (IsLocked() || preStamp != TimeStamp ||  me.ReadStamp < preStamp)
                         {
-                            throw new STMAbortException("Aborted due to read from locked object");
+                            throw new STMAbortException("Aborted due to inconsistent read");
                         }
-
-                        me.ReadSet.Add(this);
-                        return value;
                     }
                     else
                     {
-                        var curVersion = (T)writeset.Get(this);
-#if DEBUG
-                        Console.WriteLine("Transaction: " + me.ID + " read:" + curVersion);
-#endif
-                        me.ReadSet.Add(this);
-                        return curVersion;
+                        value = (T)me.WriteSet.Get(this);
                     }
+
+                    #if DEBUG
+                        Console.WriteLine("Transaction: " + me.ID + " read:" + value);
+                    #endif
+
+                    me.ReadSet.Add(this);
+                    return value;
                 case Transaction.TransactionStatus.Aborted:
                     throw new STMException("Aborted transaction attempted to read.");
                 default:
@@ -74,11 +70,6 @@ namespace STM.Implementation.Lockbased
         public override void SetValue(T value)
         {
             SetValueInternal(value);
-            /*
-            if (!Validate())
-            {
-                throw new STMAbortException("Failed validation");
-            }*/
         }
 
         private void SetValueInternal(T value)
@@ -90,31 +81,15 @@ namespace STM.Implementation.Lockbased
                     SetValueNonTransactional(value);
                     break;
                 case Transaction.TransactionStatus.Active:
-                    var writeset = me.WriteSet;
-                    if (!writeset.Contains(this))
-                    {
-
-                        if (IsLocked())
-                        {
-                            throw new STMAbortException("Aborted due to read from locked object");
-                        }
-#if DEBUG
+                    me.WriteSet.Put(this, value);
+                    #if DEBUG
                         Console.WriteLine("Transaction: " + me.ID + " wrote:" + value);
-#endif
-                        writeset.Put(this, value);
-                    }
-                    else
-                    {
-#if DEBUG
-                        Console.WriteLine("Transaction: " + me.ID + " wrote:" + value);
-#endif
-                        writeset.Put(this, value);
-                    }
+                    #endif
                     break;
                 case Transaction.TransactionStatus.Aborted:
                     throw new STMException("Aborted transaction attempted to write.");
                 default:
-                    throw new Exception("Shits on fire yo!");
+                    throw new Exception("Unkown transaction state!");
             }
         }
 

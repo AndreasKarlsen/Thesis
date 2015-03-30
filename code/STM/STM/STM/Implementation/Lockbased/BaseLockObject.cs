@@ -15,7 +15,6 @@ namespace STM.Implementation.Lockbased
         protected readonly ILock ReentrantLock = new ReentrantLock();
         protected readonly IList<ManualResetEvent> WaitHandles = new List<ManualResetEvent>();
         protected readonly object WaitHandlesLock = new object();
-        //internal readonly Semaphore WaitHandle = new Semaphore(0, 99);
         protected int WaitCount = 0;
 
         private volatile int _stamp;

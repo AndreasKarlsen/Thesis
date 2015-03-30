@@ -24,12 +24,32 @@ namespace STM.Implementation.Lockbased
          #region Inc Dec
          public void Inc()
          {
-             this.Value = this.Value + 1;
+             if (Transaction.LocalTransaction.Status == Transaction.TransactionStatus.Active)
+             {
+                 STMSystem.Atomic(() =>
+                 {
+                     this.Value = this.Value + 1;
+                 });
+             }
+             else
+             {
+                 this.Value = this.Value + 1;
+             }
          }
 
          public void Dec()
          {
-             this.Value = this.Value - 1;
+             if (Transaction.LocalTransaction.Status == Transaction.TransactionStatus.Active)
+             {
+                 STMSystem.Atomic(() =>
+                 {
+                     this.Value = this.Value - 1;
+                 });
+             }
+             else
+             {
+                 this.Value = this.Value - 1;
+             }
          }
 
          public static TMLong operator ++(TMLong tmLong)

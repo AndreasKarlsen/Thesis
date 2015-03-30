@@ -1,7 +1,6 @@
 ﻿TODO:
 
 
-
 DONE:
 Fix non passing test
 TM dobule int float long uint ulong
@@ -9,4 +8,6 @@ Use validate method for commit validation
 Commit non-transactional write
 Create test for non-transactional write
 Max attempts
+Exceptions
+non-transactional ++ --
 

@@ -41,6 +41,11 @@ namespace STM.Implementation.Lockbased
             get { return _lockObjects.Count; }
         }
 
+        public bool Validate(Transaction transaction)
+        {
+            return this.All(lo => lo.Validate(transaction));
+        }
+
         #region Locking
 
         public bool TryLock(int milisecs)

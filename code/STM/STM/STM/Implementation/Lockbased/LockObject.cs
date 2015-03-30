@@ -50,10 +50,10 @@ namespace STM.Implementation.Lockbased
 
         internal override void Commit(object o, int timestamp)
         {
-#if DEBUG
+            #if DEBUG
             Transaction me = Transaction.LocalTransaction;
             Console.WriteLine("Transaction: " + me.ID + " commited:" + o);
-#endif
+            #endif
             _version = (T)o;
             TimeStamp = timestamp;
             lock (WaitHandlesLock)
