@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Evaluation.Common;
 using STM.Collections;
@@ -14,6 +15,7 @@ namespace Evaluation.Library.SantaClausImpl
         public int ID { get; private set; }
         private Queue<Elf> _buffer;
         private TMVar<bool> _waitingToAsk = new TMVar<bool>(false);
+        private TMVar<bool> _questionAsked = new TMVar<bool>(false);
 
         public Elf(int id, Queue<Elf> buffer)
         {
@@ -27,7 +29,7 @@ namespace Evaluation.Library.SantaClausImpl
             {
                 while (true)
                 {
-                    randomGen.Next(100 * randomGen.Next(21));
+                    Thread.Sleep(100 * randomGen.Next(21));
 
                     STMSystem.Atomic(() =>
                     {
@@ -41,13 +43,26 @@ namespace Evaluation.Library.SantaClausImpl
                     });
 
                     Console.WriteLine("Elf {0} at the door",ID);
-
+                    //Waiting on santa
                     STMSystem.Atomic(() =>
                     {
                         if (_waitingToAsk)
                         {
                             STMSystem.Retry();
                         }
+                    });
+
+                    //Asking question
+
+                    //Done asking
+                    STMSystem.Atomic(() =>
+                    {
+                        if (!_questionAsked)
+                        {
+                            STMSystem.Retry();
+                        }
+
+                        _questionAsked.Value = false;
                     });
                     
                 }
@@ -57,6 +72,11 @@ namespace Evaluation.Library.SantaClausImpl
         public void AskQuestion()
         {
             _waitingToAsk.Value = false;
+        }
+
+        public void BackToWork()
+        {
+            _questionAsked.Value = true;
         }
     }
 }

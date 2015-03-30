@@ -16,6 +16,7 @@ namespace Evaluation.Library.SantaClausImpl
 
         private Queue<Reindeer> reindeerBuffer;
         private TMVar<bool> workingForSanta = new TMVar<bool>(false);
+        private TMVar<bool> waitingOnSanta = new TMVar<bool>(false);
 
         public Reindeer(int id, Queue<Reindeer> buffer)
         {
@@ -39,6 +40,17 @@ namespace Evaluation.Library.SantaClausImpl
 
                     Console.WriteLine("Reindeer {0} is back",ID);
 
+                    //Wait for santa to be ready
+                    STMSystem.Atomic(() =>
+                    {
+                        if (waitingOnSanta)
+                        {
+                            STMSystem.Retry();
+                        }
+                    });
+
+                    //Delivering presents
+
                     //Wait to be released by santa
                     STMSystem.Atomic(() =>
                     {
@@ -49,6 +61,11 @@ namespace Evaluation.Library.SantaClausImpl
                     });   
                 }
             });
+        }
+
+        public void HelpDeliverPresents()
+        {
+            waitingOnSanta.Value = false;
         }
 
         public void ReleaseReindeer()

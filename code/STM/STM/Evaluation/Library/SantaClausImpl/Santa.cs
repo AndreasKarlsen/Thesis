@@ -20,7 +20,6 @@ namespace Evaluation.Library.SantaClausImpl
             _eBuffer = eBuffer;
         }
 
-
         public Task Start()
         {
             return Task.Run(() =>
@@ -50,7 +49,18 @@ namespace Evaluation.Library.SantaClausImpl
                     {
                         case WakeState.ReindeerBack:
                             Console.WriteLine("All reindeer are back!");
+
+                            //Setup the sleigh
+                            STMSystem.Atomic(() =>
+                            {
+                                foreach (var reindeer in _rBuffer)
+                                {
+                                    reindeer.HelpDeliverPresents();
+                                }
+                            });
+
                             //Deliver presents
+                            Console.WriteLine("Santa delivering presents");
                             Thread.Sleep(100);
 
                             //Release reindeer
@@ -67,15 +77,24 @@ namespace Evaluation.Library.SantaClausImpl
                             break;
                         case WakeState.ElfsIncompetent:
                             Console.WriteLine("3 elfs at the door!");
+                            STMSystem.Atomic(() =>
+                            {
+                                foreach (var elf in _eBuffer)
+                                {
+                                    elf.AskQuestion();
+                                }
+                            });
+
                             //Answer questions
                             Thread.Sleep(100);
 
+                            //Back to work incompetent elfs!
                             STMSystem.Atomic(() =>
                             {
                                 for (int i = 0; i < SCStats.MAX_ELFS; i++)
                                 {
                                     var elf = _eBuffer.Dequeue();
-                                    elf.AskQuestion();
+                                    elf.BackToWork();
                                 }
                             });
 
@@ -84,12 +103,6 @@ namespace Evaluation.Library.SantaClausImpl
                     }
                 }
             });
-        }
-
-        private enum WakeState
-        {
-            ReindeerBack,
-            ElfsIncompetent
         }
         
     }

@@ -141,30 +141,6 @@ namespace STM
 
             Status = TransactionStatus.Committed;
             return true;
-
-            
-            if (!Validate(out writeStamp)) 
-                return false;
-            
-            
-            if (IsNested)
-            {
-                WriteSet.Unlock();
-                MergeWithParent();
-                Transaction.LocalTransaction = Parent;
-            }
-            else
-            {
-                HandleCommit(writeStamp);
-            }
-
-
-#if DEBUG
-            Console.WriteLine("COMMITTED: "+ID);
-#endif
-
-            Status = TransactionStatus.Committed;
-            return true;
         }
 
         public void Abort()

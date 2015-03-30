@@ -7,7 +7,7 @@ using STM.Implementation.Lockbased;
 
 namespace STM.Collections
 {
-    public class Queue<T>
+    public class Queue<T> : IEnumerable<T>
     {
         private readonly TMVar<Node> _head = new TMVar<Node>(null);
         private readonly TMVar<Node> _tail = new TMVar<Node>(null);
@@ -75,6 +75,21 @@ namespace STM.Collections
                 Value = value;
             }
 
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            var item = _head;
+            for (int i = 0; i < Count; i++)
+            {
+                yield return item.Value.Value;
+                item = item.Value.Next;
+            }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

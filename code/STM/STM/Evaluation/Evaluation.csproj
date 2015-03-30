@@ -41,6 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\Enums.cs" />
     <Compile Include="Common\IStartable.cs" />
     <Compile Include="Common\SCStats.cs" />
     <Compile Include="Library\DiningPhilosophers.cs" />
@@ -49,6 +50,10 @@
     <Compile Include="Library\SantaClausImpl\Santa.cs" />
     <Compile Include="Library\SantaClausProblem.cs" />
     <Compile Include="Locking\LockingDiningPhilosophers.cs" />
+    <Compile Include="Locking\SantaClausImpl\LockingElf.cs" />
+    <Compile Include="Locking\SantaClausImpl\LockingReindeer.cs" />
+    <Compile Include="Locking\SantaClausImpl\LockingSanta.cs" />
+    <Compile Include="Locking\LockingSantaClausProblem.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
