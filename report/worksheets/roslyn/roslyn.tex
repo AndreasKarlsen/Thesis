@@ -1,58 +1,16 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Roslyn}{0}{Februar 10, 2015}{}{../../}
-\toby[i]{Lav en bedre intro - hvordan vi har fået overview (kilder eks. whitepaper og blogposts, ellers inspektion af koden) og fortæl meningen med flowet. Og forklar præcist hvad roslyn er. (evt. skriv at vi referer til roslyn projektet, når vi skriver Roslyn). Evt. også fortæl hvad det skal bruges til og refer til roslyn extension sektion. Husk at fortæl at meget at det literatur der findes snakker om API delen og ikke selve behind the scences roslyn (stortset kun blog indlæg) og lidt whitepaper}
+This chapter describes the Microsoft Roslyn project, hereafter referred to as Roslyn. There is little literature on Roslyn, the main source is \cite{ng2012roslyn}, which is a whitepaper from Microsoft that gives an overview of Roslyn. However its main focus is on the API side of Roslyn, described in \bsref{sec:intro}, and not the internal details of compilation, which we need in order to integrate \ac{STM} into the Roslyn C\# compiler. Beyond the white paper, blog and forum posts have been used, but most of these also only describe the API side, as Roslyn was first released as open source in 2014\cite{csharpBuild}. A few of these does however describe the internal details of compilation, and the rest of the knowledge described is obtained by inspecting and debugging the source code.
 
-%Noter til omkring hvorfor architetcure og call chain er vigtigt:
-	%In this section we give an overview of the compilation call chain of a C\# compilation in order show how the common core code and the specific compiler code is 
-	%give the reader further insight into how the compilation 
-	%how the compilation is invoked and structured in terms of the core code and the individual compiler code for c\# or VB. (i sidst afsnit vil vi forklare de enkelte faser der bliver udført.)
-	%det er nødvendigt som grundviden, for at kunne gå mere i dealjer i compile phases afsnit og fortælle hvor tingene ligger (uden man skal til at forkalre det hele der)
+The purpose of this chapter is to obtain knowledge required to modify the C\# compiler with \ac{STM} support, in particular our \stmname. The extension of the Roslyn compiler will be described in \bsref{chap:roslyn_extension}.
 
-This chapter describes the Microsoft Roslyn project, hereafter referred to as Roslyn. There is little literature on Roslyn, the main source is \bsref{ng2012roslyn}, which is a whitepaper from Microsoft that gives an overview of Roslyn. However its main focus is on the API side of Roslyn, described in \bsref{sec:intro}, and not the internal details of compilation, which we need in order to integrate \ac{STM} into the Roslyn C\# compiler. Beyond the white paper, blog and forum posts have been used, but most of these also only describe the API side, as Roslyn was first released as open source in 2014\cite{csharpBuild}. A few of these does however describe the internal details of compilation, and the rest of the knowledge described is obtained by inspecting and debugging the source code.
+In \bsref{sec:intro} we give an introduction to the Roslyn project. In \bsref{sec:roslyn_archi} we describe the architecture of Roslyn, specifically which projects is of importance to our focus\toby{evt. reference til scope eller problemformulering} and give an overview of the call chain during compilation. This is done to give insight into where specific compiler code is located and where the core compiler code is located, which also simplifies explaining where code for the individual compiler phases, illustrated in \bsref{fig:api_vs_compiler_pipeline}, is located in \bsref{sec:compile_phases}. In \bsref{sec:compile_phases} we describe the internal details of the compiler phases, which is valuable in order to select how and where to extend the compiler with \ac{STM} support. Finally in \bsref{sec:syntax_trees}, we give a detailed description of the syntax trees of the Roslyn compiler, as we will extend the C\# compiler with \stmnamesp by modifying the syntax tree\toby{som beskrevet i - hvor?}.
 
-The purpose of this chapter is to obtain knowledge required to modify the C\# compiler with \ac{STM} support, in particular our \stmname. The extension of Roslyn will be described in \bsref{chap:roslyn_extension}.
+\toby[i]{Det er lidt mærkeligt med den sidste sætning, omkring syntax træer, fordi den skal refere til et fremtidigt kapitel Roslyn Extension. Kan vi have valgt om i hvilken fase og hvor vi vil extened i dette kapitel efter Compile phases, og give det som grund til at vi går i dybden med syntax trees?}
 
-%Hvad de enkelte kapitler beskriver og hvordan de hænger sammen.
-
-In \bsref{sec:intro} we give an introduction to the Roslyn project. In \bsref{sec:roslyn_archi} we describe the architecture of Roslyn, specifically which projects is of importance to our focus\toby{evt. reference til scope eller problemformulering} and an overview of the call chain during compilation. This is done in order to give insight into where specific compiler code is located and where the core compiler code is located, which simplifies classification\toby{måske bedre ord} of code folders to the individual compiler phases. %forklar om kompiler phases sektion
-%forklar om sidste sektion (syntax træ) og hvorfor den er vigtig.
-
-%This knowledge is required for easier telling where the individual compiler phase a located in the code in compiler phases section
-
-
-In \bsref{sec:inside_ros}\toby{Indsæt ny ref} we describe the inside of Roslyn, which includes the inner architecture and compilation phases. Lastly in \bsref{sec:syntax_trees} we give a detailed description of Roslyn's syntax trees, as that is where we will integrate \stmnamesp in C\#.\toby{Det skal vi enten skrive før hvorfor vil gør det, eller refere til længere nede hvor vi skriver hvorfor vi gør.}
-
-
-%it was first introduced in October 2011\footnote{\url{http://blogs.msdn.com/b/csharpfaq/archive/2011/10/19/introducing-the-microsoft-roslyn-ctp.aspx}} as a \ac{CTP} and was recently opensource 
-
-%
-
-%a preview was first made available in October 2011 and it was 
-
-%api side forklar kort og refer ned ned (kort tid open-source, derfor lidt litteratur omkring internal)
-
-
-%bla bla not old and almost just open source\toby[i]{Find ud af hvornår det første roslyn projekt blev released. Det blev open source in 2014}. 
-
-%Other than that, blog and forum posts have been used, where a few describes the compilation stages in more detail instead of the API side. The rest of the knowledge described is obtained by inspecting and debugging the source code.\toby{Giver det mening af snakke om API side her? Når det først forklares i intro, eller skal der være en reference?}
-
-
-
-
-
-%the basics about syntax trees.
-
-%and its focus is on the API part of Roslyn and not describing the internals of the compiler phases.
-
-
-%There is not much literature 
-
-%the main litterature is a whitepaper 
-
-%ng2012roslyn
-
-%also they have changed some things since the first roslyn releases, which means that code examples for inspiration have had to be modified in order to be true for the current roslyn implementation
-
+%Extra:
+	%it was first introduced in October 2011\footnote{\url{http://blogs.msdn.com/b/csharpfaq/archive/2011/10/19/introducing-the-microsoft-roslyn-ctp.aspx}} as a \ac{CTP} and was recently opensource in 2014
+	%also they have changed some things since the first roslyn releases, which means that code examples for inspiration have had to be modified in order to be true for the current roslyn implementation
 \section{Introduction}\label{sec:intro}
 Project Roslyn is Microsoft's initiative of completely rewriting the C\# and \ac{VB} compilers, using their own managed code language. That is, the C\# compiler is written in C\# and the \ac{VB} compiler in \ac{VB}. Roslyn was released as open source at the Microsoft Build Conference 2014\cite{csharpBuild}.
 
@@ -231,7 +189,8 @@ If programs are invalid as a result of errors in source code, a syntax tree is s
 \end{enumerate}
 
 \section{Outcome}\toby{evt. en anden titel}
-\toby[i]{Afslutnings kapitel: Dermed kan vi ændre BLA BLA for at integere \stmname via Roslyn. Er ikke helt sikker på hvad der skal være heri}
+\lone[i]{Afslutnings kapitel: Dermed kan vi ændre BLA BLA for at integere \stmname via Roslyn.}
+\toby[i]{Måske kan vi undvære kapitlet, med det der er skrevet i starten af kapitlet?}
 %Vi vil ændre i den første fase, i syntax træeet, fordi det er simplest? og det er effektivt 
 
 %EXTRA
