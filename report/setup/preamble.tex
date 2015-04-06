@@ -346,6 +346,41 @@ with-meta,with-open,with-out-str,with-precision,xml-seq,zero?,zipmap
 	\end{quote}
 }
 
+\newcommand{\bnfterm}[1]{
+	\ensuremath{\texttt{'#1'}\,}
+}
+
+\newcommand{\bnfnonterm}[1]{
+	\ensuremath{\text{\textless#1\textgreater{}}\,}
+}
+
+%\newcommand{\bnfrepeat}[1]{
+%	\ensuremath{\{\,#1\}}
+%}
+
+\newcommand{\bnfrepeat}[1]{
+	\ensuremath{\,#1^{*}\,}
+}
+
+\newcommand{\bnfplus}[1]{
+	\ensuremath{\,#1^{+}\,}
+}
+
+\newcommand{\bnfgroup}[1]{
+	\ensuremath{\left(\,#1\right)}
+}
+
+\newcommand{\bnfselect}[2]{
+	\ensuremath{#1\text{\textbar{}}\,#2}
+}
+
+\newcommand{\bnfepsilon}[0]{
+	\ensuremath{\mathcal{E}}
+}
+
+\newcommand{\bnfmetavar}[1]{
+	\ensuremath{\mathsf{#1}\,}
+}
 
 \newcommand{\lag}{\langle}
 \newcommand{\rag}{\rangle}

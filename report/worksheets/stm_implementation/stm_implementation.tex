@@ -490,8 +490,7 @@ any access to the read-set can be optimized away. The \ac{STM} library implement
   }
 \end{lstlisting}
 
-\subsubsection{Providing Opacity}
-As described in \bsref{sec:stm_req_opacity} providing opacity requires ensuring that transactions do not read invalid data throughout their execution. Therefore a transaction must validate a read when it occurs, ensuring that the transaction is not allowed to continue when the read is inconsistent. For this purpose the \ac{STM} library uses the approach shown by \cite[p. 117]{harris2010transactional} and extends the reading of values to the implementation depicted in \bsref{lst:library_opacity}. As seen on lines 12-16 reading a value directly from the transactional variable has been extended with validation ensuring that the transaction aborts if the variable has been changed since the transaction recorded its timestamp.
+\subsubsection{Providing Opacity}As described in \bsref{sec:stm_req_opacity} providing opacity requires ensuring that transactions do not read invalid data throughout their execution. Therefore a transaction must validate a read when it occurs, ensuring that the transaction is not allowed to continue when the read is inconsistent. For this purpose the \ac{STM} library uses the approach shown by \cite[p. 117]{harris2010transactional} and extends the reading of values to the implementation depicted in \bsref{lst:library_opacity}. As seen on lines 12-16 reading a value directly from the transactional variable has been extended with validation ensuring that the transaction aborts if the variable has been changed since the transaction recorded its timestamp.
 \begin{lstlisting}[label=lst:library_opacity,
   caption={Providing Opacity},
   language=Java,  
