@@ -60,7 +60,7 @@
     <Compile Include="Implementation\Lockbased\TMFloat.cs" />
     <Compile Include="Implementation\Lockbased\TMInt.cs" />
     <Compile Include="Implementation\Lockbased\TMLong.cs" />
-    <Compile Include="Implementation\Lockbased\TMUInt.cs" />
+    <Compile Include="Implementation\Lockbased\TMUint.cs" />
     <Compile Include="Implementation\Lockbased\TMUlong.cs" />
     <Compile Include="Interfaces\ILock.cs" />
     <Compile Include="Implementation\Lockbased\LockObject.cs" />
