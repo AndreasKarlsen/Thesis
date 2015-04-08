@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using STM.Implementation.Lockbased;
 
 namespace LanguagedBasedDining
@@ -8,27 +9,49 @@ namespace LanguagedBasedDining
     {
         private static readonly int MAX_EAT_COUNT = 1000;
         private static atomic int eatCounter = 0;
-        private static atomic bool fork1 = true;
-        private static atomic bool fork2 = true;
-        private static atomic bool fork3 = true;
-        private static atomic bool fork4 = true;
-        private static atomic bool fork5 = true;
 
         public static void Main()
         {
-            var t1 = new Thread(() =>
+            var dinning = new DiningPhilosopher();
+            dinning.Start();
+        }
+
+        public void Start()
+        {
+            var fork1 = new Fork();
+            var fork2 = new Fork();
+            var fork3 = new Fork();
+            var fork4 = new Fork();
+            var fork5 = new Fork();
+
+            var t1 = StartPhilosopher(fork1, fork2);
+            var t2 = StartPhilosopher(fork2, fork3);
+            var t3 = StartPhilosopher(fork3, fork4);
+            var t4 = StartPhilosopher(fork4, fork5);
+            var t5 = StartPhilosopher(fork5, fork1);
+
+            Task.WaitAll(t1, t2, t3, t4, t5);
+        }
+
+        private Task StartPhilosopher(Fork left, Fork right)
+        {
+            var t1 = new Task(() =>
             {
                 while (eatCounter < MAX_EAT_COUNT)
                 {
                     atomic
                     {
-                        if (!fork1 || !fork2)
+                        left.AttemptToPickUp();
+                        right.AttemptToPickUp();
+                        /*
+                        if (!left.State || !right.State)
                         {
                             retry;
                         }
 
-                        fork1 = false;
-                        fork2 = false;
+                        left.State = false;
+                        right.State = false;
+                        */
                     }
 
                     Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
@@ -37,124 +60,8 @@ namespace LanguagedBasedDining
 
                     atomic
                     {
-                        fork1 = true;
-                        fork2 = true;
-                    }
-
-                    Thread.Sleep(100);
-                }
-            });
-
-            var t2 = new Thread(() =>
-            {
-                while (eatCounter < MAX_EAT_COUNT)
-                {
-                    atomic
-                    {
-                        if (!fork2 || !fork3)
-                        {
-                            retry;
-                        }
-
-                        fork2 = false;
-                        fork3 = false;
-                    }
-
-                    Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
-                    Thread.Sleep(100);
-                    Console.WriteLine("Eat count: " + ++eatCounter);
-
-                    atomic
-                    {
-                        fork2 = true;
-                        fork3 = true;
-                    }
-
-                    Thread.Sleep(100);
-                }
-            });
-
-            var t3 = new Thread(() =>
-            {
-                while (eatCounter < MAX_EAT_COUNT)
-                {
-                    atomic
-                    {
-                        if (!fork3 || !fork4)
-                        {
-                            retry;
-                        }
-
-                        fork3 = false;
-                        fork4 = false;
-                    }
-
-                    Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
-                    Thread.Sleep(100);
-                    Console.WriteLine("Eat count: " + ++eatCounter);
-
-                    atomic
-                    {
-                        fork3 = true;
-                        fork4 = true;
-                    }
-
-                    Thread.Sleep(100);
-                }
-            });
-
-            var t4 = new Thread(() =>
-            {
-                while (eatCounter < MAX_EAT_COUNT)
-                {
-                    atomic
-                    {
-                        if (!fork4 || !fork5)
-                        {
-                            retry;
-                        }
-
-                        fork4 = false;
-                        fork5 = false;
-                    }
-
-                    Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
-                    Thread.Sleep(100);
-                    Console.WriteLine("Eat count: " + ++eatCounter);
-
-                    atomic
-                    {
-                        fork4 = true;
-                        fork5 = true;
-                    }
-
-                    Thread.Sleep(100);
-                }
-            });
-
-            var t5 = new Thread(() =>
-            {
-                while (eatCounter < MAX_EAT_COUNT)
-                {
-                    atomic
-                    {
-                        if (!fork5 || !fork1)
-                        {
-                            retry;
-                        }
-
-                        fork5 = false;
-                        fork1 = false;
-                    }
-
-                    Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
-                    Thread.Sleep(100);
-                    Console.WriteLine("Eat count: " + ++eatCounter);
-
-                    atomic
-                    {
-                        fork5 = true;
-                        fork1 = true;
+                        left.State = true;
+                        right.State = true;
                     }
 
                     Thread.Sleep(100);
@@ -162,16 +69,29 @@ namespace LanguagedBasedDining
             });
 
             t1.Start();
-            t2.Start();
-            t3.Start();
-            t4.Start();
-            t5.Start();
 
-            t1.Join();
-            t2.Join();
-            t3.Join();
-            t4.Join();
-            t5.Join();
+            return t1;
+        }
+
+        public class Fork
+        {
+            public atomic bool State { get; set; }
+
+            public Fork()
+            {
+                State = true;
+            }
+
+            public void AttemptToPickUp()
+            {
+                atomic{
+                    if (!State)
+                    {
+                        retry;
+                    }
+                    State = true;
+                }
+            }
         }
     }
 }
