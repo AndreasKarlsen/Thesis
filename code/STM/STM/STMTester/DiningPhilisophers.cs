@@ -3,18 +3,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using STM.Implementation.Lockbased;
 
-namespace LanguagedBasedDining
+namespace STMTester
 {
     public class DiningPhilosopher
     {
-        private static readonly int MAX_EAT_COUNT = 1000;
-        private static atomic int eatCounter = 0;
-
-        public static void Main()
-        {
-            var dinning = new DiningPhilosopher();
-            dinning.Start();
-        }
+        private static readonly int MAX_EAT_COUNT = 50;
+        private static TMInt eatCounter = new TMInt(0);
 
         public void Start()
         {
@@ -39,30 +33,21 @@ namespace LanguagedBasedDining
             {
                 while (eatCounter < MAX_EAT_COUNT)
                 {
-                    atomic
+                    STMSystem.Atomic(() =>
                     {
                         left.AttemptToPickUp();
                         right.AttemptToPickUp();
-                        /*
-                        if (!left.State || !right.State)
-                        {
-                            retry;
-                        }
-
-                        left.State = false;
-                        right.State = false;
-                        */
-                    }
+                    });
 
                     Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
                     Thread.Sleep(100);
                     Console.WriteLine("Eat count: " + ++eatCounter);
 
-                    atomic
+                    STMSystem.Atomic(() =>
                     {
-                        left.State = true;
-                        right.State = true;
-                    }
+                        left.State.Value = true;
+                        right.State.Value = true;
+                    });
 
                     Thread.Sleep(100);
                 }
@@ -75,23 +60,23 @@ namespace LanguagedBasedDining
 
         public class Fork
         {
-            public atomic bool State { get; set; }
+            public TMVar<bool> State { get; set; }
 
             public Fork()
             {
-                State = true;
+                State = new TMVar<bool>(true);
             }
 
             public void AttemptToPickUp()
             {
-                atomic{
-                    if (!State)
+                STMSystem.Atomic(() =>
+                {
+                    if (!State.Value)
                     {
-                        retry;
+                        STMSystem.Retry();
                     }
-
-                    State = false;
-                }
+                    State.Value = false;
+                });
             }
         }
     }
