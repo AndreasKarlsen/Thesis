@@ -12,7 +12,7 @@ As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply
 
 \subsection{Transactional Block}
 The declaration of a transaction takes the format \bscode{atomic} \{ $S$ \}, where $S$ is the general class of C\# statements. Any assignments to transactional variables inside an atomic block will be perceived as executed in one atomic step by other transactions and non-transactional code.
-
+\andreas[inline]{Should you be able to return from an atomic block?}
 \subsection{Transactional Field}
 The declaration of a transactional field takes the format:
 
@@ -50,7 +50,7 @@ $method$-$modifiers$ $type$ $name$ $\{$ get $get$-$body$ set $set$-$body$ $\}$
 
 where $field$-$modifiers$ includes the new \bscode{atomic} keyword, and $method$-$modifiers$ does not. This is the only change to properties in C\#, and the normal rules of property usage still applies, as defined in \cite[p. 52]{sestoft2011c}.
 
-The manual property lets the programmer specify a backing field manually, allowing him to specialize the functionality of the getter and setter, i.e. used for implementing the observer pattern. The automatic properties generate a backing field automatically, but the getter and setter cannot have specialized functionality. 
+The manual property lets the programmer specify a backing field manually, allowing him to specialize the functionality of the getter and setter, e.g. used for implementing the observer pattern. The automatic properties generate a backing field automatically, but the getter and setter cannot have specialized functionality. 
 
 Atomic automatic properties simplifies the implementation whenever the property serves as a simple getter and setter. An example of such a property is shown in \bsref{lst:auto_atomic_property}. If the programmer wishes to supply additional logic for the get and set operations the manual property can be made atomic by accessing an atomic backing field as demonstrated in \bsref{lst:atomic_property}. Both cases are frequently used in C\#, thus making an \bscode{atomic} version makes the feature usable in a transaction in a orthogonal way.
 
@@ -162,7 +162,7 @@ where $param$-$modifier$ represents C\#'s \bscode{ref} and \bscode{out} keywords
     
 \end{lstlisting}
 
-
+\andreas[inline]{We must reason about what happens when we parse in an atomic variable into an atomic parameter. We must adhere to existing semantics when atomic value types are used, so the user does not experience reference semantics when passing in an atomic value type. Ref should be designed to enable passing atomic value type by ref.}
 
 \subsection{Transactional Reference Parameters}
 According to \cite[p. 97]{csharp2013specificaiton}: \textit{``A parameter declared with a ref modifier is a reference parameter.''} As opposed to a value parameter, a reference parameter uses call-by-reference semantics, thus it is the actual reference used as argument, not a copy. Consequently, changes to the argument will have influence outside the method scope, regardless of the parameter being a value or reference type. Changes to the parameter will take effect immediately, both in and outside of the method scope\cite[p. 42]{sestoft2011c}. Additionally, a variable is required to be instantiated before it is passed as a reference parameter\cite[p. 97]{csharp2013specificaiton}.
