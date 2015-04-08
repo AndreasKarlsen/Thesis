@@ -31,7 +31,7 @@ As described in \bsref{}\kasper{HUSK REFERENCE!} the \ac{STM} system of \stmname
 \end{itemize}
 Any wait-free algorithm is also lock-free and any lock-free algorithm is also obstruction-free, but not vice versa\cite[p. 60]{herlihy2012art}\lone{Hvorfor ikke, forklar}. While all of these progress guarantees preclude deadlocks, only wait-freedom and lock-freedom preclude livelocks\cite[p. 47]{harris2010transactional}. Obstruction free algorithms have been shown to provide efficient implementations in practice\cite[p. 61]{herlihy2012art}, especially when paired with techniques such as exponential backoff\cite[p. 147]{herlihy2012art} and contention managers\cite[p. 51]{harris2010transactional}.
 
-Whether \ac{STM} implementations need to be wait-free, lock-free, obstruction-free or even provide any of these guarantees at all is an ongoing discussion\andreas{Where? In the research community? At our group?}. Arguments have been made for even obstruction-freedom being too strong a guarantee and that \ac{STM} can be made faster by employing controlled locking\cite{ennals2006software}. Due to the complexities associated with non-blocking algorithms\cite{al2013nonblocking}\cite[p. 61]{herlihy2012art} and the evidence that blocking \ac{STM} systems can perform in practice, we initially choose to focus on blocking \ac{STM} algorithms. We do however keep the option of moving to a non-blocking algorithm later, as demonstrated by Fernandes et al. in \cite{fernandes2011lock}.\lone{Hvordan/hvornår afgøres dette?}
+Whether \ac{STM} implementations need to be wait-free, lock-free, obstruction-free or even provide any of these guarantees at all is an ongoing discussion\andreas{Where? In the research community? At our group?}. Arguments have been made for even obstruction-freedom being too strong a guarantee and that \ac{STM} can be made faster by employing controlled locking\cite{ennals2006software}. Due to the complexities associated with non-blocking algorithms\cite{al2013nonblocking}\cite[p. 61]{herlihy2012art} and the evidence that blocking \ac{STM} systems can perform in practice, we initially choose to focus on blocking \ac{STM} algorithms. We do however keep the option of moving to a non-blocking algorithm after producing a initial implementation, as demonstrated by Fernandes et al. in \cite{fernandes2011lock}. Due to the limited applicability of C\#'s volatile keyword\cite[p. 302]{csharp2013specificaiton} ensuring that the most recently written value is always read without resorting to locking can be problematic for the non supported types. Choosing a locking implementation mitigates this issue.
 
 %Older \ac{STM} systems tend to be either lock-free or obstruction-free\cite[p. 47]{harris2010transactional} while blocking \ac{STM} systems have emerged in an attempt to tune performance\cite[p. 51]{harris2010transactional}.
 
@@ -98,7 +98,9 @@ TL\rom{2} uses lazy updating simplifying the implementation of strong atomicity 
 
 McRT was discarded as its eager updating strategy based on locking may require non-transactional reads to wait. If an active transaction \bscode{t1} has written a value to some variable \bscode{x} and a non-transactional read to \bscode{x} occurs, the non-transactional read would have to wait for \bscode{t1} to finish in order to ensure that the value read is not rolled back at a later point. Additionally conflict detection against active transaction can lead to unnecessary aborts as described in \bsref{sec:stm_impl_mcrt}.
 
-JVSTM's use of the well known \ac{MVCC} approach to transactions facilitates a guarantee that read-only transactions will always be able to commit. While this is an attractive property, \ac{MVCC} also requires a garbage collection thread tasked with removing old values that can no longer be read, thereby complicating the implementation. Additionally, the lock based version of JVSTM uses commit phases which execute sequentially due to global locking. As a result the scalability of the  JVSTM algorithm is reduced\cite[p. 86]{cachopo2007development}. 
+JVSTM's use of the well known \ac{MVCC} approach to transactions facilitates a guarantee that read-only transactions will always be able to commit. While this is an attractive property, \ac{MVCC} also requires a garbage collection thread tasked with removing old values that can no longer be read, thereby complicating the implementation. Additionally, the lock based version of JVSTM uses commit phases which execute sequentially due to global locking. As a result the scalability of the  JVSTM algorithm is reduced\cite[p. 86]{cachopo2007development}.
+ 
+While performance of the \ac{STM} system, as described in \bsref{sec:scope}, is not the primary concern of this thesis we do not believe that closing our eyes completely to this factor is the correct approach. Multiple different algorithms are available and we have aimed at selecting one that fulfills the requirements with only minimal performance sacrifices. 
 
 \andreas[inline]{We must mention why performance matters, even though we do not care in the evaluation}
 
@@ -117,14 +119,8 @@ JVSTM's use of the well known \ac{MVCC} approach to transactions facilitates a g
 %
 %The base DSTM algorithm does not support concurrent reads as the locator objects does not allow distinguishing a read from a write operation\cite[p. 435]{herlihy2012art}. As concurrent reads is one of the major advantages offered by \ac{STM}'s optimistic approach to shared memory concurrency, the algorithm must be modified to support such operations in order to be useful in practice.
 
-\section{STM Algorithm}
-Description of selected algorithm.
-%Avoiding deadlocks.
 
-\section{Implementation Description}
-This section describes the \ac{STM} library which executes transactions in \stmnamesp. \bsref{sec:stm_library_interface} describes the library interface while \bsref{sec:stm_impl_internal_detials} describes the most important details of the implementation.
-\lone{Hvis i laver præs af rækkefølge, så vær konsekvente}
-\subsection{Library Interface} 
+\section{Library Interface} 
 \label{sec:stm_library_interface}
 The \ac{STM} system which executes transactions in \stmnamesp is implemented as a C\# library\andreas{Can we reference to a design decision?}. Transactions are started by using one of the overloads of the static \bscode{Atomic} method on the \bscode{STMSystem} class. The static method \bscode{Atomic} is overloaded with support for transaction with and without return values as well as specification of zero to many \bscode{orelse} blocks. \bsref{lst:library_atomic} presents an example of transaction declarations. On lines 5-8 the simple transaction declaration corresponding to the \bscode{atomic} block is shown. Lines 10-14 depict the declaration of a transaction with a return value. Finally lines 16-23 depict the declaration of a transaction with an associated \bscode{orelse} block. 
 
@@ -168,7 +164,7 @@ The \ac{STM} system which executes transactions in \stmnamesp is implemented as 
   }
 \end{lstlisting}
 
-\subsubsection{Transactional Variables}
+\subsection{Transactional Variables}
 Transactional variables are created by declaring instances of the generic \bscode{TMVar} class. Instances of the \bscode{TMVar} class wrap an object to which transactional access is provided.  The constructor of the \bscode{TMVar} class takes a type parameter specifying the type which the \bscode{TMVar} instance wraps.
 
 The \bscode{TMVar} class exposes methods and properties for getting and setting the wrapped object. Any access through these operations are tracked by the \ac{STM} system, both transactional and non-transactional. Furthermore the \bscode{TMVar} class uses C\#'s implicit conversion feature to allow a \bscode{TMVar} to implicitly be converted to the enclosed value whenever the \bscode{TMVar} occurs as an r-value. Special types, deriving from \bscode{TMVar}, are supplied for the common types \bscode{int}, \bscode{long}, \bscode{float}, \bscode{double} \bscode{uint} and \bscode{ulong}. These types supply transactional support for common operations such as \bscode{++} and \bscode{--} which are executed on the enclosed object. \bsref{lst:library_tmvar}  shows the declaration of a number of transactional variables. Lines 5-7 use the generic \bscode{TMVar} class to wrap objects of various types. Line 8 declare a \bscode{TMInt}, which is the specialized type for transaction integers. Lines 11-17 declares a transaction that on line 13 check if the boolean value wrapped by \bscode{tmBool} is true and the string value wrapped by \bscode{tmString} is equal to the string \bscode{"abc"}. \bscode{tmBool} and \bscode{tmString} are implicitly converted to the wrapped value while preserving transactional access, allowing the transactional variable to be used as if it were an instance of the enclosed type. Line 15 uses the \bscode{++} operator supported by the \bscode{TMInt} type.
@@ -205,7 +201,7 @@ The \bscode{TMVar} class exposes methods and properties for getting and setting 
     }
   }
 \end{lstlisting}
-\subsubsection{Retry}
+\subsection{Retry}
 The library supports the \bscode{retry} construct via the static \bscode{Retry} method on the \bscode{STMSystem} class. The retry method can be called from both in and outside transactions but will only have an effect when called inside transactions. \bsref{lst:library_retry} presents a example of how the \bscode{Retry} method can be used. Lines 5-11 show a transaction dequeuing an item from a shared buffer. On line 8 the \bscode{Retry} method is used to initiate a retry in case the queue is empty. The call on line 15 has no effect as it is not enclosed in a transaction\andreas{Do we want to warn if this happens?}.
 
 \begin{lstlisting}[label=lst:library_retry,
@@ -239,7 +235,7 @@ The library supports the \bscode{retry} construct via the static \bscode{Retry} 
     }
   }
 \end{lstlisting}
-\subsubsection{Nesting}
+\subsection{Nesting}
 The \ac{STM} library supports both lexical and dynamic nesting of transactions. Lexical nesting is achieved by specifying a transaction within the body of another transaction while dynamic nesting is achieved through calling methods defined using transactions within the body of another transactions. Nesting is done under closed nesting semantics as described in \bsref{sec:stm_req_nesting}. An example of nesting using the C\# library is shown in \bsref{lst:library_nesting}. Here line 6-15 show a lexically nested transaction while line 20-24 show two dynamically nested transactions as the \bscode{Enqueue} and \bscode{Dequeue} methods are themselves defined using a transaction. 
 %Nesting
 \begin{lstlisting}[label=lst:library_nesting,
@@ -282,7 +278,7 @@ The \ac{STM} library supports both lexical and dynamic nesting of transactions. 
     }
   }
 \end{lstlisting}
-\subsubsection{Dining Philosophers as Example}
+\subsection{Dining Philosophers as Example}
 As a final example employing many of the library features in conjunction \bsref{lst:library_dinning} presents an implementation of the dining philosophers problem\cite[p. 673]{hoare1978communicating}.  The \bscode{DiningPhilosophers} method on line 3 sets up the required forks and philosophers. The \bscode{StartPhilosopher} method starts a new thread representing a philosopher. The philosopher will first attempt to acquire both forks as defined in the transaction on lines 24-31. If one of the forks is not available the transaction will execute a retry on line 27 blocking until this state changes. When a philosopher acquires both forks she will eat, represented by the sleep on line 33, followed by putting back the forks in the transaction defined on line 36-40.
 
 \begin{lstlisting}[label=lst:library_dinning,
@@ -347,10 +343,10 @@ As a final example employing many of the library features in conjunction \bsref{
   }
 \end{lstlisting}
 
-\subsection{Internal Details}
+\section{Internal Details}
 \label{sec:stm_impl_internal_detials}
 This section highlights the defining aspects of the \ac{STM} libraries internal implementation.
-\subsubsection{Writing a Value}
+\subsection{Writing a Value}
 \label{sec:stm_imple_internal_detials_write}
 As described in \bsref{sec:stm_impl_tl2}\andreas{Ref to "STM Algorithm?} TL\rom{2} uses a write-set to collect any written values to be written to the actual locations when the transaction commits. Therefore any writes to transactional variables must be redirected to the write-set instead of the actual location. \bsref{lst:library_write_value} shows how this is accomplished in the \ac{STM} library. Line 3 gets the currently executing transaction from threadlocal storage. That is, each thread gets its own transaction instance when accessing the \bscode{LocalTransaction} property. Based on the status of the transaction, different actions are taken. Each thread accesses a transaction that has the status \bscode{Committed} whenever no transaction is currently executing on that specific thread. Therefore the case on line 6 covers writing a value to a transactional variable from outside a transaction scope. How this is accomplished is explained in \bsref{sec:stm_impl_providing_strong_atomicity}. The case on line 9 covers writing a value as part of a transaction. Here the value to be written is put into the write-set of the transaction performing the write. When the given transaction commits, the value will be written back to the transactional variable.
 
@@ -382,7 +378,7 @@ As described in \bsref{sec:stm_impl_tl2}\andreas{Ref to "STM Algorithm?} TL\rom{
   }
 \end{lstlisting}
 
-\subsubsection{Reading a Value}
+\subsection{Reading a Value}
 \label{sec:stm_imple_internal_detials_read}
 How the value of a transactional variable is read depends on the context in which the read occurs. Reading the value of a transactional variable from non-transactional code amounts to reading the value contained within the variable, as this value is guaranteed to be the most recently committed value. On the other hand, a read from transactional code has to read an uncommitted value which was previously written by the same transaction, if such a value exists. Only if no such value is present should the transaction read the value currently contained in the transactional variable. \bsref{lst:library_read_value} shows how reading the value of a transactional variable is implemented in the \ac{STM} library. The case on line 6 corresponds to a non-transactional read and are forwarded directly to the base class in order to retrieve the value of the transactional variable. The case on line 8 corresponds to a transactional write. Line 10-11 retrieves a previously written value from the transactions write-set if such a value is present. If no such value is present the value contained in the current transaction is read instead. Finally, on line 15, the transactional variable is added to the active transactions read-set so that the read can be validated before the transaction commits.
 \begin{lstlisting}[label=lst:library_read_value,
@@ -417,8 +413,9 @@ How the value of a transactional variable is read depends on the context in whic
     }
   }
 \end{lstlisting}
-\subsubsection{Committing a Transaction}
-Committing a transaction follows the steps described in \bsref{sec:stm_impl_tl2}. \bsref{lst:library_commit} shows the implementations of these steps. The \bscode{Commit} method declared on line 3\andreas{Line 3?} drives the commit process and returns \bscode{true} if the commit succeeds. If the transactions is not nested within another transaction, the body of the if statement on line 6 is entered. The call to the \bscode{Validate} method on line 8 acquires the lock on each object in the transactions write-set, validates the read-set and increments the version-clock acquiring the new writestamp. The \bscode{Validate} method returns true if the read-set could be validated correctly and returns the new writestamp using an \bscode{out} parameter. All locks are acquired using a timeout in order to prevent deadlocks and all acquired locks are released if validation of the read-set fails. If validation succeeds the \bscode{HandleCommit} method commits all buffered writes to their respective transactional variables after which all acquired locks are released. 
+
+\subsection{Committing a Transaction}
+Committing a transaction follows the steps described in \bsref{sec:stm_impl_tl2}. \bsref{lst:library_commit} shows the implementations of these steps. The \bscode{Commit} method declared on line 1 drives the commit process and returns \bscode{true} if the commit succeeds. If the transactions is not nested within another transaction, the body of the if statement on line 3 is entered. The call to the \bscode{Validate} method on line 6 acquires the lock on each object in the transactions write-set, validates the read-set and increments the version-clock acquiring the new writestamp. The \bscode{Validate} method returns true if the read-set could be validated correctly and returns the new writestamp using an \bscode{out} parameter. All locks are acquired using a timeout in order to prevent deadlocks and all acquired locks are released if validation of the read-set fails. If validation succeeds the \bscode{HandleCommit} method commits all buffered writes to their respective transactional variables after which all acquired locks are released. 
 
 If the transaction is nested within another transaction the else case on line 11 is executed. Nested transactions does not need to acquire the lock on items in their read-set or increment the version clock as they will not be responsible for committing the values under closed nested semantics. Therefore, a validation of the read-set, as seen on line 13, is sufficient. If the validation succeeds the transaction merges its read and write sets with those of the outer transaction in order for the outer transaction to commit any written values when its reaches its commit stage. On line 17 the outer transaction is restored as the currently active transaction so that it can be resumed. Finally on line 20 the status of the transaction is changed to committed before returning on line 21.
 
@@ -459,12 +456,12 @@ If the transaction is nested within another transaction the else case on line 11
     return true;
   }
 \end{lstlisting}
-\subsubsection{Providing Strong Atomicity}
+\subsection{Providing Strong Atomicity}
 \label{sec:stm_impl_providing_strong_atomicity}
 As described in \bsref{sec:stm_requirements} the \ac{STM} system must support strong atomicity. In \bsref{sec:stm_imple_internal_detials_write} it is described how the \ac{STM} system is able to detect whether or not read and write operations occur inside or outside a transaction and take different actions based on this information. In the case of a non-transactional read the system reads the most recently committed value as described in \bsref{sec:stm_imple_internal_detials_read}, ensuring that no uncommitted values can be read. A non-transactional write is more complicated as the \ac{STM} system must ensure atomicty between both non-transactional access and transactional access. To that extent the approach described by Hindman et al. in \cite{hindman2006atomicity} of executing non-transactional access as optimized mini transaction is adopted. As no value is read during a non-transactional write a non-transactional write in the context of the TL\rom{2} algorithm consist only of 
 \begin{inparaenum}[(1)]
 \item Acquiring the lock on the transactional variable to which the write occurs
-\item Incrementing\andreas{Writing?} and getting the value of the version clock
+\item Incrementing and getting the value of the version clock
 \item Committing the new value and timestamp
 \item Releasing the acquired lock,
 \end{inparaenum}
@@ -490,7 +487,7 @@ any access to the read-set can be optimized away. The \ac{STM} library implement
   }
 \end{lstlisting}
 
-\subsubsection{Providing Opacity}
+\subsection{Providing Opacity}
 As described in \bsref{sec:stm_req_opacity} providing opacity requires ensuring that transactions do not read invalid data throughout their execution. Therefore a transaction must validate a read when it occurs, ensuring that the transaction is not allowed to continue when the read is inconsistent. For this purpose the \ac{STM} library uses the approach shown by \cite[p. 117]{harris2010transactional} and extends the reading of values to the implementation depicted in \bsref{lst:library_opacity}. As seen on lines 12-16 reading a value directly from the transactional variable has been extended with validation ensuring that the transaction aborts if the variable has been changed since the transaction recorded its timestamp.
 \begin{lstlisting}[label=lst:library_opacity,
   caption={Providing Opacity},

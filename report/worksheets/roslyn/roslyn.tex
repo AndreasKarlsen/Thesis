@@ -1,10 +1,10 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Roslyn}{0}{Februar 10, 2015}{}{../../}
-This chapter describes the Microsoft Roslyn project, hereafter referred to as Roslyn. There is little literature on Roslyn, the main source is \cite{ng2012roslyn}, which is a whitepaper from Microsoft that gives an overview of Roslyn. However its main focus is on the API side of Roslyn, described in \bsref{sec:intro}, and not the internal details of compilation, which we need in order to integrate \ac{STM} into the Roslyn C\# compiler. Beyond the white paper, blog and forum posts have been used, but most of these also only describe the API side, as Roslyn was first released as open source in 2014\cite{csharpBuild}. A few of these does however describe the internal details of compilation, and the rest of the knowledge described is obtained by inspecting and debugging the source code.
+This chapter describes the Microsoft Roslyn project, hereafter referred to as Roslyn. Little literature on Roslyn exists, the main source is \cite{ng2012roslyn}, which is a whitepaper from Microsoft that gives an overview of Roslyn. However its main focus is on the API side of Roslyn, described in \bsref{sec:intro}, and not the internal details of compilation, which we need in order to integrate \ac{STM} into the Roslyn C\# compiler. Beyond the white paper, blog and forum posts have been used, but most of these also only describe the API side. A few of these does however describe the internal details of compilation. The rest of the knowledge described is obtained by inspecting and debugging the source code.
 
-The purpose of this chapter is to obtain knowledge required to modify the C\# compiler with \ac{STM} support, in particular our \stmname. The extension of the Roslyn compiler will be described in \bsref{chap:roslyn_extension}.
+The purpose of this chapter is to obtain knowledge required to modify the C\# compiler with \ac{STM} support, in order to build the language integrated \ac{STM} system \stmname. The extension of the Roslyn compiler will be described in \bsref{chap:roslyn_extension}.
 
-In \bsref{sec:intro} we give an introduction to the Roslyn project. In \bsref{sec:roslyn_archi} we describe the architecture of Roslyn, specifically which projects is of importance to our focus\toby{evt. reference til scope eller problemformulering} and give an overview of the call chain during compilation. This is done to give insight into where specific compiler code is located and where the core compiler code is located, which also simplifies explaining where code for the individual compiler phases, illustrated in \bsref{fig:api_vs_compiler_pipeline}, is located in \bsref{sec:compile_phases}. In \bsref{sec:compile_phases} we describe the internal details of the compiler phases, which is valuable in order to select how and where to extend the compiler with \ac{STM} support. Finally in \bsref{sec:syntax_trees}, we give a detailed description of the syntax trees of the Roslyn compiler, as we will extend the C\# compiler with \stmnamesp by modifying the syntax tree\toby{som beskrevet i - hvor?}.
+In \bsref{sec:intro} we give an introduction to the Roslyn project. In \bsref{sec:roslyn_archi} we describe the architecture of Roslyn, specifically which projects are of particular importance to our focus\toby{evt. reference til scope eller problemformulering} and give an overview of the call chain during compilation. This is done to give insight into where specific compiler code is located and where the core compiler code is located, which also simplifies explaining where code for the individual compiler phases, illustrated in \bsref{fig:api_vs_compiler_pipeline}, is located in \bsref{sec:compile_phases}. In \bsref{sec:compile_phases} we describe the internal details of the compiler phases, which is valuable in order to select how and where to extend the compiler with \ac{STM} support. Finally in \bsref{sec:syntax_trees}, we give a detailed description of the syntax trees of the Roslyn compiler.%, as we will extend the C\# compiler with \stmnamesp by modifying the syntax tree\toby{som beskrevet i - hvor?}.
 
 \toby[i]{Det er lidt mærkeligt med den sidste sætning, omkring syntax træer, fordi den skal refere til et fremtidigt kapitel Roslyn Extension. Kan vi have valgt om i hvilken fase og hvor vi vil extened i dette kapitel efter Compile phases, og give det som grund til at vi går i dybden med syntax trees?}
 
@@ -61,7 +61,7 @@ In \bsref{fig:roslyn_invoke_overview} an overview of the compilation call chain 
 \end{sidewaysfigure}
 
 \section{Compile Phases}\label{sec:compile_phases}
-The C\# compiler builds upon concepts from traditional compiler theory, such as lexing, parsing, declaration processing, semantic analysis and code generation\cite{sebestaProLang}\cite{fischer2009crafting}. Throughout the phases of compilation, traditional concepts such as a syntax tree, symbol table and visitor pattern are also used. In this section we will elaborate on the compiler phases in the compiler pipeline shown in \bsref{fig:api_vs_compiler_pipeline}. In \bsref{fig:roslyn_csharpanalysis_overview} an overview of the folders inside the C\# code analysis is shown.
+The C\# compiler builds upon concepts from traditional compiler theory, such as lexing, parsing, declaration processing, semantic analysis and code generation\cite{sebestaProLang}\cite{fischer2009crafting}. Throughout the phases of compilation, traditional concepts such as a syntax tree, symbol table and visitor pattern\cite[p. 366]{gamma1994design} are also used. In this section we will elaborate on the compiler phases in the compiler pipeline shown in \bsref{fig:api_vs_compiler_pipeline}. In \bsref{fig:roslyn_csharpanalysis_overview} an overview of the folders inside the C\# code analysis is shown.
 
 \begin{figure}[htbp]
 \centering
@@ -99,6 +99,7 @@ Syntax trees are the primary structure used throughout compilation. Syntax trees
 \end{enumerate}
 
 \subsection{Red And Green Trees}
+\label{subsec:roslyn_red_green_trees}
 The Roslyn team wanted a primary data structure for compilation with the following characteristics\cite{lippert2012redgreen}:
 \begin{itemize}
 	\item Immutable.
@@ -188,7 +189,9 @@ If programs are invalid as a result of errors in source code, a syntax tree is s
 \item Skipping tokens until the parser finds a token from where it can continue the parse. The skipped tokens are added as a trivia node with the \bscode{SkippedTokens} kind.
 \end{enumerate}
 
-\section{Outcome}\toby{evt. en anden titel}
+\subsection{Syntax Tree Generation}
+The nodes, associated factory methods and visitor pattern implementation of the syntax tree is generated based on the contents of the \bscode{Syntax.xml} file located in the \bscode{CSharpCodeAnalysis (Portable)} project. The contents of the file describes information such as the fields and base class for each node in tree. Whenever the compiler is build, a tool, which source code resides in the \bscode{Tools\textbackslash CSharpSyntaxGenerator} project, generates the classes for each node defined in \bscode{Syntax.xml} along with relevant factory methods, properties for getting the value of each field associated with a node and pure methods for updating the fields of a node, that is generating a new node representing the change. The tool also generates the visitor pattern implementation along with the required \bscode{accept} methods on each node. Both the red and green tree, described in \bsref{subsec:roslyn_red_green_trees}, are generated during this process. 
+ \section{Outcome}\toby{evt. en anden titel}
 \lone[i]{Afslutnings kapitel: Dermed kan vi ændre BLA BLA for at integere \stmname via Roslyn.}
 \toby[i]{Måske kan vi undvære kapitlet, med det der er skrevet i starten af kapitlet?}
 %Vi vil ændre i den første fase, i syntax træeet, fordi det er simplest? og det er effektivt 
