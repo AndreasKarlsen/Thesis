@@ -7,14 +7,14 @@ using STM.Interfaces;
 
 namespace STM.Implementation.Lockbased
 {
-    public class TMUInt : TMVar<uint>, Incrementable
+    public class TMUint : TMVar<uint>, Incrementable
     {
-        public TMUInt()
+        public TMUint()
         {
 
         }
 
-        public TMUInt(uint i)
+        public TMUint(uint i)
             : base(i)
         {
 
@@ -52,13 +52,13 @@ namespace STM.Implementation.Lockbased
             }
         }
 
-        public static TMUInt operator ++(TMUInt tmuint)
+        public static TMUint operator ++(TMUint tmuint)
         {
             tmuint.Inc();
             return tmuint;
         }
 
-        public static TMUInt operator --(TMUInt tmuint)
+        public static TMUint operator --(TMUint tmuint)
         {
             tmuint.Dec();
             return tmuint;
