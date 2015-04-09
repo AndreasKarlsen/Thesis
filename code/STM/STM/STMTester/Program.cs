@@ -35,6 +35,8 @@ namespace STMTester
             //OrElseTest();
             //OrElseNestingTest2();
             //OrElseNestingTest3();
+            var dining = new DiningPhilosopher();
+            dining.Start();
             Console.ReadKey();
         }
 
