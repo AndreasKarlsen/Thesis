@@ -43,15 +43,6 @@ namespace LanguagedBasedDining
                     {
                         left.AttemptToPickUp();
                         right.AttemptToPickUp();
-                        /*
-                        if (!left.State || !right.State)
-                        {
-                            retry;
-                        }
-
-                        left.State = false;
-                        right.State = false;
-                        */
                     }
 
                     Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
