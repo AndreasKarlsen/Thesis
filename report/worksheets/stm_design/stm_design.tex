@@ -4,7 +4,7 @@ This chapter describes the considerations \& design decisions of \stmname, the i
 
 We introduce the atomic block and transactional variables in \bsref{sec:stm_design}. The different kinds of parameters and their integration with transactions is described in \bsref{sec:parameter_design}. This is followed by an example of the new syntax, demonstrated in \bsref{sec:example_design}. The \bscode{retry} and \bscode{orelse} keywords are introduced in \bsref{sec:sync_design} for supporting conditional synchronization. \bsref{sec:nesting_design} shows how \stmnamesp supports nesting of transactions. Finally a summary of the design requirements described in this chapter is given in \bsref{sec:summary_design}.
 
-Throughout this chapter, we use Extended Backus-Naur Form. It is used for descriptions of the proposed syntax extensions, with ? signaling 0 or 1 occurrences and + signaling 0 or more occurrences. Parentheses are used for grouping: ( item1, item2 ). Items formatted as \bscode{non-term} are non terminals, usually keywords, while items formatted as $terminal$ are terminals. 
+Throughout this chapter, we describe the proposed syntax extensions using  Extended Backus-Naur Form. The notation uses ? for signaling 0 or 1 occurrences and + signaling 0 or more occurrences. Parentheses are used for grouping: ( item1, item2 ). Items formatted as \bscode{terminal} are  terminals, while items formatted as $non-term$ are non-terminals.
 \label{chap:stm_design}
 
 \section{Transactional Block \& Variables}\label{sec:stm_design}
@@ -16,8 +16,8 @@ The declaration of a transaction takes the format \bscode{atomic} \{ $S$ \}, whe
 \subsection{Transactional Field}
 The declaration of a transactional field takes the format:
 
-$field$-$modifiers$ $type$ $name$ = $initial$-$value$ ( , $name$ = $initial$-$value$ )+ ; \\
-$field$-$modifiers$ $type$ $name$ ( , $name$ )+ ;
+$field$-$modifiers$ $type$ \bscode{name} = $initial$-$value$ ( , \bscode{name} = $initial$-$value$ )+ ; \\
+$field$-$modifiers$ $type$ \bscode{name} ( , \bscode{name} )+ ;
 
 where $field$-$modifiers$ includes the new \bscode{atomic} keyword as well as existing C\# modifiers such as \bscode{public}, \bscode{private} and \bscode{static}. The $field$-$modifiers$ {readonly} and \bscode{const} are not included, since their unchangeable nature makes tracking them in a \ac{STM} system pointless.
 
@@ -45,8 +45,8 @@ The $type$ can be any existing or user-defined type including the \bscode{dynami
 \subsection{Transactional Properties}
 C\# facilitates a language feature which eases the encapsulation of fields typically used in \ac{OOP}. The feature is known as properties, and can be in an automatic or a manual form. The formats in mentioned order are\cite[p. 52]{sestoft2011c}:
 
-$field$-$modifiers$ $type$ $name$ \{$access$-$modifier$? get; $access$-$modifier$? set; \}
-$method$-$modifiers$ $type$ $name$ $\{$ get $get$-$body$ set $set$-$body$ $\}$
+$field$-$modifiers$ $type$ \bscode{name} \{$access$-$modifier$? \bscode{get}\bscode{;} $access$-$modifier$? \bscode{set}\bscode{;} \}
+$method$-$modifiers$ $type$ \bscode{name} $\{$ \bscode{get} $get$-$body$ \bscode{set} $set$-$body$ $\}$
 
 where $field$-$modifiers$ includes the new \bscode{atomic} keyword, and $method$-$modifiers$ does not. This is the only change to properties in C\#, and the normal rules of property usage still applies, as defined in \cite[p. 52]{sestoft2011c}.
 
@@ -103,10 +103,10 @@ Atomic automatic properties simplifies the implementation whenever the property 
 \subsection{Transactional Local Variables}
 The declaration of transactional local variables follows the format:
 
-\bscode{atomic} \bscode{var} $name$ = $expr$;\\
+\bscode{atomic} \bscode{var} \bscode{name} = $expr$;\\
 \bscode{atomic} $type$ $var$-$decl$ ( = $expr$ )? ( , $var$-$dcl$ ( = $expr$ )? )+ ;\\
 
-where $var$-$dcl$ is defined as $name$ or $name$ = $expr$. As with transactional fields $type$ can be any existing or user defined type including the \bscode{dynamic} keyword.
+where $var$-$dcl$ is defined as \bscode{name} or \bscode{name} = $expr$. As with transactional fields $type$ can be any existing or user defined type including the \bscode{dynamic} keyword.
 \begin{lstlisting}[label=lst:local_variable,
   caption={Local Transactional Variable},
   language=Java,  
@@ -136,7 +136,7 @@ In \stmnamesp, a value parameter can be marked as atomic, and becomes a transact
 \andreas[inline]{Consider making atomic a parameter modifier, so it cannot be combined with ref, out, or params}
 For declaration of transactional parameters the format is as follows:
 
-\bscode{atomic} $param$-$modifier$? $type$ $name$
+\bscode{atomic} $param$-$modifier$? $type$ \bscode{name}
 
 where $param$-$modifier$ represents C\#'s \bscode{ref} and \bscode{out} keywords, and $type$ can be any existing or user defined type including the \bscode{dynamic} keyword, as previously stated. The \bscode{atomic} keyword cannot be combined with optional parameters\andreas{Hvorfor ikke?}.
 

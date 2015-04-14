@@ -1,8 +1,32 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Roslyn Extension}{0}{Februar 10, 2015}{}{../../}
-Text
+The chapter describes how the Roslyn C\# compiler was extended to support the constructs of \stmname. \bsref{sec:roslyn_extension_strategy} describes the over all strategy, \bsref{sec:roslyn_extension_strategy} describes the changes made to the lexer and parser while \bsref{sec:syntax_tree_transformations} presents examples of the transformations made by the extension.
 \label{chap:roslyn_extension}
+\section{Extension Strategy}
+\label{sec:roslyn_extension_strategy}
+The Roslyn C\# compiler was extended by modifying the lexing and parsing phases with support for the language construct described in \bsref{chap:stm_design}. The extended parsing phase outputs a extended syntax tree containing direct representations of any utilized \ac{STM} language extensions. The syntax tree is then analyzed, transforming any language extension into equivalent C\# code utilizing the \ac{STM} library described in \bsref{chap:implementation}. The transformation phase outputs a syntax tree containing only standard C\# code, executing the described \ac{STM} operations. This syntax tree is then passed to the reaming C\# compiler phases, utilizing its semantic analysis and code generation implementations. The approach is visualized in \bsref{fig:compiler_pipeline_extension}. The parser has been extended to output a extended syntax tree and transformation of this tree occurs before the binding and IL emission phases. The transformation phase utilizes both the extended syntax tree and symbol information gather trough the Roslyn C\# compilers \ac{API}.
+\begin{figure}[htbp]
+\centering
+ \includegraphics[width=1\textwidth]{\rootpath/worksheets/roslyn_extension/figures/compiler_pipeline_extension} 
+ \caption{Extension occurs at the syntax tree and symbol level.}
+\label{fig:compiler_pipeline_extension}
+\end{figure}
 
+The described approach was due to the following reasons:
+\begin{enumerate}
+\item Simple lexer parser
+\item Generated syntax tree
+\item Fast modification of syntax trees
+\item Syntax tree exposed as API. Best documented part of the compiler.
+\item Utilize code generation and semantic analysis
+\end{enumerate}
+
+\section{Lexer \& Parser Changes}
+\label{sec:roslyn_lexer_parser_changes}
+
+
+\section{Syntax Tree Transformations}
+\label{sec:syntax_tree_transformations}
 %HUSK
 \toby[i]{Evt. til valg af implementerings strategi: refer til at syntax træer kan blive modificeret hurtigt og med et lille memory overhead (den tredje key attribut omkring syntax træer)}
 \kasper{Implementerings beskrivelse: error codes, lexer, parser, tvars, atomic block, replacement}
