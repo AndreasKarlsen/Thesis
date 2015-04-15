@@ -12,13 +12,13 @@ The Roslyn C\# compiler was extended by modifying the lexing and parsing phases 
 \label{fig:compiler_pipeline_extension}
 \end{figure}
 
-The described approach was due to the following reasons:
+The described approach was selected due to the following reasons:
 \begin{enumerate}
-\item Simple lexer parser
-\item Generated syntax tree
-\item Fast modification of syntax trees
-\item Syntax tree exposed as API. Best documented part of the compiler.
-\item Utilize code generation and semantic analysis
+\item As described in \bsref{subsec:roslyn_first_phase} the C\# lexer  uses a simple \bscode{switch} case to identify tokens by choosing the type of token to identify based on the first character of the token, while the parser uses a recursive descent technique, both of which are implemented by hand. Such techniques have a low degree of complexity compared to strategies such as \ac{LALR}. As such modifying the lexer and parser is simpler than would be the case if more complex techniques had been employed.
+\item The Roslyn compiler generates the nodes composing its syntax tree along with factory methods and visitor pattern implementations based on the contents of an \ac{XML} file. Therefore adding new nodes to represents the extended language constructs, such as the \bscode{atomic} block and \bscode{retry} statement, amounts to adding definitions for theses nodes to the \ac{XML}, allowing the employed tool to generate source code for the new nodes.
+\item As described in \bsref{sec:syntax_trees} Roslyn's syntax trees are designed to be fast to modify by reusing underlying green nodes instead of creating complete copies\cite[p. 6]{ng2012roslyn}. This speaks for conducting transformation on the level of the syntax tree despite its immutable implementation.
+\item The Roslyn project has been designed to allow programmers to utilize the information gather during the compilation process by analyzing the syntax tree as well as the information in the symbol table and the results of semantics analysis. These parts of the compiler are exposed as a public \ac{API} allowing access to both syntactical and semantic information. Utilizing this \ac{API} during the transformation phases allows the transformation to draw on the existing semantical analysis to answer questions such as, what method is the target of a method invocation, without the need for implementing complex analysis.
+\item By parsing a extended syntax tree and transforming it into a regular C\# syntax tree the existing semantical analysis and code emission implementations can be utilized.
 \end{enumerate}
 
 \section{Lexer \& Parser Changes}

@@ -74,6 +74,7 @@ The C\# compiler builds upon concepts from traditional compiler theory, such as 
 The initial phase of compilation entails initial work, such as parsing the command line with associated parameters and setting up for compilation, as described in \bsref{ssec:overview_chain}. This phase is executed sequentially\cite{sadovRoslynPerf}.
 
 \subsection{First Phase}
+\label{subsec:roslyn_first_phase}
 The first phase involves parsing the source code, which is done in a traditional compiler fashion by lexing source code into tokens and parsing them into a syntax tree, which represents the syntactic structure of source code. The lexer is implemented using a \bscode{switch} used for identifying the type of token to lex given the first character of the token. The parser is implemented as a top-down parser using the common recursive descent approach. The parsing phase will check for syntax errors in source code, but does not have enough information to check for semantic errors, such as scope or type errors. The phase is concurrent, as several files may be parsed simultaneously\cite{sadovRoslynPerf}. The code for this phase is mainly located within the \bscode{Parser} and \bscode{Symbols} folder. We will describe the syntax tree and its contents in more detail in \bsref{sec:syntax_trees}.
 \kasper[inline]{Måske lidt om at lexer og parser implementerings teknikker.}
 
