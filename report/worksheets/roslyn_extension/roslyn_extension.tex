@@ -1,10 +1,12 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Roslyn Extension}{0}{Februar 10, 2015}{}{../../}
-The chapter describes how the Roslyn C\# compiler was extended to support the constructs of \stmname. \bsref{sec:roslyn_extension_strategy} describes the over all strategy, \bsref{sec:roslyn_extension_strategy} describes the changes made to the lexer and parser while \bsref{sec:syntax_tree_transformations} presents examples of the transformations made by the extension.
+The chapter describes how the Roslyn C\# compiler was extended to support the constructs of \stmname described in \bsref{chap:stm_design}. \bsref{sec:roslyn_extension_strategy} describes the overall strategy, \bsref{sec:roslyn_lexer_parser_changes} describes the changes made to the lexer and parser while \bsref{sec:syntax_tree_transformations} presents examples of the transformations made on the syntax tree by the extension.
 \label{chap:roslyn_extension}
 \section{Extension Strategy}
 \label{sec:roslyn_extension_strategy}
-The Roslyn C\# compiler was extended by modifying the lexing and parsing phases with support for the language construct described in \bsref{chap:stm_design}. The extended parsing phase outputs a extended syntax tree containing direct representations of any utilized \ac{STM} language extensions. The syntax tree is then analyzed, transforming any language extension into equivalent C\# code utilizing the \ac{STM} library described in \bsref{chap:implementation}. The transformation phase outputs a syntax tree containing only standard C\# code, executing the described \ac{STM} operations. This syntax tree is then passed to the reaming C\# compiler phases, utilizing its semantic analysis and code generation implementations. The approach is visualized in \bsref{fig:compiler_pipeline_extension}. The parser has been extended to output a extended syntax tree and transformation of this tree occurs before the binding and IL emission phases. The transformation phase utilizes both the extended syntax tree and symbol information gather trough the Roslyn C\# compilers \ac{API}.
+The Roslyn C\# compiler was extended by modifying the lexing and parsing phases with support for the language construct described in \bsref{chap:stm_design}. The extended parsing phase outputs an extended syntax tree containing direct representations of the language changes provided by \stmname. The syntax tree is then analyzed by identifying \stmnamesp constructs, followed by a transformation where any language extension is transformed into equivalent C\# code utilizing the \ac{STM} library described in \bsref{chap:implementation}. 
+
+The transformation phase outputs a syntax tree containing only standard C\# code, executing the described \ac{STM} operations. This syntax tree is then passed to the remaining C\# compiler phases, utilizing its semantic analysis and code generation implementations. The approach is visualized in \bsref{fig:compiler_pipeline_extension}. The parser has been extended to output an extended syntax tree and transformation of this tree occurs before the binding and IL emission phases. The transformation phase utilizes both the extended syntax tree and symbol information gather through the Roslyn \ac{API}.
 \begin{figure}[htbp]
 \centering
  \includegraphics[width=1\textwidth]{\rootpath/worksheets/roslyn_extension/figures/compiler_pipeline_extension} 
@@ -24,10 +26,52 @@ The described approach was due to the following reasons:
 \section{Lexer \& Parser Changes}
 \label{sec:roslyn_lexer_parser_changes}
 
-
+\andreas[inline]{Should contain lexer and parser changes, and the modifications to the syntax tree, and how it is made (XML changes)}	
 \section{Syntax Tree Transformations}
 \label{sec:syntax_tree_transformations}
 %HUSK
 \toby[i]{Evt. til valg af implementerings strategi: refer til at syntax træer kan blive modificeret hurtigt og med et lille memory overhead (den tredje key attribut omkring syntax træer)}
-\kasper{Implementerings beskrivelse: error codes, lexer, parser, tvars, atomic block, replacement}
+\kasper[inline]{Implementerings beskrivelse: error codes, lexer, parser, tvars, atomic block, replacement}
+
+\subsection{Atomic Block}
+Atomic and orElse block replacement
+
+\subsection{Field Types}
+\subsection{Properties}
+\subsection{Local variables}
+With or without type inference
+
+\subsection{Member Accesses}
+Accessing the .Value instead of the object directly
+
+\subsection{Parameters}
+Could also contain method and constructor argument replacement.
+
+\subsection{Retry}
+
+Steps in the transformation of the syntax tree (ordered as executed)
+\begin{enumerate}
+	\item Replace atomic properties
+	\item Replace field types
+	\item Replace atomic and orelse block
+	\item Replace retry
+	\item Replace local vars
+	\item Replace method arguments
+	\item Replace constructor arguments
+	\item Replace member accesses
+	\item Replace parameters
+\end{enumerate}
+
+(ordered as the design chapter)
+\begin{enumerate}
+	\item Replace atomic and orelse block
+	\item Replace field types
+	\item Replace atomic properties
+	\item Replace local vars
+	\item Replace member accesses
+	\item Replace parameters (value, reference, out, params)
+	\item Replace method arguments
+	\item Replace constructor arguments
+	\item Replace retry
+\end{enumerate}
 \worksheetend
