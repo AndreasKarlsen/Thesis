@@ -179,6 +179,7 @@ Every node, token and trivia knows its position in source code. This is accompli
 Every node, token and trivia has two properties to obtain spans: \bscode{Span} and \bscode{FullSpan}. The \bscode{Span} property includes only the span of the node, token or trivia and not any trivia, where the \bscode{FullSpan} property includes the normal span and any leading or trailing trivia.  
 
 \subsubsection{Kinds}
+\label{subsubsec:roslyn_kinds}
 Every node, token and trivia has an integer \bscode{RawKind} property, used to identify the syntax element type. Each language, C\# or \ac{VB}, then contains a \bscode{SyntaxKind} enumeration that contains all the nodes, tokens and trivia in the language, that the integer can be cast to. The \bscode{CSharpSyntaxKind} method does the casting automatically\cite{roslynwikiOverview}\cite[p. 9]{ng2012roslyn}.
 
 Kinds are especially important for tokens and trivia, as they have only a single type, \bscode{SyntaxToken} and \bscode{SyntaxTrivia}, for all tokens and trivia. Thus, the only way to identify the particular token or trivia at hand, is by identifying its associated kind.
@@ -191,14 +192,12 @@ If programs are invalid as a result of errors in source code, a syntax tree is s
 \end{enumerate}
 
 \subsection{Syntax Tree Generation}
+\label{subsec:roslyn_syntax_tree_generation}
 The nodes, associated factory methods and visitor pattern implementation of the syntax tree is generated based on the contents of the \bscode{Syntax.xml} file located in the \bscode{CSharpCodeAnalysis (Portable)} project. The contents of the file describes information such as the fields and base class for each node in tree. Whenever the compiler is build, a tool, which source code resides in the \bscode{Tools\textbackslash CSharpSyntaxGenerator} project, generates the classes for each node defined in \bscode{Syntax.xml} along with relevant factory methods, properties for getting the value of each field associated with a node and pure methods for updating the fields of a node, that is generating a new node representing the change. The tool also generates the visitor pattern implementation along with the required \bscode{accept} methods on each node. Both the red and green tree, described in \bsref{subsec:roslyn_red_green_trees}, are generated during this process. 
- \section{Outcome}\toby{evt. en anden titel}
-\lone[i]{Afslutnings kapitel: Dermed kan vi ændre BLA BLA for at integere \stmname via Roslyn.}
-\toby[i]{Måske kan vi undvære kapitlet, med det der er skrevet i starten af kapitlet?}
-%Vi vil ændre i den første fase, i syntax træeet, fordi det er simplest? og det er effektivt 
 
 %EXTRA
-\kasper[inline]{Maybe syntax tree generation strategy (FROM XML)}
+\kasper[inline]{SyntaxKind enum}
+\kasper[inline]{SemanticModel}
 
 %semantic model evt. (tror kun det er i forhold til api)
 	%følgende sker direkte i runcore kald

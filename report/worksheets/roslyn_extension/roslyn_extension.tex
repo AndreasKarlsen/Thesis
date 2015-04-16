@@ -23,10 +23,70 @@ The described approach was selected due to the following reasons:
 \item By parsing a extended syntax tree and transforming it into a regular C\# syntax tree the existing semantical analysis and code emission implementations can be utilized.
 \end{enumerate}
 
-\section{Lexer \& Parser Changes}
+\section{Lexing \& Parsing Phases}
+This section describes the changes conducted in order to extend the lexing and parsing phases of the Roslyn C\# compiler to support the constructs described in \bsref{chap:stm_design}.
 \label{sec:roslyn_lexer_parser_changes}
-
 \andreas[inline]{Should contain lexer and parser changes, and the modifications to the syntax tree, and how it is made (XML changes)}	
+\subsection{Lexer Changes}
+As described in \bsref{chap:stm_design} \stmnamesp introduces the three new \bscode{atomic}, \bscode{orelse} and \bscode{retry} keywords. As a result the lexer component has been extended to identify these keyword as tokens with the correct kind. The C\# lexer initially lexes keyword tokens as if they where identifies. If a identifies token can be determined to correspond to a keyword, a keyword token with the correct kind is returned instead. 
+
+Allowing the lexer to identify the the new keywords required adding their definition to the lookup methods of the \bscode{SyntaxKindFacts} class. The \bscode{SyntaxKindFacts} class defines the \bscode{GetKeywordKind} which the lexer uses to identify the keyword kind of a identifier, if the identifier represents a keyword. Additionally the \bscode{SyntaxKindFacts} class defines the \bscode{GetText} method for determining the string representation of a keyword based on its kind, to which a definition of the new keywords where added.
+
+To allow a token to represent the new keywords, the \bscode{AtomicKeyword}, \bscode{OrelseKeyowrd} and \bscode{RetryKeyword} entries where added to the \bscode{SyntaxKind} enumeration. As described in \bsref{subsubsec:roslyn_kinds}, the \bscode{SyntaxKind} enumeration contains a entry for each type of node, token, or trivia in C\#. Whenever the lexer identifies a occurrence of one of the new keywords, with the corresponding kind is return. For example a occurrence of the \bscode{atomic} keyword result in a token with the kind \bscode{AtomicKeyword} being returned.
+
+\subsection{Syntax Tree Extension}
+The design described in adds the \bscode{atomic}, \bscode{orelse} and \bscode{retry} constructs which the existing syntax tree can not express. Therefore the syntax tree must be extended to support these language constructs. As described in \bsref{subsec:roslyn_syntax_tree_generation} nodes composing the syntax tree, along with factory methods and the visitor pattern implementation, are generated on the basis of an \ac{XML} file. Adding additional nodes to the the syntax tree therefore amounts to definition them in the \ac{XML} notation, which has been done for the three previously mentioned constructs. \bsref{lst:roslyn_extension_tre_xml} shows the \ac{XML} defining the \bscode{AtomicStatementSyntax} node which represents a \bscode{atomic} block in the syntax tree. Line 1 defines the name and base class of the the node while line 2 defines its kind. The \bscode{AtomicStatement} kind has been added to the \bscode{SyntaxKind} enumeration as described previously. Line 3 defines a property on the node which holds the token representing the \bscode{AtomicKeyword} which starts the definition of the atomic blocks. The property has a constraint specifying the kind of on the token that can be associated with the property which is defined on line 4 as well as a comment given on lines 5-6. Line 11 defines a statement property which holds the block of statements associated with the defined \bscode{atomic} block. Line 18 defines a property containing a \bscode{SyntaxList} of \bscode{orelse} blocks associated with the \bscode{atomic} block. This relation ship has been modeled after the relationship between a C\# \bscode{try} statement and its \bscode{catch} clauses, as both have a zero to many association. Finally lines 25-29 defines a comment for the \bscode{AtomicStatementSyntax}, while lines 30-32 defines a comment for the factory method.
+
+\begin{lstlisting}[label=lst:roslyn_extension_tre_xml,
+  caption={AtomicStatement \ac{XML} definition},
+  language=XML,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  morekeywords={Name, Base, Type}]  % Start your code-block
+
+  <Node Name="AtomicStatementSyntax" Base="StatementSyntax">
+    <Kind Name="AtomicStatement"/>
+    <Field Name="AtomicKeyword" Type="SyntaxToken">
+      <Kind Name="AtomicKeyword"/>
+      <PropertyComment>
+        <summary>
+          Gets a SyntaxToken that represents the atomic keyword.
+        </summary>
+      </PropertyComment>
+    </Field>
+    <Field Name="Statement" Type="StatementSyntax">
+      <PropertyComment>
+        <summary>
+          Gets a StatementSyntax the represents the statement to be executed when the condition is true.
+        </summary>
+      </PropertyComment>
+    </Field>
+    <Field Name="Orelses" Type="SyntaxList&lt;OrelseSyntax&gt;">
+      <PropertyComment>
+        <summary>
+          Gets a SyntaxList containing the orelse blocks associated with the atomic statement.
+        </summary>
+      </PropertyComment>
+    </Field>
+    <TypeComment>
+      <summary>Represents an atomic block.</summary>
+    </TypeComment>
+    <FactoryComment>
+      <summary>Creates an AtomicStatementSyntax node</summary>
+    </FactoryComment>
+  </Node>
+\end{lstlisting}
+
+Declaration of transactional local variables, fields and parameters does not require modifications to the syntax tree as the standard nodes for these constructs allow a collection of modifiers to be associated with the declaration. Any atomic modifiers are simply added to the collection along with any other modifiers. 
+
+
+\subsection{Parser Changes}
+%error codes, const atomic, readonly atomic
+
+
 \section{Syntax Tree Transformations}
 \label{sec:syntax_tree_transformations}
 %HUSK

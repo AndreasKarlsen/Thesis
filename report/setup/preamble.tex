@@ -158,6 +158,8 @@
 \definecolor{bluekeywords}{rgb}{0.13,0.13,1}
 \definecolor{greencomments}{rgb}{0,0.5,0}
 \definecolor{redstrings}{rgb}{0.9,0,0}
+\definecolor{gray}{rgb}{0.4,0.4,0.4}
+\definecolor{darkblue}{rgb}{0.0,0.0,0.6}
 \usepackage{caption} 
 \usepackage{multicol}
 \DeclareCaptionFont{white}{\color{white}}
@@ -207,6 +209,17 @@
   morestring=[b]",
   morestring=[b]',
   morestring=[b]"""
+}
+
+\lstdefinelanguage{XML}
+{
+  morestring=[b]",
+  morestring=[s]{>}{<},
+  morecomment=[s]{<?}{?>},
+  stringstyle=\color{black},
+  identifierstyle=\color{darkblue},
+  keywordstyle=\color{redstrings},
+  morekeywords={xmlns,version,type}% list your attributes here
 }
 
 \lstdefinelanguage{clojure}%
