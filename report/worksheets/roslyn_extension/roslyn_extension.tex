@@ -88,6 +88,50 @@ Declaration of transactional local variables, fields and parameters does not req
 
 
 \subsection{Parser Changes}
+As described in \bsref{subsec:roslyn_first_phase} the C\# parser uses a recursive decent strategy implemented by hand. As it is customary for recursive decent implementations, each construct has a method responsible for parsing that particular construct. For the new \bscode{atomic}, \bscode{orelse} and \bscode{retry} such a method has been added, while the methods for parsing local variable, field, parameters and properties have been modified to allow for a atomic modifier, as well as generating error messages for any unsupported modifier combinations such as \bscode{atomic const} and \bscode{readonly const}. Error are associated with the erroneous nodes as it is customary for the compiler. A later compilation phase generates error messages and cancels code emission if any errors where present.
+
+\bsref{lst:parse_atomic_block} shows the \bscode{ParseAtomicBlock} method responsible for parsing a \bscode{atomic}. Line \ref{line:ab_keyword} parses a \bscode{atomic} keyword returning a token representing the keyword. Line \ref{line:ab_block} parses the block of statements representing the transaction body. Lines \ref{line:ab_orelse_start} to line \ref{line:ab_orelse_end} parses any \bscode{orelse} blocks associated with the \bscode{atomic} statement, if any are present. Line \ref{line:ab_allocate} allocates a \bscode{SyntaxListBuilder}. The \bscode{Allocate} method reuses existing space if possible, in order to limit the overhead of allocation. Line \ref{line:ab_parse_orelse} delegates the parsing of the actual \bscode{orelse} block to its corresponding method. Line \ref{line:ab_free} frees the space allocated by the call on on line \ref{line:ab_allocate}. The \bscode{try finally} construct ensures that the space is freed in case of an exception. Finally on line \ref{line:ab_return} the syntax factory is used to create the \bscode{AtomicStatementSyntax} that is returned.
+
+\begin{lstlisting}[label=lst:parse_atomic_block,
+  caption={Method for parsing \bscode{atomic} block},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  private StatementSyntax ParseAtomicBlock()
+  { 
+    var atomicKeyword = this.EatToken(SyntaxKind.AtomicKeyword);~\label{line:ab_keyword}~
+    var block = this.ParseEmbeddedStatement(false);~\label{line:ab_block}~
+
+    var orelses = SyntaxFactory.List<OrelseSyntax>();~\label{line:ab_orelse_start}~
+    var orelseBuilder = _pool.Allocate<OrelseSyntax>();
+    ~\label{line:ab_allocate}~
+    try
+    {
+      while (this.CurrentToken.Kind == SyntaxKind.OrelseKeyword)
+      {
+        var clause = ParseOrelse();~\label{line:ab_parse_orelse}~
+        orelseBuilder.Add(clause);
+      }
+
+      orelses = orelseBuilder.ToList();~\label{line:ab_tolist}~
+    }
+    finally
+    {
+      _pool.Free(orelseBuilder);~\label{line:ab_free}~
+    }~\label{line:ab_orelse_end}~
+
+    return _syntaxFactory.AtomicStatement(atomicKeyword, block, orelses);~\label{line:ab_return}~
+  }
+\end{lstlisting}
 %error codes, const atomic, readonly atomic
 
 
