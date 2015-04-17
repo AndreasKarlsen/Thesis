@@ -16,7 +16,13 @@ Project Roslyn is Microsoft's initiative of completely rewriting the C\# and \ac
 
 Beyond changing the languages the compilers are written in, Roslyn provides a new approach to compiler interaction and usage. Traditionally a compiler is treated as a black box which receives source code as input and produces objects files or assemblies as output\cite[p. 3]{ng2012roslyn}. During compilation the compiler builds a deep knowledge about the code, which in traditional compilers is unavailable to the programmer and discarded once the compilation is done. This is where Roslyn differs, as it exposes the code analysis of the compiler by providing an \ac{API} which allows the programmer to obtain information about the different compilation phases\cite[p. 3]{ng2012roslyn}. 
 
-The compiler \acp{API} available are illustrated in \bsref{fig:api_vs_compiler_pipeline} where each \ac{API} corresponds to a phase in the compiler pipeline. In the first phase the source code is turned into tokens and parsed according to the language grammar. This phase is exposed through an \ac{API} as a syntax tree. In the second phase declarations, i.e. namespaces and types from code and imported metadata, are analyzed to form named symbols. This phase is exposed as a hierarchical symbol table. In the third phase identifiers in the code are matched to symbols. This phase is exposed as a model which exposes the result of the semantic analysis. In the last phase, information gathered throughout compilation is used to emit an assembly. This phase is exposed as an \ac{API} that can be used to produce IL bytecodes\cite[p. 3-4]{ng2012roslyn}.
+The compiler \acp{API} available are illustrated in \bsref{fig:api_vs_compiler_pipeline} where each \ac{API} corresponds to a phase in the compiler pipeline. In the first phase the source code is turned into tokens and parsed according to the language grammar. This phase is exposed through an \ac{API} as a syntax tree. In the second phase declarations, i.e. namespaces and types from code and imported metadata, are analyzed to form named symbols. This phase is exposed as a hierarchical symbol table. In the third phase identifiers in the code are matched to symbols. This phase is exposed as a model which exposes the result of the semantic analysis. This modes is referred to as a semantic model. A semantic model exposes method that answer semantics questions related to the syntax tree for which the it is created\cite{ng2012roslyn}. Through the semantic model programmers can obtain information such as:
+\begin{itemize}
+\item The type of an expression
+\item The symbol corresponding to a declaration
+\item The target of a method invocation
+\end{itemize} 
+In the last phase, information gathered throughout compilation is used to emit an assembly. This phase is exposed as an \ac{API} that can be used to produce IL bytecodes\cite[p. 3-4]{ng2012roslyn}.
 
 \begin{figure}[htbp]
 \centering
@@ -79,11 +85,12 @@ The first phase involves parsing the source code, which is done in a traditional
 \kasper[inline]{Måske lidt om at lexer og parser implementerings teknikker.}
 
 \subsection{Second Phase}
+\label{subsec:roslyn_second_phase}
 The second phase involves creating a \bscode{Compilation} type object, specifically a \bscode{CSharpCompilation} type as we focus on the C\# compiler. A \bscode{Compilation} object contains information necessary for further compilation e.g. all assembly references, compiler options and source code. In the creation of a \bscode{CSharpCompilation} object, a declaration table is created which keeps track of type and namespace declarations in source code\cite{sadovRoslynPerf}. This is done sequentially\cite{sadovRoslynPerf}. Additionally the \bscode{Compilation} object contains a symbol table, which holds all symbols declared in source code or imported assemblies.\toby{Tror den er lazy, så først når den bruges laves den} Each namespace, type, method, property, field, event, parameter and local variable is represented as a symbol and stored in the symbol table\cite[p. 14]{ng2012roslyn}. Each type of symbol has its own symbol class, e.g. \bscode{MethodSymbol} derives from the base \bscode{Symbol} class. The symbol table can be accessed by the \bscode{GlobalNamespace} property, as a tree of symbols, rooted by the global namespace symbol. Furthermore there also exists a range of methods and properties to obtain symbols. The code for this phase is mainly located within the \bscode{Declarations} and \bscode{Symbols} folders.
 %compilation is immutable, like syntax trees
 
 \subsection{Third Phase}
-In order to enable semantic analysis, the third phase entails fully binding all symbols, which is determining what each symbol actually refers to, e.g. what namespace and overloaded method, a particular method refers to. Any problems with symbol binding, like inheritance loops, will be reported. Binding is done concurrently, however binding members of a type will force base types to be bound also. For symbols not related, they can be bound in any order.\cite{sadovRoslynPerf}
+In order to enable semantic analysis, the third phase entails fully binding all symbols, which is determining what each symbol actually refers to, e.g. what namespace and overloaded method, a particular method refers to. Any problems with symbol binding, like inheritance loops, will be reported. Binding is done concurrently, however binding members of a type will force base types to be bound also. For symbols not related, they can be bound in any order \cite{sadovRoslynPerf}.
 
 Additionally, the binding phase also creates a bound tree, which is the Roslyn compilers internal tree used for flow analysis and emitting. In \cite{roslynBinder} Anthony D. Green states that they do not want to expose the bound tree through the \ac{API}: ``\textit{It has been a long standing design decision not to expose the bound tree. The shape of the bound nodes is actually pretty fragile compared to the shape of the syntax nodes and can be changed around a lot depending on what scenarios need to be addressed. We might store something somewhere one day for performance and remove it the next for compatibility or vice versa}''.\toby{Skal vi have det med eller ej? Mest for at fortælle det er der, men det er ikke noget vi vil pille i.} 
 Data flow and control flow analysis is employed, which uses the bound tree to e.g. check if statements are reachable, as the C\# specification states that an unreachable statement should produce a warning\cite{gafter2011}. The code for this phase is mainly located in the \bscode{Binder}, \bscode{BoundTree} and \bscode{FlowAnalysis} folders.
@@ -193,12 +200,12 @@ If programs are invalid as a result of errors in source code, a syntax tree is s
 
 \subsection{Syntax Tree Generation}
 \label{subsec:roslyn_syntax_tree_generation}
-The nodes, associated factory methods and visitor pattern implementation of the syntax tree is generated based on the contents of the \bscode{Syntax.xml} file located in the \bscode{CSharpCodeAnalysis (Portable)} project. The contents of the file describes information such as the fields and base class for each node in tree. Whenever the compiler is build, a tool, which source code resides in the \bscode{Tools\textbackslash CSharpSyntaxGenerator} project, generates the classes for each node defined in \bscode{Syntax.xml} along with relevant factory methods, properties for getting the value of each field associated with a node and pure methods for updating the fields of a node, that is generating a new node representing the change. The tool also generates the visitor pattern implementation along with the required \bscode{accept} methods on each node. Both the red and green tree, described in \bsref{subsec:roslyn_red_green_trees}, are generated during this process. 
+The nodes, associated factory methods and visitor pattern implementation of the syntax tree is generated based on the contents of the \bscode{Syntax.xml} file located in the \bscode{CSharpCodeAnalysis (Portable)} project. The contents of the file describes information such as the fields and base class for each node in tree. Whenever the compiler is build, a tool, which source code resides in the \bscode{Tools\textbackslash CSharpSyntaxGenerator} project, generates the classes for each node defined in \bscode{Syntax.xml} along with relevant factory methods, properties for getting the value of each field associated with a node and pure methods for updating the fields of a node, that is generating a new node representing the change. The tool also generates the visitor pattern implementation along with the required \bscode{accept} methods on each node. Both the red and green tree, described in \bsref{subsec:roslyn_red_green_trees}, are generated during this process.
+
+
+
 
 %EXTRA
-\kasper[inline]{SyntaxKind enum}
-\kasper[inline]{SemanticModel}
-
 %semantic model evt. (tror kun det er i forhold til api)
 	%følgende sker direkte i runcore kald
 %compilation = source files, assembly references and compiler options. Main: symbol table
