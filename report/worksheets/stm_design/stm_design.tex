@@ -42,17 +42,17 @@ The $type$ can be any existing or user-defined type including the \bscode{dynami
   public atomic static int x, y, z;
 \end{lstlisting}
 
-\subsection{Transactional Properties}
+\subsection{Transactional Properties}\label{subsec:design_properties}
 C\# facilitates a language feature which eases the encapsulation of fields typically used in \ac{OOP}. The feature is known as properties, and can be in an automatic or a manual form. The formats in mentioned order are\cite[p. 52]{sestoft2011c}:
 
-$field$-$modifiers$ $type$ \bscode{name} \{$access$-$modifier$? \bscode{get}\bscode{;} $access$-$modifier$? \bscode{set}\bscode{;} \}
+$field$-$modifiers$ $type$ \bscode{name} \{$access$-$modifier$? \bscode{get}\bscode{;} $access$-$modifier$? \bscode{set}\bscode{;} \}\\
 $method$-$modifiers$ $type$ \bscode{name} $\{$ \bscode{get} $get$-$body$ \bscode{set} $set$-$body$ $\}$
 
 where $field$-$modifiers$ includes the new \bscode{atomic} keyword, and $method$-$modifiers$ does not. This is the only change to properties in C\#, and the normal rules of property usage still applies, as defined in \cite[p. 52]{sestoft2011c}.
 
 The manual property lets the programmer specify a backing field manually, allowing him to specialize the functionality of the getter and setter, e.g. used for implementing the observer pattern. The automatic properties generate a backing field automatically, but the getter and setter cannot have specialized functionality. 
 
-Atomic automatic properties simplifies the implementation whenever the property serves as a simple getter and setter. An example of such a property is shown in \bsref{lst:auto_atomic_property}. If the programmer wishes to supply additional logic for the get and set operations the manual property can be made atomic by accessing an atomic backing field as demonstrated in \bsref{lst:atomic_property}. Both cases are frequently used in C\#, thus making an \bscode{atomic} version makes the feature usable in a transaction in a orthogonal way.
+Atomic automatic properties simplifies the implementation whenever the property serves as a simple getter and setter. An example of such a property is shown in \bsref{lst:auto_atomic_property}. If the programmer wishes to supply additional logic for the get and set operations the manual property can be made atomic by accessing an atomic backing field as demonstrated in \bsref{lst:atomic_property}. Both cases are frequently used in C\#, thus making an \bscode{atomic} version makes the feature usable in a transaction in an orthogonal way.
 
 \begin{lstlisting}[label=lst:auto_atomic_property,
   caption={Automatic Transactional Properties},

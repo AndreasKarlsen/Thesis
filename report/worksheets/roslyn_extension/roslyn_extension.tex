@@ -100,8 +100,71 @@ Declaration of transactional local variables, fields and parameters does not req
 \subsection{Atomic Block}
 Atomic and orElse block replacement
 
-\subsection{Field Types}
+\subsection{Field Types}\label{subsec:extension_field}
 \subsection{Properties}
+In \bsref{subsec:design_properties} we described the design for transactional properties. The automatic form is exemplified in \bsref{lst:before_atomic_property}:
+
+\begin{lstlisting}[label=lst:before_atomic_property,
+  caption={Before Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  class Car {
+      public atomic int KmDriven { get; set; }
+  }
+\end{lstlisting}
+
+In order to provide the wanted semantics, we transform it into two parts: an atomic backing field (line 2), and a manual property (line 3-11). Thus, after the transformation, the example in \bsref{lst:before_atomic_property} becomes \bsref{lst:after_atomic_property}. 
+
+\begin{lstlisting}[label=lst:after_atomic_property,
+  caption={After Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+
+  class Car {
+    private atomic int _kmDriven;
+    public int KmDriven {
+        get {
+            return _kmDriven;
+        }
+        set {
+            _kmDriven = value;
+            // Announce value changes
+        }
+    }
+  }
+\end{lstlisting}
+
+The transformation takes the following approach for each transactional property identified in the syntax tree:
+
+\begin{enumerate}
+	\item Constructs a get-body with the access-modifier of the original propertys get. The get-body contains a block in which a return to the backing field is. The backing field is not yet constructed, but a method is used to determine its future identifier to ensure a correct reference.
+	\item Constructs a set-body with the access-modifier of the original propertys set. The set-body contains a block in which an assignment of \bscode{value} is made to the backing field.
+	\item Constructs a manual property with the access modifier of the original property, the get-body and set-body constructed earlier.
+	\item Constructs a private transactional field of the same type as the original property.
+\end{enumerate}
+The code performing the transformation can be found in \andreas{STM.cs - ReplaceProperties(SyntaxNode root)}
+
+The transactional properties are transformed before the transactional fields, thus enabling reuse of the transformation done for atomic fields, as the backing field can be constructed as a transactional field instead of fully transforming it. Additionally, no transformation has to be done for the manual form, as the transactional field used for backing the property is processed as described in \bsref{subsec:extension_field}. 
+
+\andreas[inline]{We dont secure that the generated backing field does not already exist.}
+
 \subsection{Local variables}
 With or without type inference
 
@@ -138,4 +201,7 @@ Steps in the transformation of the syntax tree (ordered as executed)
 	\item Replace constructor arguments
 	\item Replace retry
 \end{enumerate}
+
+\section{Design \& Integration revisited}
+Changes to design due to limited implementation possibilities.
 \worksheetend
