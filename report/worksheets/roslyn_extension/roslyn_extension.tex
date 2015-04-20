@@ -142,15 +142,70 @@ As described in \bsref{subsec:roslyn_first_phase} the C\# parser uses a recursiv
 \end{lstlisting}
 %error codes, const atomic, readonly atomic
 
+\subsection{Symbol Changes}
+The symbols representing fields, local variables, and parameters have been modified with a new \bscode{IsAtomic} property of type \bscode{bool}, indicating if they represent a atomic variation of these constructs. The logic which creates the symbol table has further been modified to, for each of these constructs, determine whether the declaration is atomic and set the \bscode{IsAtomic} to the appropriate value.
+
+For each usage of a field, local variable or parameter, the semantic model allows for the retrieval of a symbol, representing the corresponding declaration. Based on the added \bscode{IsAtomic} property this symbol can be used to determine whether the usage represents the usage of a atomic variable. For cases where only access to atomic variable has be modified, the symbol extension allows easy access to the required information.
+
 
 \section{Syntax Tree Transformations}
 \label{sec:syntax_tree_transformations}
-%HUSK
-\toby[i]{Evt. til valg af implementerings strategi: refer til at syntax træer kan blive modificeret hurtigt og med et lille memory overhead (den tredje key attribut omkring syntax træer)}
-\kasper[inline]{Implementerings beskrivelse: error codes, lexer, parser, tvars, atomic block, replacement}
+This section presents example of the syntax tree transformations performed during the compilation process. In order to prevent errors due to ambiguity between types names, the transformation process uses fully qualified names\cite[p. 73]{csharp2013specificaiton}  for any types in the \ac{STM} library. In the examples presented in this section the simple names have been used, in order to improve readability. 
 
 \subsection{Atomic Block}
-Atomic and orElse block replacement
+In \bsref{subsec:design_atomic_block} the design for the \bscode{atomic} block is described. \bsref{lst:before_atomic_block} depicts the syntax of the atomic block before transformation. 
+
+\begin{lstlisting}[label=lst:before_atomic_block,
+  caption={\bscode{atomic} Block Before Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set}]  % Start your code-block
+
+  atomic
+  {
+    //Block
+  }
+  orelse
+  {
+    //Orelse block
+  }
+\end{lstlisting}
+The transformation of a atomic block is done over the four steps described bellow.
+\begin{enumerate}
+	\item Construct a syntax node for a lambda expression (anonymous function) with a body equal to that of the atomic block.
+	\item Construct lambda expressions for any \bscode{orelse} blocks associated with the \bscode{atomic} blocks, preserving their bodies as with the \bscode{atomic} block.
+	\item Construct a syntax node for the invocation of the \bscode{STMSystem.Atomic} method, giving the created lambda expressions as arguments.
+	\item Replace the \bscode{atomic} block with the invocation of the \bscode{STMSystem.Atomic} method.
+\end{enumerate}
+For syntax shown in \bsref{lst:before_atomic_block} the transformation produces the output shown in \bsref{lst:after_atomic_block}.
+
+\begin{lstlisting}[label=lst:after_atomic_block,
+  caption={\bscode{atomic} Block After Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set}]  % Start your code-block
+
+  STMSystem.Atomic(() => {
+    //Block					
+  },
+  () => {
+    //Orelse block
+  });
+\end{lstlisting}
 
 \subsection{Field Types}\label{subsec:extension_field}
 \subsection{Properties}
