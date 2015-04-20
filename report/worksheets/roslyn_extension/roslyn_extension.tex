@@ -268,8 +268,74 @@ The transactional properties are transformed before the transactional fields, th
 \subsection{Local variables}
 With or without type inference
 
-\subsection{Member Accesses}
-Accessing the .Value instead of the object directly
+\subsection{Usage of Transactional Variables}
+As described in \bsref{subsec:stm_impl_transactional_variables} setting the value of a transactional variable is done trough the \bscode{Value} property of the supplied \ac{STM} types. As the type of any field, local variable or property declared \bscode{atomic} in \stmnamesp is changed to the corresponding \ac{STM} type, any assignment must go trough the \bscode{Value} property. As described in \bsref{subsec:stm_impl_transactional_variables} the \ac{STM} types supply support for implicit conversion to the wrapped value, when appearing as r-values. The transformation can however not rely on implicit conversion in all cases as, for example the comparison of to \bscode{TMInt} objects results in reference comparison instead of the intended integer comparison. As such, also the r-value appearances of any transactional field, local variable and parameter must be transformed to access the \bscode{Value} property ensuring that the wrapped object is accessed instead of the \ac{STM} object. Special handling is given to the \bscode{++} and \bscode{--} operators as the numeric \bscode{STM} types supply transactional implementations of these operators. The transformation ensures that these operators access the \ac{STM} object directly instead of access the \bscode{Value} property.
+
+The implementations for the transformation of access to transactional variables are divided into two parts. The first dealing with the usage of transnational variables occurring as a single identifier such as \bscode{someTMVar}. The second part handles member access expressions such as \bscode{object.someTMfield.someOtherTMfield}. While these two implementations differ in the syntactic constructs they work on, their overall approach both follow the steps described below:
+
+\begin{enumerate}
+	\item Identify each usage of a transactional field, local variable, or parameter including both r and l-value occurrences.
+	\item Construct a member access expression accessing the \bscode{Value} property of the identified variable.
+	\item Replace the usage of the variable with the constructed member access expression. 
+\end{enumerate}
+
+\bsref{lst:before_atomic_usage} presents a example accessing both a transactional field, local variable and parameter. \bsref{lst:after_atomic_usage} shows the result of applying the transformation to the example presented in \bsref{lst:before_atomic_usage}. The assignment on line \ref{line:au_assigment} of \bsref{lst:before_atomic_usage} is transformed to access the \bscode{Value} property of both its left and right sides, as both of the variable involved are transactional. The result of the transformation is shown on line \ref{line:au_assigment_after} of \bsref{lst:after_atomic_usage}. The member access expression on line \ref{line:au_member_access} of \bsref{lst:before_atomic_usage} is likewise transformed to access the \bscode{Value} property of both transactional fields involved. The resulting code is shown on line \ref{line:au_member_access_after} of \bsref{lst:after_atomic_usage}.
+
+\begin{lstlisting}[label=lst:before_atomic_usage,
+  caption={Usage of \bscode{atomic} Variables Before Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set}]  % Start your code-block
+
+  public class AtomicExample
+  {
+    public atomic AtomicExample aField;
+
+    public AtomicExample ExampleMethod(atomic int i)
+    {
+      atomic int k = 0;
+      k = i;~\label{line:au_assigment}~
+
+      return aField.aField;~\label{line:au_member_access}~
+    }
+  }
+\end{lstlisting}
+
+\begin{lstlisting}[label=lst:after_atomic_usage,
+  caption={Usage of \bscode{atomic} Variables After Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set}]  % Start your code-block
+
+  public class AtomicExample
+  {
+    public TMVar<AtomicExample> aField = new TMVar<AtomicExample>();
+
+    public AtomicExample ExampleMethod(TMInt i)
+    {
+      TMInt k = new TMInt(0);
+      k.Value = i.Value;~\label{line:au_assigment_after}~
+
+      return aField.Value.aField.Value;~\label{line:au_member_access_after}~
+    }
+  }
+\end{lstlisting}
 
 \subsection{Parameters}
 Could also contain method and constructor argument replacement.
