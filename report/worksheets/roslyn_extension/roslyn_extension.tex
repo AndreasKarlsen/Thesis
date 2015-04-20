@@ -26,7 +26,14 @@ The described approach was selected due to the following reasons:
 
 \item By parsing an extended syntax tree and transforming it into a regular C\# syntax tree, the existing semantical analysis and code emission implementations can be utilized.
 \end{enumerate}
-\andreas[inline]{What speaks against our approach? - Sing a song about that we chose this approach despite of the disadvantages. Refer to our restriction, about not modifying the CLR, which could be another approach}
+
+Despite of the many advantages of the selected approach, we also found disadvantages which we have to cope with. The following disadvantages was identified:
+\begin{enumerate}
+	\item By doing modifications to the syntax tree, the roundtripable property is lost, as the syntax tree no longer represents the original source code. Consequently, it is not possible to inform the programmer of the placement of errors in generated code. This require us, to perform our own code analysis, and give meaningful errors attached to the original source code. Ultimately, we lose the ability to rely on the existing code analysis provided by the Roslyn compiler. Alternatively, we could perform the transformation at a later compilation phase, e.g. modifying the bound tree in the binding phase or do changes before emitting code in the emit phase. This would preserve the roundtripable property, but also limit the reuse of the existing compiler. 
+	
+	\item As we translate \bscode{atomic} fields, properties and local variables to a corresponding \ac{STM} type, the types need to be known. As C\# allows the programmer to utilize type inference for local variables, the type can be unknown at this point of compilation, thus making it impossible to identify which type the local variables should be translated to. To remedy this, we must infer the type before translation. Roslyn offers the possibility to evaluate the type an expression, which we use to infer the type of \bscode{atomic} local variables of no type. Consequently, we must perform some of the work, that the Roslyn compiler does at later stages of the compilation.
+\end{enumerate}
+
 \section{Lexing \& Parsing Phases}
 This section describes the changes conducted in order to extend the lexing and parsing phases of the Roslyn C\# compiler to support the constructs described in \bsref{chap:stm_design}.
 \label{sec:roslyn_lexer_parser_changes}
