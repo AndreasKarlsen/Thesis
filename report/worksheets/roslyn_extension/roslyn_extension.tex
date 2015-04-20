@@ -172,9 +172,9 @@ In \bsref{subsec:design_atomic_block} the design for the \bscode{atomic} block i
 \end{lstlisting}
 The transformation of a atomic block is done over the four steps described bellow.
 \begin{enumerate}
-	\item Create a syntax node for a lambda expression (anonymous function) with a body equal to that of the atomic block.
-	\item Create lambda expressions for any \bscode{orelse} blocks associated with the \bscode{atomic} blocks, preserving their bodies as with the \bscode{atomic} block.
-	\item Create a syntax node for the invocation of the \bscode{STMSystem.Atomic} method, giving the created lambda expressions as arguments.
+	\item Construct a syntax node for a lambda expression (anonymous function) with a body equal to that of the atomic block.
+	\item Construct lambda expressions for any \bscode{orelse} blocks associated with the \bscode{atomic} blocks, preserving their bodies as with the \bscode{atomic} block.
+	\item Construct a syntax node for the invocation of the \bscode{STMSystem.Atomic} method, giving the created lambda expressions as arguments.
 	\item Replace the \bscode{atomic} block with the invocation of the \bscode{STMSystem.Atomic} method.
 \end{enumerate}
 For syntax shown in \bsref{lst:before_atomic_block} the transformation produces the output shown in \bsref{lst:after_atomic_block}.
