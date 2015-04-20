@@ -29,7 +29,7 @@ This approach can be used in combination with code where the internals are avail
   morekeywords={atomic, retry, orElse, var, get, set, sealed}]  % Start your code-block
   
   sealed class Car {
-    private final int _kmDriven;
+    private const int _kmDriven;
     public Car(int km) { _kmDriven = km; }
     public Car Drive (int km) { 
       return new Car(_kmDriven + km); 

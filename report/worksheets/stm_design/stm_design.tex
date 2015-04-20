@@ -11,8 +11,9 @@ Throughout this chapter, we describe the proposed syntax extensions using  Exten
 As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply language integrated support for defining transaction scopes as well as declaration of transactional variables. For this purpose \stmnamesp extends C\# with the \bscode{atomic} keyword. The \bscode{atomic} keyword will serve as both a statement denoting a transaction scope as well as a modifier applicable to the declaration of variables. 
 
 \subsection{Transactional Block}
+\label{subsec:design_atomic_block}
 The declaration of a transaction takes the format \bscode{atomic} \{ $S$ \}, where $S$ is the general class of C\# statements. Any assignments to transactional variables inside an atomic block will be perceived as executed in one atomic step by other transactions and non-transactional code.
-\andreas[inline]{Should you be able to return from an atomic block?}
+\andreas[inline]{Describe, that you are able to return from an atomic block.}
 \subsection{Transactional Field}
 The declaration of a transactional field takes the format:
 
