@@ -216,7 +216,8 @@ Any field declared \bscode{atomic} must have its type substituted to the corresp
 	\item Replace the original field declaration with the newly the constructed field declaration. 
 \end{enumerate}
 
-\bsref{lst:before_atomic_field} presents a example of two \bscode{atomic} field declarations before transformation while \bsref{lst:after_atomic_field} shows the result of applying the transformation.
+\bsref{lst:before_atomic_field} presents a example of two \bscode{atomic} field declarations before transformation while \bsref{lst:after_atomic_field} shows the result of applying the transformation. Line \ref{line:af_field1_before} of \bsref{lst:before_atomic_field} is transformed to line \ref{line:af_field1_after} of \bsref{lst:after_atomic_field}. The type of the field is changed to the specialized integer \ac{STM} type \bscode{TMInt} and the initializer expression is used to initialized the value of the created \bscode{TMInt} object. Line \ref{line:af_field2_before} of \bsref{lst:before_atomic_field} is transformed to line \ref{line:af_field2_after} of \bsref{lst:after_atomic_field}. The type is transformed to \bscode{TMVar<string>}. For \bscode{field3}, which original definition does not contain a initializer expression, a initializer expression has been created following the previously described procedure.
+ 
 \begin{lstlisting}[label=lst:before_atomic_field,
   caption={\bscode{atomic} Field Before Transformation},
   language=Java,  
@@ -250,7 +251,7 @@ Any field declared \bscode{atomic} must have its type substituted to the corresp
   commentstyle=\color{greencomments},
   keywordstyle=\color{bluekeywords},
   stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orelse, var, get, set}]  % Start your code-block
+  morekeywords={atomic, retry, orelse, var, get, set, string}]  % Start your code-block
 
   public class AtomicFieldExample
   {
@@ -274,7 +275,7 @@ In \bsref{subsec:design_properties} we described the design for transactional pr
   commentstyle=\color{greencomments},
   keywordstyle=\color{bluekeywords},
   stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+  morekeywords={atomic, retry, orElse, var, get, set, string}]  % Start your code-block
 
   class Car {
       public atomic int KmDriven { get; set; }
