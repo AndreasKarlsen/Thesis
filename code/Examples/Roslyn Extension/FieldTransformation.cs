@@ -6,8 +6,6 @@ namespace AtomicExamples
     {
         private atomic int field1 = 1;
         public atomic string field2 = "Hello world!", field3;
-
-
     }
 
 }
