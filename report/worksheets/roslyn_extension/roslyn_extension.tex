@@ -398,7 +398,126 @@ The implementations for the transformation of access to transactional variables 
 \end{lstlisting}
 
 \subsection{Parameters}
-Could also contain method and constructor argument replacement.
+\label{subsec:roslyn_extension_parameters}
+As was the case with transactional local variables and transactional fields the type of a parameter declared atomic must be changed to the corresponding \ac{STM} type in order for the \ac{STM} system to track assignments to it. \bsref{lst:before_atomic_parameter} presents a method taking two \bscode{atomic} parameters while \bsref{lst:after_atomic_parameter} presents the result of applying the parameter transformation. Each atomic parameter is transformed individually and any \bscode{ref} or \bscode{out} modifiers are preserved.
+
+\begin{lstlisting}[label=lst:before_atomic_parameter,
+  caption={\bscode{atomic} Parameters Before Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set}]  % Start your code-block
+
+  public class AtomicParameterExample
+  {
+    public void TestMethod(atomic int x,,bool b, atomic ref string s)~\label{line:ap_before}~
+    {
+      //Body
+    }
+  }
+\end{lstlisting}
+
+\begin{lstlisting}[label=lst:after_atomic_parameter,
+  caption={\bscode{atomic} Parameters After Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ref}]  % Start your code-block
+
+  public class AtomicParameterExample
+  {
+    public void TestMethod(TMInt x, bool b, ref TMVar<string> s)~\label{line:ap_after}~
+    {
+      //Body
+    }
+  }
+\end{lstlisting}
+
+\subsection{Arguments}
+As described in \bsref{subsec:stm_desgin_value_parameters} \stmnmesp support value parameters. Replacing the type of atomic parameters with the corresponding \ac{STM} type,as described in \bsref{subsec:roslyn_extension_parameters}, results in a type missmatch when calling a method with a \bscode{atomic} parameter of some type $T$ as the parameter is no longer of type $T$, but $T$'s corresponding \ac{STM} type. As a result transformation must be applied to arguments passes to a \bscode{atomic} parameter, ensuring that the argument represents a object of the required \ac{STM} type. The transformation of an argument to a \bscode{atomic} parameter goes trough the following steps:
+
+\begin{enumerate}
+	\item Determine the \ac{STM} type of the formal parameter to which the argument corresponds.
+	\item Construct a object initialization expression creating a object of the previously determined \ac{STM} type, giving the argument expression as a argument to constructor of the object.
+	\item Replace the argument with the constructed object initialization expression.
+\end{enumerate}
+
+\bsref{lst:before_atomic_argument} presents a example of calling a method with a \bscode{atomic} parameter, while \bsref{lst:after_atomic_argument} shows the result of applying the transformation. Line \ref{line:aa_param_before} is transformed as described in \bsref{subsec:roslyn_extension_parameters}. Line \ref{line:aa_before} in \bsref{lst:before_atomic_argument} is transformed to line \ref{line:aa_after} in \bsref{lst:after_atomic_argument}. The argument to the \bscode{atomic} parameter is replaced with a object initialization expression creating a new \bscode{TMInt} object which wrapped value is initialized using the original argument.
+
+\begin{lstlisting}[label=lst:before_atomic_argument,
+  caption={\bscode{atomic} Argument Before Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set}]  % Start your code-block
+
+  public class AtomicArgumentExample
+  {
+    public static void TestMethod(atomic int x, int y)~\label{line:aa_param_before}~
+    {
+      //Body
+    }
+
+    public static void Main()
+    {
+      TestMethod(1, 2);~\label{line:aa_before}~
+    }
+  }
+\end{lstlisting}
+
+\begin{lstlisting}[label=lst:after_atomic_argument,
+  caption={\bscode{atomic} Argument After Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ref}]  % Start your code-block
+
+  public class AtomicArgumentExample
+  {
+    public static void TestMethod(TMInt x, int y)
+    {
+      //Body
+    }
+
+    public static void Main()
+    {
+      TestMethod(new TMInt(1), 2);~\label{line:aa_after}~
+    }
+  }
+\end{lstlisting}
+
+\subsubsection{Ref/Out Arguments}
+Supporting \bscode{atomic} \bscode{ref} and \bscode{out} parameters, as described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters}, presents additional problems due to the type missmatch as a result of transforming the parameters. \bscode{ref} and \bscode{out} parameters require the argument to be either a assignable variable of the same type as the parameter. As the type of the parameter is transformed, a variable of type $T$ can not be passed directly as \bscode{ref} or \bscode{out} to a \bscode{atomic} parameter of type $T$.
+
+Analysis has been implemented to generate an error if the original argument does not correspond to a variable as this error is otherwise lost. 
 
 \subsection{Retry}
 
@@ -430,4 +549,5 @@ Steps in the transformation of the syntax tree (ordered as executed)
 
 \section{Design \& Integration revisited}
 Changes to design due to limited implementation possibilities.
+\kasper[inline]{\bscode{atomic} variable altid initializeret}
 \worksheetend

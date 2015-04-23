@@ -131,6 +131,7 @@ In C\# there exist four different kinds of parameters: Value, Reference, Output,
 
 \andreas[inline]{We cannot support optional parameters on value types}
 \subsection{Transactional Value Parameters}
+\label{subsec:stm_desgin_value_parameters}
 According to \cite[p. 97]{csharp2013specificaiton}: \textit{``A parameter declared without a ref or out modifier is a value parameter.''} If the parameter is a value type, call-by-value semantics is used, thus assignments to the argument have no effect outside the method scope. If it is a reference type, it is still call-by-value semantics, however side-effects that changes the referenced object, will persist outside the method scope. Due to the call-by-value semantics, assignments to an argument of reference type will have no effect outside the method scope\cite[p. 76]{sestoft2011c}.
 
 In \stmnamesp, a value parameter can be marked as atomic, and becomes a transactional value parameter. Semantically it is equivalent to a transactional local variable which is instantiated to the value of the parameter.\cite[p. 76]{sestoft2011c} 
@@ -167,6 +168,7 @@ where $param$-$modifier$ represents C\#'s \bscode{ref} and \bscode{out} keywords
 \andreas[inline]{We must reason about what happens when we parse in an atomic variable into an atomic parameter. We must adhere to existing semantics when atomic value types are used, so the user does not experience reference semantics when passing in an atomic value type. Ref should be designed to enable passing atomic value type by ref.}
 
 \subsection{Transactional Reference Parameters}
+\label{subsec:stm_desgin_ref_parameters}
 According to \cite[p. 97]{csharp2013specificaiton}: \textit{``A parameter declared with a ref modifier is a reference parameter.''} As opposed to a value parameter, a reference parameter uses call-by-reference semantics, thus it is the actual reference used as argument, not a copy. Consequently, changes to the argument will have influence outside the method scope, regardless of the parameter being a value or reference type. Changes to the parameter will take effect immediately, both in and outside of the method scope\cite[p. 42]{sestoft2011c}. Additionally, a variable is required to be instantiated before it is passed as a reference parameter\cite[p. 97]{csharp2013specificaiton}.
 
 In \stmnamesp, a reference parameter can be marked as atomic, and becomes a \ac{TRP}. A \ac{TRP} differs from a reference parameter by being tracked in transactions. Assignments to a \ac{TRP} do not take effect outside of the transaction immediately, but when the transaction commits. This is a design choice made to enforce atomicity, as immediate changes to a \ac{TRP} would enable reading intermediate transaction states. A noteworthy detail is, that changes made to a \ac{TRP} through side-effects will be immediate, as we do not track side-effects as discussed in \bsref{sec:tracking}.\lone{Evaluate on design choice}
@@ -199,6 +201,7 @@ In \stmnamesp, a reference parameter can be marked as atomic, and becomes a \ac{
 \end{lstlisting}
 
 \subsection{Transactional Output Parameters}
+\label{subsec:stm_desgin_out_parameters}
 According to \cite[p. 97]{csharp2013specificaiton}: \textit{``A parameter declared with an out modifier is an output parameter.''} An output parameter behaves as a reference parameter, except that it does not need to be instantiated before being passed as an argument. Additionally, every execution path in the method must assign a value to the variable\cite[p. 42]{sestoft2011c}. 
 
 In \stmname, an output parameter can be marked as atomic, and it becomes a \ac{TOP}. Similar to \ac{TRP}, a \ac{TOP} is tracked in transactions, and assignments in transactions takes effect outside of the transaction when it commits. The reasoning for this, is the same as for \ac{TRP}.
