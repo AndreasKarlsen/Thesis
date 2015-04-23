@@ -52,7 +52,7 @@ namespace STM.Implementation.Lockbased
         {
             #if DEBUG
             Transaction me = Transaction.LocalTransaction;
-            Console.WriteLine("Transaction: " + me.ID + " commited:" + o);
+            Console.WriteLine("Transaction: " + me.ID + " newtimestamp: " + timestamp + " oldtimestamp: " + TimeStamp + " commited:" + o);
             #endif
             _version = (T)o;
             TimeStamp = timestamp;

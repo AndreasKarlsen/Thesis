@@ -14,8 +14,8 @@ namespace Evaluation
         {
             //DiningPhilosophers.Start();
             //LockingDiningPhilosophers.Start();
-            //SantaClausProblem.Start();
-            LockingSantaClausProblem.Start();
+            SantaClausProblem.Start();
+            //LockingSantaClausProblem.Start();
             Console.ReadKey();
         }
     }

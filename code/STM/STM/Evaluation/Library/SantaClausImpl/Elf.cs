@@ -11,11 +11,11 @@ namespace Evaluation.Library.SantaClausImpl
 {
     public class Elf : IStartable
     {
-        private Random randomGen = new Random(Guid.NewGuid().GetHashCode());
+        private readonly Random _randomGen = new Random(Guid.NewGuid().GetHashCode());
         public int ID { get; private set; }
-        private Queue<Elf> _buffer;
-        private TMVar<bool> _waitingToAsk = new TMVar<bool>(false);
-        private TMVar<bool> _questionAsked = new TMVar<bool>(false);
+        private readonly Queue<Elf> _buffer;
+        private readonly TMVar<bool> _waitingToAsk = new TMVar<bool>(false);
+        private readonly TMVar<bool> _questionAsked = new TMVar<bool>(false);
 
         public Elf(int id, Queue<Elf> buffer)
         {
@@ -29,7 +29,7 @@ namespace Evaluation.Library.SantaClausImpl
             {
                 while (true)
                 {
-                    Thread.Sleep(100 * randomGen.Next(21));
+                    Thread.Sleep(100 * _randomGen.Next(21));
 
                     STMSystem.Atomic(() =>
                     {

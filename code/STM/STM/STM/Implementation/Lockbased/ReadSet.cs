@@ -43,7 +43,12 @@ namespace STM.Implementation.Lockbased
 
         public bool Validate(Transaction transaction)
         {
-            return this.All(lo => lo.Validate(transaction));
+            return Validate(transaction, transaction.ReadStamp);
+        }
+
+        public bool Validate(Transaction transaction, int readstamp)
+        {
+            return this.All(lo => lo.Validate(transaction, readstamp));
         }
 
         #region Locking

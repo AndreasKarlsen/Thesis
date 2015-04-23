@@ -73,7 +73,9 @@ namespace STM.Implementation.Lockbased
             var result = default(T);
             var index = 0;
             var overAllReadSet = new ReadSet();
+            var ovarAllReadstamp = -1;
             var nrAttempts = 0;
+
             while (true)
             {
                 var stmAction = stmActions[index];
@@ -83,6 +85,11 @@ namespace STM.Implementation.Lockbased
                 var me = prevTransaction.Status == Transaction.TransactionStatus.Active ? 
                     Transaction.StartNestedTransaction(prevTransaction) : 
                     Transaction.StartTransaction();
+
+                if (index == 0)
+                {
+                    ovarAllReadstamp = me.ReadStamp;
+                }
 
                 try
                 {
@@ -101,7 +108,7 @@ namespace STM.Implementation.Lockbased
                 }
                 catch (STMRetryException)
                 {
-                    index = HandleRetry(stmActions, me, index, overAllReadSet);
+                    index = HandleRetry(stmActions, me, index, overAllReadSet, ovarAllReadstamp);
                 }
                 catch (Exception) //Catch non stm related exceptions which occurs in transactions
                 {
@@ -143,7 +150,7 @@ namespace STM.Implementation.Lockbased
             throw new STMRetryException();
         }
 
-        private static int HandleRetry<T>(IList<Func<T>> stmActions, Transaction me, int index, ReadSet overAllReadSet)
+        private static int HandleRetry<T>(IList<Func<T>> stmActions, Transaction me, int index, ReadSet overAllReadSet, int originalReadstamp)
         {
             if (stmActions.Count == 1) //Optimized for when there are no orelse blocks
             {
@@ -152,7 +159,7 @@ namespace STM.Implementation.Lockbased
             else if (stmActions.Count == index + 1) //Final orelse block
             {
                 overAllReadSet.Merge(me.ReadSet);
-                WaitOnReadset(me, overAllReadSet);
+                WaitOnReadset(me, overAllReadSet,originalReadstamp);
                 index = 0;
             }
             else //Non final atomic or orelse blocks
@@ -168,6 +175,11 @@ namespace STM.Implementation.Lockbased
         }
 
         private static void WaitOnReadset(Transaction me, ReadSet readSet)
+        {
+            WaitOnReadset(me,readSet,me.ReadStamp);
+        }
+
+        private static void WaitOnReadset(Transaction me, ReadSet readSet, int readstamp)
         {
 
 #if DEBUG
@@ -188,7 +200,7 @@ namespace STM.Implementation.Lockbased
                 i++;
             }
 
-            if (!readSet.Validate(me))
+            if (!readSet.Validate(me,readstamp))
             {
                 return;
             }

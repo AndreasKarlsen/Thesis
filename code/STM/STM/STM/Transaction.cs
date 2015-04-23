@@ -35,7 +35,7 @@ namespace STM
             var transaction = new Transaction(TransactionStatus.Active, VersionClock.TimeStamp);
           
 #if DEBUG
-            Console.WriteLine("STARTED: "+transaction.ID);
+            Console.WriteLine("STARTED: "+transaction.ID + " readstamp: "+transaction.ReadStamp);
 #endif
             Local.Value = transaction;
             return transaction;
@@ -45,7 +45,7 @@ namespace STM
         {
             var transaction = new Transaction(TransactionStatus.Active, VersionClock.TimeStamp, parent);
 #if DEBUG
-            Console.WriteLine("STARTED NESTED: " + transaction.ID);
+            Console.WriteLine("STARTED NESTED: " + transaction.ID + " readstamp: " + transaction.ReadStamp);
 #endif
             Local.Value = transaction;
             return transaction;

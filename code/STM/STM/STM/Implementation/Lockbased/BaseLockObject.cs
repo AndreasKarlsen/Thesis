@@ -72,7 +72,7 @@ namespace STM.Implementation.Lockbased
             }
         }
 
-        internal virtual bool Validate(Transaction transaction)
+        internal virtual bool Validate(Transaction transaction, int readstamp)
         {
             switch (transaction.Status)
             {
@@ -83,8 +83,10 @@ namespace STM.Implementation.Lockbased
                     {
                         return false;
                     }
-
-                    return TimeStamp <= transaction.ReadStamp;
+#if DEBUG
+                    Console.WriteLine("Validating! transaction: " + transaction.ID + " timeStamp: " + TimeStamp + " readstamp: " + readstamp);
+#endif
+                    return TimeStamp <= readstamp;
                 case Transaction.TransactionStatus.Aborted:
                     return false;
                 default:

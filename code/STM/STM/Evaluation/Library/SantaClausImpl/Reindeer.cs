@@ -11,17 +11,17 @@ namespace Evaluation.Library.SantaClausImpl
 {
     public class Reindeer : IStartable
     {
-        private Random randomGen = new Random(Guid.NewGuid().GetHashCode());
+        private readonly Random _randomGen = new Random(Guid.NewGuid().GetHashCode());
         public int ID { get; private set; }
 
-        private Queue<Reindeer> reindeerBuffer;
-        private TMVar<bool> workingForSanta = new TMVar<bool>(false);
-        private TMVar<bool> waitingOnSanta = new TMVar<bool>(false);
+        private readonly Queue<Reindeer> _reindeerBuffer;
+        private readonly TMVar<bool> _workingForSanta = new TMVar<bool>(false);
+        private readonly TMVar<bool> _waitingOnSanta = new TMVar<bool>(false);
 
         public Reindeer(int id, Queue<Reindeer> buffer)
         {
             ID = id;
-            reindeerBuffer = buffer;
+            _reindeerBuffer = buffer;
         }
         
         public Task Start()
@@ -30,12 +30,12 @@ namespace Evaluation.Library.SantaClausImpl
             {
                 while (true)
                 {
-                    Thread.Sleep(100 * randomGen.Next(10));
+                    Thread.Sleep(100 * _randomGen.Next(10));
 
                     STMSystem.Atomic(() =>
                     {
-                        reindeerBuffer.Enqueue(this);
-                        workingForSanta.Value = true;
+                        _reindeerBuffer.Enqueue(this);
+                        _waitingOnSanta.Value = true;
                     });
 
                     Console.WriteLine("Reindeer {0} is back",ID);
@@ -43,7 +43,7 @@ namespace Evaluation.Library.SantaClausImpl
                     //Wait for santa to be ready
                     STMSystem.Atomic(() =>
                     {
-                        if (waitingOnSanta)
+                        if (_waitingOnSanta)
                         {
                             STMSystem.Retry();
                         }
@@ -54,7 +54,7 @@ namespace Evaluation.Library.SantaClausImpl
                     //Wait to be released by santa
                     STMSystem.Atomic(() =>
                     {
-                        if (workingForSanta)
+                        if (_workingForSanta)
                         {
                             STMSystem.Retry();
                         }
@@ -65,12 +65,16 @@ namespace Evaluation.Library.SantaClausImpl
 
         public void HelpDeliverPresents()
         {
-            waitingOnSanta.Value = false;
+            STMSystem.Atomic(() =>
+            {
+                _waitingOnSanta.Value = false;
+                _workingForSanta.Value = true;
+            });
         }
 
         public void ReleaseReindeer()
         {
-            workingForSanta.Value = false;
+            _workingForSanta.Value = false;
         }
     }
 }
