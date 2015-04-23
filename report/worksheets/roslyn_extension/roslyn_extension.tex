@@ -326,9 +326,9 @@ The transactional properties are transformed before the transactional fields, th
 
 \andreas[inline]{We dont protect against a naming conflict of the generated backing field and an existing field.}
 
-\subsection{Local variables}
+\subsection{Local Variables}
 In \bsref{subsec:local_variables} we described the wanted design for transactional local variables. 
-Just like fields annotated with atomic, annotated local variables must have its type substituted to a corresponding \ac{STM} type. Thus, the approach is similar to the one described in \bsref{subsec:extension_field}, with the exception that a local variable can be declared without specifying the type by using the \bscode{var} keyword, relying on compile-time type inference to determine the type. Since the type is not determined at this point, we utilize Roslyn's \ac{API} to infer the type, and replace the \bscode{var} keyword with the type. This is done by identifying all local declaration statements with the type \bscode{var} and annotated \bscode{atomic}. The transformation is exemplified with an example of before on \bsref{lst:before_atomic_variable} on line \bsref{line:av_variable1_before}, a local variable is declared by using the \bscode{var} keyword. The entire r-value of the statement is an expression, which can be evaluated to a type, by utilizing the Roslyn compiler \ac{API}. In \bsref{lst:after_atomic_variable} on line  \bsref{line:av_variable1_before} the result shows that the type was infered to a \bscode{string}, thus the \bscode{var} is replace by a \bscode{TMVar<string>}.
+Just like fields annotated with atomic, annotated local variables must have its type substituted to a corresponding \ac{STM} type. Thus, the approach is similar to the one described in \bsref{subsec:extension_field}, with the exception that a local variable can be declared without specifying the type by using the \bscode{var} keyword, relying on compile-time type inference to determine the type. Since the type is not determined at this point, we utilize Roslyn's \ac{API} to infer the type, and replace the \bscode{var} keyword with the type. This is done by identifying all local declaration statements with the type \bscode{var} and annotated \bscode{atomic}. The transformation is exemplified with an example of before on \bsref{lst:before_atomic_variable} on line \ref{line:av_variable1_before}, a local variable is declared by using the \bscode{var} keyword. The entire r-value of the statement is an expression, which can be evaluated to a type, by utilizing the Roslyn compiler \ac{API}. In \bsref{lst:after_atomic_variable} on line  \ref{line:av_variable1_after} the result shows that the type was infered to a \bscode{string}, thus the \bscode{var} is replace by a \bscode{TMVar<string>}.
 
 \begin{lstlisting}[label=lst:before_atomic_variable,
   caption={\bscode{atomic} Local Variables Before Transformation},
@@ -372,8 +372,8 @@ Just like fields annotated with atomic, annotated local variables must have its 
   {
     public void Method()
     {
-      TMVar<string> variable1 = new TMVar<string>("Hello World!");~\label{line:av_variable1_before}~
-      TMInt variable2 = new TMInt(42);~\label{line:av_variable2_before}~
+      TMVar<string> variable1 = new TMVar<string>("Hello World!");~\label{line:av_variable1_after}~
+      TMInt variable2 = new TMInt(42);~\label{line:av_variable2_after}~
     }
   }
 \end{lstlisting}
@@ -565,7 +565,113 @@ As described in \bsref{subsec:stm_desgin_value_parameters} \stmnamesp support va
 \end{lstlisting}
 
 \subsubsection{Ref/Out Arguments}
-Supporting \bscode{atomic} \bscode{ref} and \bscode{out} parameters, as described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters}, presents additional problems due to the type missmatch as a result of transforming the parameters. \bscode{ref} and \bscode{out} parameters require the argument to be either a assignable variable of the same type as the parameter. As the type of the parameter is transformed, a variable of type $T$ can not be passed directly as \bscode{ref} or \bscode{out} to a \bscode{atomic} parameter of type $T$.
+Supporting \bscode{atomic} \bscode{ref} and \bscode{out} parameters, as described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters}, presents a problem due to the type missmatch as a result of transforming the parameters. \bscode{ref} and \bscode{out} parameters require the argument to be either a assignable variable of the same type as the parameter. As the type of the parameter is transformed, a variable of type $T$ can not be passed directly as \bscode{ref} or \bscode{out} to a \bscode{atomic} parameter of type $T$.
+
+Four different cases exist for passing \bsref{ref} and \bscode{out} parameters. There are:
+\begin{enumerate}
+	\item $T$ $\quad->\quad$ \bscode{atomic} $T$
+	\item \bscode{atomic} $T$ $\quad->\quad$ $T$
+	\item \bscode{atomic} $T$ $\quad->\quad$ \bscode{atomic} $T$
+	\item $T$ $\quad->\quad$ $T$
+\end{enumerate} 
+where $T$ $\quad->\quad$ \bscode{atomic} $T$ describes passing an argument of type $T$ into a parameter of the \ac{STM} type corresponding to $T$. The fourth case is handle by the C\# compiler so transformation must only be applied in cases 1-3.
+
+\begin{lstlisting}[label=lst:before_atomic_ref,
+  caption={\bscode{ref} Arguments Before Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set}]  % Start your code-block
+
+  public class AtomicRefExample
+  {
+    public static void TestMethodAtomic(atomic ref int i)
+    {
+      i = 12;
+    }
+
+    public static void TestMethod(ref int i)
+    {
+      i = 12;
+    }
+
+    public static void Main()
+    {
+      int i = 10;
+      atomic int iAtomic = 10;
+
+      TestMethodAtomic(ref i);
+      TestMethodAtomic(ref iAtomic);
+      TestMethod(ref iAtomic);
+    }
+  }
+\end{lstlisting}
+
+\bsref{lst:before_atomic_ref} shows a example containing method three method calls each of which which fall in one of the categories which require transformation. Applying the transformation to the exampled presented in \bsref{lst:before_atomic_ref} produces a syntax tree representing the code shown in \bsref{lst:after_atomic_ref}. For each argument node the transformation goes trough the following steps:
+
+\begin{enumerate}
+	\item Determine whether the argument is passed to a \bscode{ref} or \bscode{out} parameter, if not skip any transformation
+	\item If the argument is of type $T$ and the parameter is of type \bscode{atomic} $T$
+	\begin{enumerate}
+		\item Construct a syntax node for a local variable of type $T$ initialized using the original argument and insert it just before the method call.
+		\item Replace the original argument with with a identifier equal to the name of the previously generated intermediate local variable
+		
+	\end{enumerate}
+\end{enumerate}
+
+\begin{lstlisting}[label=lst:after_atomic_ref,
+  caption={\bscode{ref} Arguments After Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set}]  % Start your code-block
+
+  public class AtomicRefExample
+  {
+    public static void TestMethodAtomic(ref TMInt i)
+    {
+      i.Value = 12;
+    }
+
+    public static void TestMethod(ref int i)
+    {
+      i = 12;
+    }
+
+    public static void Main()
+    {
+      int i = 10;
+      TMInt iAtomic = new TMInt(10);
+
+      TMInt _gen1 = new TMInt(i);
+      TestMethodAtomic(ref _gen1);
+      i = _gen1.Value;
+
+      TMInt _gen2 = new TMInt(iAtomic.Value);
+      TestMethodAtomic(ref _gen2);
+      iAtomic.Value = _gen2.Value;
+
+      int _gen3 = iAtomic.Value;
+      TestMethod(ref _gen3);
+      iAtomic.Value = _gen3;
+    }
+  }
+\end{lstlisting}
+
 
 Analysis has been implemented to generate an error if the original argument does not correspond to a variable as this error is otherwise lost. 
 
