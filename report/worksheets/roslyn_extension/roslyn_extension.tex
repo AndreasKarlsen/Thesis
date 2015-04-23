@@ -263,7 +263,17 @@ In \bsref{subsec:design_trans_field} we described the design of transactional fi
  
 
 \subsection{Properties}
-In \bsref{subsec:design_properties} we described the design for transactional properties. The automatic form is exemplified in \bsref{lst:before_atomic_property}:
+In \bsref{subsec:design_properties} we described the design for transactional properties. In order to provide the wanted semantics, we transform it into two parts: an atomic backing field, and a manual property. The transformation takes the following approach for each transactional property identified in the syntax tree:
+
+\begin{enumerate}
+	\item Constructs a get-body with the access-modifier of the original property's get. The get-body contains a block in which a return to the backing field are. The backing field is not yet constructed, but a method is used to determine its future identifier to ensure a correct reference.
+	\item Constructs a set-body with the access-modifier of the original property's set. The set-body contains a block in which an assignment of \bscode{value} is made to the backing field.
+	\item Constructs a manual property with the access modifier of the original property, the get-body and set-body constructed earlier.
+	\item Constructs a private transactional field of the same type as the original property, used as backing field.
+\end{enumerate}
+\andreas{The code performing the transformation can be found in: STM.cs - ReplaceProperties(SyntaxNode root)}
+
+The transactional properties are transformed before the transactional fields, thus enabling reuse of the transformation done for atomic fields, as the backing field can be constructed as a transactional field instead of fully transforming it. Additionally, no transformation has to be done for the manual form, as the transactional field used for backing the property is processed as described in \bsref{subsec:extension_field}. The automatic form before translation is exemplified in \bsref{lst:before_atomic_property}:
 
 \begin{lstlisting}[label=lst:before_atomic_property,
   caption={Before Transformation},
@@ -283,8 +293,7 @@ In \bsref{subsec:design_properties} we described the design for transactional pr
   }
 \end{lstlisting}
 
-In order to provide the wanted semantics, we transform it into two parts: an atomic backing field (line 2), and a manual property (line 3-11). Thus, the result of transforming the example in \bsref{lst:before_atomic_property} is \bsref{lst:after_atomic_property}. 
-
+The result of transforming the example in \bsref{lst:before_atomic_property} is shown in \bsref{after_atomic_property}.
 \begin{lstlisting}[label=lst:after_atomic_property,
   caption={After Transformation},
   language=Java,  
@@ -311,18 +320,6 @@ In order to provide the wanted semantics, we transform it into two parts: an ato
     }
   }
 \end{lstlisting}
-
-The transformation takes the following approach for each transactional property identified in the syntax tree:
-
-\begin{enumerate}
-	\item Constructs a get-body with the access-modifier of the original property's get. The get-body contains a block in which a return to the backing field are. The backing field is not yet constructed, but a method is used to determine its future identifier to ensure a correct reference.
-	\item Constructs a set-body with the access-modifier of the original property's set. The set-body contains a block in which an assignment of \bscode{value} is made to the backing field.
-	\item Constructs a manual property with the access modifier of the original property, the get-body and set-body constructed earlier.
-	\item Constructs a private transactional field of the same type as the original property, used as backing field.
-\end{enumerate}
-\andreas{The code performing the transformation can be found in: STM.cs - ReplaceProperties(SyntaxNode root)}
-
-The transactional properties are transformed before the transactional fields, thus enabling reuse of the transformation done for atomic fields, as the backing field can be constructed as a transactional field instead of fully transforming it. Additionally, no transformation has to be done for the manual form, as the transactional field used for backing the property is processed as described in \bsref{subsec:extension_field}. 
 
 \andreas[inline]{We dont protect against a naming conflict of the generated backing field and an existing field.}
 
@@ -449,7 +446,7 @@ The implementations for the transformation of access to transactional variables 
 
 \subsection{Parameters}
 \label{subsec:roslyn_extension_parameters}
-As was the case with transactional local variables and transactional fields the type of a parameter declared atomic must be changed to the corresponding \ac{STM} type in order for the \ac{STM} system to track assignments to it. \bsref{lst:before_atomic_parameter} presents a method taking two \bscode{atomic} parameters while \bsref{lst:after_atomic_parameter} presents the result of applying the parameter transformation. Each atomic parameter is transformed individually and any \bscode{ref} or \bscode{out} modifiers are preserved.
+As the case with transactional local variables and transactional fields, the type of a parameter declared atomic must be changed to the corresponding \ac{STM} type in order for the \ac{STM} system to track assignments to it. \bsref{lst:before_atomic_parameter} presents a method taking two \bscode{atomic} parameters while \bsref{lst:after_atomic_parameter} presents the result of applying the parameter transformation. Each atomic parameter is transformed individually and any \bscode{ref} or \bscode{out} modifiers are preserved.
 
 \begin{lstlisting}[label=lst:before_atomic_parameter,
   caption={\bscode{atomic} Parameters Before Transformation},
@@ -467,7 +464,7 @@ As was the case with transactional local variables and transactional fields the 
 
   public class AtomicParameterExample
   {
-    public void TestMethod(atomic int x,,bool b, atomic ref string s)~\label{line:ap_before}~
+    public void TestMethod(atomic int x, bool b, atomic ref string s)~\label{line:ap_before}~
     {
       //Body
     }
@@ -498,15 +495,15 @@ As was the case with transactional local variables and transactional fields the 
 \end{lstlisting}
 
 \subsection{Arguments}
-As described in \bsref{subsec:stm_desgin_value_parameters} \stmnamesp support value parameters. Replacing the type of atomic parameters with the corresponding \ac{STM} type,as described in \bsref{subsec:roslyn_extension_parameters}, results in a type mismatch when calling a method with a \bscode{atomic} parameter of some type $T$ as the parameter is no longer of type $T$, but $T$'s corresponding \ac{STM} type. As a result transformation must be applied to arguments passes to an \bscode{atomic} parameter, ensuring that the argument represents a object of the required \ac{STM} type. The transformation of an argument to a \bscode{atomic} parameter goes trough the following steps:
+As described in \bsref{subsec:stm_desgin_value_parameters} \stmnamesp support value parameters. Replacing the type of atomic parameters with the corresponding \ac{STM} type, as described in \bsref{subsec:roslyn_extension_parameters}, results in a type mismatch when calling a method with an \bscode{atomic} parameter of some type $T$ as the parameter is no longer of type $T$, but $T$'s corresponding \ac{STM} type. As a result transformation must be applied to arguments passed to an \bscode{atomic} parameter, ensuring that the argument represents an object of the required \ac{STM} type. The transformation of an argument to an \bscode{atomic} parameter goes trough the following steps:
 
 \begin{enumerate}
 	\item Determine the \ac{STM} type of the formal parameter to which the argument corresponds.
-	\item Construct a object initialization expression creating a object of the previously determined \ac{STM} type, giving the argument expression as a argument to constructor of the object.
+	\item Construct an object initialization expression creating an object of the previously determined \ac{STM} type, giving the argument expression as an argument to the constructor of the object.
 	\item Replace the argument with the constructed object initialization expression.
 \end{enumerate}
 
-\bsref{lst:before_atomic_argument} presents a example of calling a method with a \bscode{atomic} parameter, while \bsref{lst:after_atomic_argument} shows the result of applying the transformation. Line \ref{line:aa_param_before} is transformed as described in \bsref{subsec:roslyn_extension_parameters}. Line \ref{line:aa_before} in \bsref{lst:before_atomic_argument} is transformed to line \ref{line:aa_after} in \bsref{lst:after_atomic_argument}. The argument to the \bscode{atomic} parameter is replaced with a object initialization expression creating a new \bscode{TMInt} object which wrapped value is initialized using the original argument.
+\bsref{lst:before_atomic_argument} presents an example of calling a method with an \bscode{atomic} parameter, while \bsref{lst:after_atomic_argument} shows the result of the transformation. Line \ref{line:aa_param_before} is transformed as described in \bsref{subsec:roslyn_extension_parameters}. Line \ref{line:aa_before} in \bsref{lst:before_atomic_argument} is transformed to line \ref{line:aa_after} in \bsref{lst:after_atomic_argument}. The argument to the \bscode{atomic} parameter is replaced with a object initialization expression creating a new \bscode{TMInt} object which wrapped value is initialized using the original argument.
 
 \begin{lstlisting}[label=lst:before_atomic_argument,
   caption={\bscode{atomic} Argument Before Transformation},
@@ -565,16 +562,27 @@ As described in \bsref{subsec:stm_desgin_value_parameters} \stmnamesp support va
 \end{lstlisting}
 
 \subsubsection{Ref/Out Arguments}
-Supporting \bscode{atomic} \bscode{ref} and \bscode{out} parameters, as described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters}, presents a problem due to the type missmatch as a result of transforming the parameters. \bscode{ref} and \bscode{out} parameters require the argument to be either a assignable variable of the same type as the parameter. As the type of the parameter is transformed, a variable of type $T$ can not be passed directly as \bscode{ref} or \bscode{out} to a \bscode{atomic} parameter of type $T$.
+Supporting \bscode{atomic} \bscode{ref} and \bscode{out} parameters, as described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters}, presents a problem due to the type mismatch as a result of transforming the parameters. \bscode{ref} and \bscode{out} parameters require the argument to be either an assignable variable of the same type as the parameter. As the type of the parameter is transformed, a variable of type $T$ can not be passed directly as \bscode{ref} or \bscode{out} to a \bscode{atomic} parameter of type $T$.
 
-Four different cases exist for passing \bsref{ref} and \bscode{out} parameters. There are:
+Four different cases exist for passing \bscode{ref} and \bscode{out} parameters. There are:
 \begin{enumerate}
 	\item $T$ $\quad->\quad$ \bscode{atomic} $T$
 	\item \bscode{atomic} $T$ $\quad->\quad$ $T$
 	\item \bscode{atomic} $T$ $\quad->\quad$ \bscode{atomic} $T$
 	\item $T$ $\quad->\quad$ $T$
 \end{enumerate} 
-where $T$ $\quad->\quad$ \bscode{atomic} $T$ describes passing an argument of type $T$ into a parameter of the \ac{STM} type corresponding to $T$. The fourth case is handle by the C\# compiler so transformation must only be applied in cases 1-3.
+where $T$ $\quad->\quad$ \bscode{atomic} $T$ describes passing an argument of type $T$ into a parameter of the \ac{STM} type corresponding to $T$. The fourth case is handled by the C\# compiler so transformation must only be applied in cases 1-3.
+
+\bsref{lst:before_atomic_ref} shows an example containing three method calls, each of which fall in one of the categories which require transformation. Applying the transformation to the exampled presented in \bsref{lst:before_atomic_ref} produces a syntax tree representing the code shown in \bsref{lst:after_atomic_ref}. For each argument node the transformation goes through the following steps:
+
+\begin{enumerate}
+	\item Determine whether the argument is passed to a \bscode{ref} or \bscode{out} parameter, if not skip any transformation
+	\item If the argument is of type $T$ and the parameter is of type \bscode{atomic} $T$
+	\begin{enumerate}
+		\item Construct a syntax node for a local variable of type $T$ initialized using the original argument and insert it just before the method call.
+		\item Replace the original argument with with a identifier equal to the name of the previously generated intermediate local variable.
+	\end{enumerate}
+\end{enumerate}
 
 \begin{lstlisting}[label=lst:before_atomic_ref,
   caption={\bscode{ref} Arguments Before Transformation},
@@ -614,17 +622,7 @@ where $T$ $\quad->\quad$ \bscode{atomic} $T$ describes passing an argument of ty
   }
 \end{lstlisting}
 
-\bsref{lst:before_atomic_ref} shows a example containing method three method calls each of which which fall in one of the categories which require transformation. Applying the transformation to the exampled presented in \bsref{lst:before_atomic_ref} produces a syntax tree representing the code shown in \bsref{lst:after_atomic_ref}. For each argument node the transformation goes trough the following steps:
 
-\begin{enumerate}
-	\item Determine whether the argument is passed to a \bscode{ref} or \bscode{out} parameter, if not skip any transformation
-	\item If the argument is of type $T$ and the parameter is of type \bscode{atomic} $T$
-	\begin{enumerate}
-		\item Construct a syntax node for a local variable of type $T$ initialized using the original argument and insert it just before the method call.
-		\item Replace the original argument with with a identifier equal to the name of the previously generated intermediate local variable
-		
-	\end{enumerate}
-\end{enumerate}
 
 \begin{lstlisting}[label=lst:after_atomic_ref,
   caption={\bscode{ref} Arguments After Transformation},
@@ -672,8 +670,7 @@ where $T$ $\quad->\quad$ \bscode{atomic} $T$ describes passing an argument of ty
   }
 \end{lstlisting}
 
-
-Analysis has been implemented to generate an error if the original argument does not correspond to a variable as this error is otherwise lost. 
+Analysis has been implemented to generate an error if the original argument does not correspond to a variable, as this error is otherwise lost. 
 
 \subsection{Retry}
 In \bsref{sec:sync_design} we described the design of conditional synchronization through the use of \bscode{retry}. As \bscode{retry} is a keyword employed as a statement, we need to identify all \bscode{retry} keywords and replace them with a method invocation to the static method \bscode{STMSystem.Retry} defined in the \ac{STM} library, described in \bsref{subsec:impl_retry}. The library then carries out the effect of the \bscode{retry} statement.
