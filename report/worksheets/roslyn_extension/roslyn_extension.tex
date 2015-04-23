@@ -497,7 +497,7 @@ As was the case with transactional local variables and transactional fields the 
 \end{lstlisting}
 
 \subsection{Arguments}
-As described in \bsref{subsec:stm_desgin_value_parameters} \stmnmesp support value parameters. Replacing the type of atomic parameters with the corresponding \ac{STM} type,as described in \bsref{subsec:roslyn_extension_parameters}, results in a type missmatch when calling a method with a \bscode{atomic} parameter of some type $T$ as the parameter is no longer of type $T$, but $T$'s corresponding \ac{STM} type. As a result transformation must be applied to arguments passes to a \bscode{atomic} parameter, ensuring that the argument represents a object of the required \ac{STM} type. The transformation of an argument to a \bscode{atomic} parameter goes trough the following steps:
+As described in \bsref{subsec:stm_desgin_value_parameters} \stmnamesp support value parameters. Replacing the type of atomic parameters with the corresponding \ac{STM} type,as described in \bsref{subsec:roslyn_extension_parameters}, results in a type mismatch when calling a method with a \bscode{atomic} parameter of some type $T$ as the parameter is no longer of type $T$, but $T$'s corresponding \ac{STM} type. As a result transformation must be applied to arguments passes to a \bscode{atomic} parameter, ensuring that the argument represents a object of the required \ac{STM} type. The transformation of an argument to a \bscode{atomic} parameter goes trough the following steps:
 
 \begin{enumerate}
 	\item Determine the \ac{STM} type of the formal parameter to which the argument corresponds.
