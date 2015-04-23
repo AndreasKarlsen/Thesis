@@ -14,13 +14,13 @@ As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply
 \label{subsec:design_atomic_block}
 The declaration of a transaction takes the format \bscode{atomic} \{ $S$ \}, where $S$ is the general class of C\# statements. Any assignments to transactional variables inside an atomic block will be perceived as executed in one atomic step by other transactions and non-transactional code.
 \andreas[inline]{Describe, that you are able to return from an atomic block.}
-\subsection{Transactional Field}
+\subsection{Transactional Field}\label{subsec:design_trans_field}
 The declaration of a transactional field takes the format:
 
 $field$-$modifiers$ $type$ \bscode{name} = $initial$-$value$ ( , \bscode{name} = $initial$-$value$ )+ ; \\
-$field$-$modifiers$ $type$ \bscode{name} ( , \bscode{name} )+ ;
+$field$-$modifiers$ $type$ \bscode{name} ( , \bscode{name} )+ ; \\
 \andreas{Should we have named parameters here?}
-where $field$-$modifiers$ includes the new \bscode{atomic} keyword as well as existing C\# modifiers such as \bscode{public}, \bscode{private} and \bscode{static}. The $field$-$modifiers$ {readonly} and \bscode{const} are not included, since their unchangeable nature makes tracking them in a \ac{STM} system pointless.
+where $field$-$modifiers$ includes the new \bscode{atomic} keyword as well as existing C\# modifiers such as \bscode{public}, \bscode{private} and \bscode{static}. The $field$-$modifiers$ \bscode{readonly} and \bscode{const} are not included, since their unchangeable nature makes tracking them in a \ac{STM} system pointless.
 
 The $type$ can be any existing or user-defined type including the \bscode{dynamic} keyword. The calculation of \bscode{initial-value} follows the same rules as standard C\# field initializers\cite[p. 40]{sestoft2011c}.
 
@@ -102,7 +102,7 @@ Atomic automatic properties simplifies the implementation whenever the property 
 \end{lstlisting}
 
 
-\subsection{Transactional Local Variables}
+\subsection{Transactional Local Variables}\label{subsec:local_variables}
 The declaration of transactional local variables follows the format:
 
 \bscode{atomic} \bscode{var} \bscode{name} = $expr$;\\

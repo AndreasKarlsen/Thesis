@@ -202,8 +202,8 @@ The \bscode{TMVar} class exposes methods and the \bscode{Value} property for get
     }
   }
 \end{lstlisting}
-\subsection{Retry}
-The library supports the \bscode{retry} construct via the static \bscode{Retry} method on the \bscode{STMSystem} class. The retry method can be called from both in and outside transactions but will only have an effect when called inside transactions. \bsref{lst:library_retry} presents a example of how the \bscode{Retry} method can be used. Lines 5-11 show a transaction dequeuing an item from a shared buffer. On line 8 the \bscode{Retry} method is used to initiate a retry in case the queue is empty. The call on line 15 has no effect as it is not enclosed in a transaction. However if the \bscode{RetryExample} method is called from within another transaction, the \bscode{Retry} has effect\andreas{Do we want to warn if this happens?}.
+\subsection{Retry}\label{subsec:impl_retry}
+The library supports the \bscode{retry} construct via the static \bscode{Retry} method on the \bscode{STMSystem} class. The retry method can be called from both in and outside transactions but will only have an effect when called inside transactions. \bsref{lst:library_retry} presents an example of how the \bscode{Retry} method can be used. Lines 5-11 show a transaction dequeuing an item from a shared buffer. On line 8 the \bscode{Retry} method is used to initiate a retry in case the queue is empty. The call on line 15 has no effect as it is not enclosed in a transaction. However if the \bscode{RetryExample} method is called from within another transaction, the \bscode{Retry} has effect\andreas{Do we want to warn if this happens?}.
 
 \begin{lstlisting}[label=lst:library_retry,
   caption={Library \bscode{Retry}},

@@ -207,7 +207,7 @@ For syntax shown in \bsref{lst:before_atomic_block} the transformation produces 
 As a consequence of translating an atomic block into a lambda, return statements inside the lambda does not return out of the atomic block as described in \bsref{subsec:design_atomic_block}. In order to ensure the wanted semantics, an analysis is performed to identify all atomic blocks containing return statements. In such a case, a return statement is added before the method invocation. Return statements inside nested transactions must return out of the entire transaction. To accommodate this, the analysis also identifies nested transactions.
 
 \subsection{Field Types}\label{subsec:extension_field}
-Any field declared \bscode{atomic} must have its type substituted to the corresponding \ac{STM} type in order for the \ac{STM} system to track any changes to the variable. If a specialized type exist, such as \bscode{TMInt} for \bscode{int}, then that type is used. Otherwise the generic \bscode{TMVar} is used.  As the \ac{STM} types act as a wrapper object allowing the \ac{STM} system to track how the wrapped value is access, all atomic fields must be initialized to an instance of a \bscode{STM} type as accessing the wrapped value will otherwise cause a \bscode{NullReferenceException}. If an initializer expression is given as part of the field declaration the constructor of the wrapping \ac{STM} object is given the expression as an argument, initializing the wrapped value to the value computed by the initializer expression. If no initializer expression is given the wrapped value is initialized to the default value for the wrapped type by instantiating the \ac{STM} object using its parameterless constructor. The transformation of a atomic field declaration follows the steps described below:
+In \bsref{subsec:design_trans_field} we described the design of transactional fields. Any field declared \bscode{atomic} must have its type substituted to the corresponding \ac{STM} type in order for the \ac{STM} system to track any changes to the variable. If a specialized type exist, such as \bscode{TMInt} for \bscode{int}, then that type is used. Otherwise the generic \bscode{TMVar} is used.  As the \ac{STM} types act as a wrapper object allowing the \ac{STM} system to track how the wrapped value is access, all atomic fields must be initialized to an instance of a \bscode{STM} type as accessing the wrapped value will otherwise cause a \bscode{NullReferenceException}. If an initializer expression is given as part of the field declaration the constructor of the wrapping \ac{STM} object is given the expression as an argument, initializing the wrapped value to the value computed by the initializer expression. If no initializer expression is given the wrapped value is initialized to the default value for the wrapped type by instantiating the \ac{STM} object using its parameterless constructor. The transformation of a atomic field declaration follows the steps described below:
 
 \begin{enumerate}
 	\item Determine the type of the wrapping \ac{STM} objects based on the type of the field declaration.
@@ -216,7 +216,7 @@ Any field declared \bscode{atomic} must have its type substituted to the corresp
 	\item Replace the original field declaration with the newly the constructed field declaration. 
 \end{enumerate}
 
-\bsref{lst:before_atomic_field} presents a example of two \bscode{atomic} field declarations before transformation while \bsref{lst:after_atomic_field} shows the result of applying the transformation. Line \ref{line:af_field1_before} of \bsref{lst:before_atomic_field} is transformed to line \ref{line:af_field1_after} of \bsref{lst:after_atomic_field}. The type of the field is changed to the specialized integer \ac{STM} type \bscode{TMInt} and the initializer expression is used to initialized the value of the created \bscode{TMInt} object. Line \ref{line:af_field2_before} of \bsref{lst:before_atomic_field} is transformed to line \ref{line:af_field2_after} of \bsref{lst:after_atomic_field}. The type is transformed to \bscode{TMVar<string>}. For \bscode{field3}, which original definition does not contain a initializer expression, a initializer expression has been created following the previously described procedure.
+\bsref{lst:before_atomic_field} presents a example of two \bscode{atomic} field declarations before transformation while \bsref{lst:after_atomic_field} shows the result of applying the transformation. Line \ref{line:af_field1_before} of \bsref{lst:before_atomic_field} is transformed to line \ref{line:af_field1_after} of \bsref{lst:after_atomic_field}. The type of the field is changed to the specialized integer \ac{STM} type \bscode{TMInt} and the initializer expression is used to initialized the value of the created \bscode{TMInt} object. Line \ref{line:af_field2_before} of \bsref{lst:before_atomic_field} is transformed to line \ref{line:af_field2_after} of \bsref{lst:after_atomic_field}. The type is transformed to \bscode{TMVar<string>}. For \bscode{field3}, which original definition does not contain an initializer expression, a initializer expression has been created following the previously described procedure.
  
 \begin{lstlisting}[label=lst:before_atomic_field,
   caption={\bscode{atomic} Field Before Transformation},
@@ -326,7 +326,56 @@ The transactional properties are transformed before the transactional fields, th
 \andreas[inline]{We dont protect against a naming conflict of the generated backing field and an existing field.}
 
 \subsection{Local variables}
-With or without type inference
+In \bsref{subsec:local_variables} we described the wanted design for transactional local variables. 
+Just like fields annotated with atomic, annotated local variables must have its type substituted to a corresponding \ac{STM} type. Thus, the approach is similar to the one described in \bsref{subsec:extension_field}, with the exception that a local variable can be declared without specifying the type by using the \bscode{var} keyword, relying on compile-time type inference to determine the type. Since the type is not determined at this point, we utilize Roslyn's \ac{API} to infer the type, and replace the \bscode{var} keyword with the type. This is done by identifying all local declaration statements with the type \bscode{var} and annotated \bscode{atomic}. The transformation is exemplified with an example of before on \bsref{lst:before_atomic_variable} on line \bsref{line:av_variable1_before}, a local variable is declared by using the \bscode{var} keyword. The entire r-value of the statement is an expression, which can be evaluated to a type, by utilizing the Roslyn compiler \ac{API}. In \bsref{lst:after_atomic_variable} on line  \bsref{line:av_variable1_before} the result shows that the type was infered to a \bscode{string}, thus the \bscode{var} is replace by a \bscode{TMVar<string>}.
+
+\begin{lstlisting}[label=lst:before_atomic_variable,
+  caption={\bscode{atomic} Local Variables Before Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set}]  % Start your code-block
+
+  public class AtomicVarExample
+  {
+    public void Method()
+    {
+      atomic var variable1 = "Hello World!";~\label{line:av_variable1_before}~
+      atomic int variable2 = 42;~\label{line:av_variable2_before}~
+    }
+  }
+\end{lstlisting}
+
+\begin{lstlisting}[label=lst:after_atomic_variable,
+  caption={\bscode{atomic} Local Variables After Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, string}]  % Start your code-block
+
+  public class AtomicVarExample
+  {
+    public void Method()
+    {
+      TMVar<string> variable1 = new TMVar<string>("Hello World!");~\label{line:av_variable1_before}~
+      TMInt variable2 = new TMInt(42);~\label{line:av_variable2_before}~
+    }
+  }
+\end{lstlisting}
 
 \subsection{Usage of Transactional Variables}
 As described in \bsref{subsec:stm_impl_transactional_variables} setting the value of a transactional variable is done through the \bscode{Value} property of the supplied \ac{STM} types. As the type of any field, local variable or property declared \bscode{atomic} in \stmnamesp is changed to the corresponding \ac{STM} type, any assignment must go through the \bscode{Value} property. As described in \bsref{subsec:stm_impl_transactional_variables} the \ac{STM} types supply support for implicit conversion to the wrapped value, when appearing as r-values. The transformation can however not rely on implicit conversion in all cases as, for example the comparison of two \bscode{TMInt} objects results in reference comparison instead of the expected integer comparison. As such, also the r-value appearances of any transactional field, local variable and parameter must be transformed to access the \bscode{Value} property ensuring that the wrapped object is accessed instead of the \ac{STM} object. Special handling is given to the \bscode{++} and \bscode{--} operators as the numeric \bscode{STM} types supply transactional implementations of these operators. The transformation ensures that these operators access the \ac{STM} object directly instead of access the \bscode{Value} property.
@@ -520,32 +569,7 @@ Supporting \bscode{atomic} \bscode{ref} and \bscode{out} parameters, as describe
 Analysis has been implemented to generate an error if the original argument does not correspond to a variable as this error is otherwise lost. 
 
 \subsection{Retry}
-
-Steps in the transformation of the syntax tree (ordered as executed)
-\begin{enumerate}
-	\item Replace atomic properties
-	\item Replace field types
-	\item Replace atomic and orelse block
-	\item Replace retry
-	\item Replace local vars
-	\item Replace method arguments
-	\item Replace constructor arguments
-	\item Replace member accesses
-	\item Replace parameters
-\end{enumerate}
-
-(ordered as the design chapter)
-\begin{enumerate}
-	\item Replace atomic and orelse block
-	\item Replace field types
-	\item Replace atomic properties
-	\item Replace local vars
-	\item Replace member accesses
-	\item Replace parameters (value, reference, out, params)
-	\item Replace method arguments
-	\item Replace constructor arguments
-	\item Replace retry
-\end{enumerate}
+In \bsref{sec:sync_design} we described the design of conditional synchronization through the use of \bscode{retry}. As \bscode{retry} is a keyword employed as a statement, we need to identify all \bscode{retry} keywords and replace them with a method invocation to the static method \bscode{STMSystem.Retry} defined in the \ac{STM} library, described in \bsref{subsec:impl_retry}. The library then carries out the effect of the \bscode{retry} statement.
 
 \section{Design \& Integration revisited}
 Changes to design due to limited implementation possibilities.
