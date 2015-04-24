@@ -42,6 +42,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common\Enums.cs" />
+    <Compile Include="Common\HashMap.cs" />
+    <Compile Include="Common\IHashMap.cs" />
     <Compile Include="Common\IStartable.cs" />
     <Compile Include="Common\SCStats.cs" />
     <Compile Include="Library\DiningPhilosophers.cs" />
