@@ -1,6 +1,6 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Design and Integration}{0}{Februar 10, 2015}{}{../../}
-This chapter describes the considerations and design decisions of \stmname, the integration with existing language features, as well as \stmname's syntax \& semantics. The design of \stmnamesp impacts the way it can be integrated with C\#. Thus we make the design adhere to the requirements made in \bsref{sec:stm_requirements}, while integrating seamlessly with existing language features. The decisions made in this chapter, will be the requirements for the implementation of \stmname described in \bsref{chap:implementation}, and for the extension of the Roslyn C\# compiler described in \bsref{chap:roslyn_extension}.
+This chapter describes the considerations and design decisions of \stmname, the integration with existing language features, as well as \stmname's syntax \& semantics. The design of \stmnamesp impacts the way it can be integrated with C\#. Thus we make the design adhere to the requirements made in \bsref{sec:stm_requirements}, while integrating seamlessly with existing language features. The decisions made in this chapter, will be the requirements for the implementation of \stmnamesp described in \bsref{chap:implementation}, and for the extension of the Roslyn C\# compiler described in \bsref{chap:roslyn_extension}.
 
 We introduce the atomic block and transactional variables in \bsref{sec:stm_design}. The different kinds of parameters and their integration with transactions is described in \bsref{sec:parameter_design}. This is followed by an example of the new syntax, demonstrated in \bsref{sec:example_design}. The \bscode{retry} and \bscode{orelse} keywords are introduced in \bsref{sec:sync_design} for supporting conditional synchronization. \bsref{sec:nesting_design} shows how \stmnamesp supports nesting of transactions. Finally a summary of the design requirements described in this chapter is given in \bsref{sec:summary_design}.
 
@@ -12,8 +12,7 @@ As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply
 
 \subsection{Transactional Block}
 \label{subsec:design_atomic_block}
-The declaration of a transaction takes the format \bscode{atomic} \{ $S$ \}, where $S$ is the general class of C\# statements. Any assignments to transactional variables inside an atomic block will be perceived as executed in one atomic step by other transactions and non-transactional code.
-\andreas[inline]{Describe, that you are able to return from an atomic block.}
+The declaration of a transaction takes the format \bscode{atomic} \{ $S$ \}, where $S$ is the general class of C\# statements. Any assignments to transactional variables inside an atomic block will be perceived as executed in one atomic step by other transactions and non-transactional code. Return statements inside an atomic block will cause a return from the contained method, just like returns in \bscode{if} and \bscode{try} blocks. 
 \subsection{Transactional Field}\label{subsec:design_trans_field}
 The declaration of a transactional field takes the format:
 
@@ -22,7 +21,7 @@ $field$-$modifiers$ $type$ \bscode{name} ( , \bscode{name} )+ ; \\
 \andreas{Should we have named parameters here?}
 where $field$-$modifiers$ includes the new \bscode{atomic} keyword as well as existing C\# modifiers such as \bscode{public}, \bscode{private} and \bscode{static}. The $field$-$modifiers$ \bscode{readonly} and \bscode{const} are not included, since their unchangeable nature makes tracking them in a \ac{STM} system pointless.
 
-The $type$ can be any existing or user-defined type including the \bscode{dynamic} keyword. The calculation of \bscode{initial-value} follows the same rules as standard C\# field initializers\cite[p. 40]{sestoft2011c}.
+The $type$ can be any existing or user-defined type including the \bscode{dynamic} keyword. The calculation of \bscode{initial-value} follows the same rules as standard C\# field initializers\cite[p. 40]{sestoft2011c}. 
 
 \bsref{lst:design_transactional_fields} presents an example of atomic field declarations.
 
@@ -101,6 +100,7 @@ Atomic automatic properties simplifies the implementation whenever the property 
   }
 \end{lstlisting}
 
+No additional restrictions is made on transactional properties marked \bscode{virtual}. Consequently a programmer can shadow the \bscode{atomic} annotation from a property, by override the property without marking it \bscode{atomic}. However, as a property by default is not virtual, it is a conscious decision from the programmer to enable it to be overridden.
 
 \subsection{Transactional Local Variables}\label{subsec:local_variables}
 The declaration of transactional local variables follows the format:
@@ -234,8 +234,8 @@ In \stmname, an output parameter can be marked as atomic, and it becomes a \ac{T
 \subsection{Transactional Parameter Array}
 According to \cite[p. 17]{csharp2013specificaiton}: \textit{``A parameter array permits a variable number of arguments to be passed to a method''}. Inside the method, the arguments are inside an array of the specified type. This is true, regardless of zero, a single or multiple arguments being passed into to the parameter. As the variable number of arguments is converted to an array, assignments to this array is possible. 
 
-In \stmnamesp, a parameter array can be marked as atomic, making assignments to it trackable in transactions. \bsref{lst:design_param_array} shows an example of such a method declaration.
-
+In \stmname, a parameter array can be marked as atomic, making assignments to it trackable in transactions. \bsref{lst:design_param_array} shows an example of such a method declaration.
+\andreas{We should argue that assignments to the argument rarely makes sense, as the programmer loses the reference. And we do not track the changes inside the array, thus it does not provide anything to mark it atomic}
 \begin{lstlisting}[label=lst:design_param_array,
   caption={Transactional Parameter Array},
   language=Java,  
@@ -255,6 +255,8 @@ In \stmnamesp, a parameter array can be marked as atomic, making assignments to 
   }
     
 \end{lstlisting}
+
+\andreas[inline]{We should discuss the different cases of passing non-atomic variables into atomic parameters etc. Basically the cases discussed in Roslynb Extension atm}
 \section{Example of \stmnamesp}\label{sec:example_design}
 \bsref{lst:stm_atomic_syntax}, which is a modified version of the race condition example from our previous study\cite[p. 23]{dpt907e14trending}, presents an example of the syntax extensions \stmnamesp brings to C\#. On line 6 the transactional field \bscode{number} is defined and assigned an initial value of 10. The main method defines and starts two threads. \bscode{t1} checks if the value of \bscode{number} is equal to 10 and assigns \bscode{number} times 3 to the field if the condition is true. These operations are executed as a transaction defined by the \bscode{atomic} keyword and associated block on line 11. \bscode{t2} assigns 20 to \bscode{number} inside a transaction defined on line 17. In this example \stmnamesp removes the race conditions associated with \bscode{t2} changing the value of \bscode{number} between the read on line 12 and the read on line 13. In the case such a change occurs the \ac{STM} system of \stmnamesp will abort and retry one of the implicated transactions in order to resolve the conflict.\lone{impl. detalje, kommer senere? - Referer til impl senere.}
  
