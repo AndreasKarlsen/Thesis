@@ -374,7 +374,8 @@ Just like fields annotated with atomic, annotated local variables must have its 
   }
 \end{lstlisting}
 
-\subsection{Usage of Transactional Variables}
+\subsection{Accessing Transactional Variables}
+\label{subsec:roslyn_extension_accessing_variables}
 As described in \bsref{subsec:stm_impl_transactional_variables} setting the value of a transactional variable is done through the \bscode{Value} property of the supplied \ac{STM} types. As the type of any field, local variable or property declared \bscode{atomic} in \stmnamesp is changed to the corresponding \ac{STM} type, any assignment must go through the \bscode{Value} property. As described in \bsref{subsec:stm_impl_transactional_variables} the \ac{STM} types supply support for implicit conversion to the wrapped value, when appearing as r-values. The transformation can however not rely on implicit conversion in all cases as, for example the comparison of two \bscode{TMInt} objects results in reference comparison instead of the expected integer comparison. As such, also the r-value appearances of any transactional field, local variable and parameter must be transformed to access the \bscode{Value} property ensuring that the wrapped object is accessed instead of the \ac{STM} object. Special handling is given to the \bscode{++} and \bscode{--} operators as the numeric \bscode{STM} types supply transactional implementations of these operators. The transformation ensures that these operators access the \ac{STM} object directly instead of access the \bscode{Value} property.
 
 The implementations for the transformation of access to transactional variables are divided into two parts. The first dealing with the usage of a transactional variable occurring as a single identifier such as \bscode{someTMVar}. The second part handles member access expressions such as \bscode{object.tmfield1.tmfield2}. While these two implementations differ in the syntactic constructs they work on, their overall approach both follow the steps described below:
@@ -492,6 +493,70 @@ As the case with transactional local variables and transactional fields, the typ
     }
   }
 \end{lstlisting}
+
+\subsubsection{Transactional Output Parameters}
+Transactional output parameters described in \bsref{subsec:stm_desgin_out_parameters} require additional handling as C\# requires every execution path in the method body to assign a value to the parameter\cite[p. 42]{sestoft2011c}. As described in \bsref{subsec:roslyn_extension_accessing_variables}, any assignment to the variable is replaced with an assignment to its \bscode{Value} property. As a consequence no assignments occur to the variable itself resulting in an error in the generated code. To rectify this issue a assignment, assigning a new \ac{STM} object with the same type as the parameter, is generated in the top method body for every \bscode{atomic out} parameter of that particular method. For each \bscode{atomic out} the transformation goes trough the following steps:
+
+\begin{enumerate}
+	\item Construct object initialization expression creating a new \ac{STM} object of the same type as the parameter.
+	\item Construct a assignment statement assigning the newly constructed object initialization expression to the \bscode{atomic out} parameter.
+	\item Insert the assignment statement as the first statement in the body of the enclosing method declaration.
+\end{enumerate}
+
+\bsref{lst:before_atomic_out_parameter} shows an method with an \bscode{atomic out} parameter while \bsref{lst:after_atomic_out_parameter} shows the result of applying the transformation.
+Based on the \bscode{atomic out} parameter declared on line \ref{line:aout_before} of \bsref{lst:before_atomic_out_parameter} the assignment on line \ref{line:aout_after} of \bsref{lst:after_atomic_out_parameter} is generated.
+
+\begin{lstlisting}[label=lst:before_atomic_out_parameter,
+  caption={\bscode{atomic out} Parameter Before Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ret, out}]  % Start your code-block
+
+  public class AtomicOutExample
+  {
+    public static void TestMethodAtomic(atomic out int i, int j)~\label{line:aout_before}~
+    {
+      i = 12;
+      j = 12;
+    }
+  }
+\end{lstlisting}
+
+\begin{lstlisting}[label=lst:after_atomic_out_parameter,
+  caption={\bscode{atomic out} Parameter After Transformation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ret, out}]  % Start your code-block
+
+  public class AtomicOutExample
+  {
+    public static void TestMethodAtomic(out TMInt i, int j)
+    {
+      i = new TMInt();~\label{line:aout_after}~
+      i.Value = 12;
+      j = 12;
+    }
+  }
+\end{lstlisting}
+
+While the generated assignment solves the problem of assignments to \bscode{atomic out} parameter being translated to a assignment to a assignment to the \ac{STM} objects \bscode{Value} property, it introduces two new problems. Firstly, ff every code path in the original source code does not assign to the variable no error is given due to the generated assignment. Secondly, C\# requires that a out parameter is assigned to before reading from it. If a read occurs before any assignment in the original source code the error is lost due to the generated assignment. In both cases an appropriate error can be generated by apply analysis equivalent to the analysis C\# applies to \bscode{out} parameters to the \bscode{Value} property of the \bscode{atomic out} parameter. No such analysis has however been implemented in the initial prototype described in this report.
+
 
 \subsection{Arguments}
 As described in \bsref{subsec:stm_desgin_value_parameters} \stmnamesp support value parameters. Replacing the type of atomic parameters with the corresponding \ac{STM} type, as described in \bsref{subsec:roslyn_extension_parameters}, results in a type mismatch when calling a method with an \bscode{atomic} parameter of some type $T$ as the parameter is no longer of type $T$, but $T$'s corresponding \ac{STM} type. As a result transformation must be applied to arguments passed to an \bscode{atomic} parameter, ensuring that the argument represents an object of the required \ac{STM} type. The transformation of an argument to an \bscode{atomic} parameter goes trough the following steps:
@@ -664,12 +729,26 @@ For each argument node in the syntax tree the transformation goes trough the fol
     }
   }
 \end{lstlisting}
- 
-\kasper[inline]{Special handling for atomic out parameters}
+
 \subsection{Retry}
-In \bsref{sec:sync_design} we described the design of conditional synchronization through the use of \bscode{retry}. As \bscode{retry} is a keyword employed as a statement, we need to identify all \bscode{retry} keywords and replace them with a method invocation to the static method \bscode{STMSystem.Retry} defined in the \ac{STM} library, described in \bsref{subsec:impl_retry}. The library then carries out the effect of the \bscode{retry} statement.
+In \bsref{sec:sync_design} the design of conditional synchronization through the use of \bscode{retry} is described. As \bscode{retry} is a keyword employed as a statement, we need to identify all \bscode{retry} keywords and replace them with a method invocation to the static method \bscode{STMSystem.Retry} defined in the \ac{STM} library, described in \bsref{subsec:impl_retry}. The library then carries out the effect of the \bscode{retry} statement. To warn programmers of unintended behavior,  analysis generating a warning if the retry statement is used outside of an \bscode{atomic} or \bscode{orelse} block, has has been implemented. 
 
 \section{Design \& Integration revisited}
+
+\subsection{Atomic Local Variables and Fields}
+\kasper[inline]{Always initialized}
+\subsection{Atomic Optional Parameters}
+C\# requires that the default value given when declaring a optional parameter is one of the following\cite[p. 309]{csharp2013specificaiton}:
+\begin{enumerate}
+	\item A constant expression
+	\item An expression of the form \bscode{new S()} where \bscode{S} is a value type
+	\item An expression of the form \bscode{default(S)} where \bscode{S} is a value type
+\end{enumerate}
+As described in \bsref{subsec:roslyn_extension_parameters} the transformation of a \bscode{atomic} parameter transforms the type of the parameter to one of the \ac{STM} types. Providing a default value to a \bscode{atomic} parameter therefore amounts to initializing a new \ac{STM} object with the same type as the parameter supplying the defined default value to its constructor. All \ac{STM} types are however reference types and the creation of a new \ac{STM} object can therefore, per the three rules described above, not be supplied as the replacement default value as this would result in a compile time error. As such default values for transactional value parameters are not implemented in the initial prototype delivered along with this report. Analysis has been implemented to produce an error if a \bscode{atomic} value parameter is given a default value, signaling that it should be optional.
+
+
+\subsection{Atomic Ref/Out Parameters}
+\kasper[inline]{timing, out error before and after}
 Changes to design due to limited implementation possibilities.
 \kasper[inline]{\bscode{atomic} variable altid initializeret}
 \worksheetend
