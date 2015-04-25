@@ -32,6 +32,12 @@ namespace Evaluation.Common
             return hashCode < 0 ? 0 - hashCode : hashCode;
         }
 
-        
+
+        public abstract IEnumerator<KeyValuePair<K, V>> GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

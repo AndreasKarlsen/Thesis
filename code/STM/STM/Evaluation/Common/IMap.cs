@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Evaluation.Common
 {
-    public interface IMap<K,V>
+    public interface IMap<K, V> : IEnumerable<KeyValuePair<K, V>>
     {
         bool ContainsKey(K key);
         V Get(K key);

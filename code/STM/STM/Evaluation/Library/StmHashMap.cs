@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using Evaluation.Common;
 using STM.Implementation.Lockbased;
 using System.Collections.Immutable;
@@ -193,6 +195,44 @@ namespace Evaluation.Library
             });
         }
 
+        private IEnumerator<KeyValuePair<K, V>> BuildEnumerator()
+        {
+            var backingArray = _buckets.Value;
+            Thread.MemoryBarrier();
+            //Thread.MemoryBarrier();  Forces the compiler to not move the local variable into the loop header
+            //This is important as the iterator will otherwise start iterating over a resized backing array 
+            // if a resize happes during iteration.
+            //Result if allowed could be the same key value pair being iterated over more than once or not at all
+            //This way the iterator only iterates over one backing array if a resize occurs those changes are not taken into account
+            //Additions or removals are still possible during iteration => same guarantee as System.Collections.Concurrent.ConcurrentDictionary
+            for (var i = 0; i < backingArray.Length; i++)
+            {
+                var bucket = backingArray[i];
+                foreach (var node in bucket.Value)
+                {
+                    yield return new KeyValuePair<K, V>(node.Key, node.Value);
+                }
+            }
+        }
+
+        public override IEnumerator<KeyValuePair<K, V>> GetEnumerator()
+        {
+            return STMSystem.Atomic(() =>
+            {
+                var list = new List<KeyValuePair<K, V>>(_size.Value);
+                for (var i = 0; i < _buckets.Value.Length; i++)
+                {
+                    var bucket = _buckets.Value[i];
+                    foreach (var node in bucket.Value)
+                    {
+                        list.Add(new KeyValuePair<K, V>(node.Key, node.Value));
+                    }
+                }
+                return list.GetEnumerator();
+            }); 
+        }
+
+
         public override V this[K key]
         {
             get { return Get(key); }
@@ -214,5 +254,7 @@ namespace Evaluation.Library
                 Value = new TMVar<V>(value);
             }
         }
+
+       
     }
 }

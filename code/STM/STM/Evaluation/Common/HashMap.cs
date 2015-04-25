@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Evaluation.Common
 {
-    public class HashMap<K,V> : BaseHashMap<K,V>, IEnumerable<KeyValuePair<K,V>>
+    public class HashMap<K,V> : BaseHashMap<K,V>
     {
 
         private Node[] _buckets;
@@ -208,7 +208,7 @@ namespace Evaluation.Common
             set { Add(key, value); }
         }
 
-        public  IEnumerator<KeyValuePair<K, V>> GetEnumerator()
+        public override IEnumerator<KeyValuePair<K, V>> GetEnumerator()
         {
             for (int i = 0; i < _buckets.Length; i++)
             {
@@ -219,11 +219,6 @@ namespace Evaluation.Common
                     node = node.Next;
                 }
             }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
 
         private class Node

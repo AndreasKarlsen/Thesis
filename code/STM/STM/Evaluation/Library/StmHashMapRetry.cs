@@ -246,6 +246,25 @@ namespace Evaluation.Library
         {
             get { return _size.Value; }
         }
+
+        private IEnumerator<KeyValuePair<K, V>> BuildEnumerator()
+        {
+            var backingArray = _buckets.Value;
+            for (var i = 0; i < backingArray.Length; i++)
+            {
+                var bucket = backingArray[i];
+                foreach (var node in bucket.Value)
+                {
+                    yield return new KeyValuePair<K, V>(node.Key, node.Value);
+                }
+            }
+        }
+
+        public override IEnumerator<KeyValuePair<K, V>> GetEnumerator()
+        {
+            return STMSystem.Atomic(() => BuildEnumerator());
+        }
+
         private class Node
         {
             public K Key { get; private set; }

@@ -50,11 +50,20 @@ namespace Evaluation
                 }
             }
 
+            foreach (var kvPair in map)
+            {
+                if (kvPair.Key != kvPair.Value)
+                {
+                    Console.WriteLine("Error on key: " + kvPair.Key);
+                }
+            }
+
             for (var i = -50; i < 50; i++)
             {
                 map.Remove(i);
             }
             Console.WriteLine(map.Size);
+
         }
 
         private static void STMHashMapSequentialTest()
