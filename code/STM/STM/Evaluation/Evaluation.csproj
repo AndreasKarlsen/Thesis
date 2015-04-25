@@ -32,7 +32,13 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ReadOnlyCollectionsInterfaces">
+      <HintPath>..\packages\ReadOnlyCollectionInterfaces.1.0.0\lib\NET45\ReadOnlyCollectionsInterfaces.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Collections.Immutable.Net40">
+      <HintPath>..\packages\System.Collections.Immutable.Net40.1.0.30.17\lib\net40\System.Collections.Immutable.Net40.dll</HintPath>
+    </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -41,9 +47,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\BaseHashMap.cs" />
     <Compile Include="Common\Enums.cs" />
     <Compile Include="Common\HashMap.cs" />
-    <Compile Include="Common\IHashMap.cs" />
+    <Compile Include="Common\IMap.cs" />
     <Compile Include="Common\IStartable.cs" />
     <Compile Include="Common\SCStats.cs" />
     <Compile Include="Library\DiningPhilosophers.cs" />
@@ -51,6 +58,7 @@
     <Compile Include="Library\SantaClausImpl\Reindeer.cs" />
     <Compile Include="Library\SantaClausImpl\Santa.cs" />
     <Compile Include="Library\SantaClausProblem.cs" />
+    <Compile Include="Library\StmHashMap.cs" />
     <Compile Include="Locking\LockingDiningPhilosophers.cs" />
     <Compile Include="Locking\SantaClausImpl\LockingElf.cs" />
     <Compile Include="Locking\SantaClausImpl\LockingReindeer.cs" />
@@ -61,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

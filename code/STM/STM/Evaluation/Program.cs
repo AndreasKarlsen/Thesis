@@ -17,17 +17,21 @@ namespace Evaluation
             //LockingDiningPhilosophers.Start();
             //SantaClausProblem.Start();
             //LockingSantaClausProblem.Start();
-            HashMapTest();
+            //HashMapTest();
+            STMHashMapSequentialTest();
             Console.ReadKey();
         }
 
         private static void HashMapTest()
         {
-            IHashMap<int, int> map = new HashMap<int, int>();
+            MapTest(new HashMap<int, int>());
+        }
 
+        private static void MapTest(IMap<int, int> map)
+        {
             for (var i = -50; i < 50; i++)
             {
-                map.Add(i,i);
+                map.Add(i, i);
             }
             Console.WriteLine(map.Size);
 
@@ -51,8 +55,11 @@ namespace Evaluation
                 map.Remove(i);
             }
             Console.WriteLine(map.Size);
+        }
 
-           
+        private static void STMHashMapSequentialTest()
+        {
+            MapTest(new StmHashMap<int, int>());
         }
     }
 }

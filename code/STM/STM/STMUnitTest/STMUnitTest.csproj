@@ -62,9 +62,14 @@
     <Compile Include="DynamicTest.cs" />
     <Compile Include="LockTest.cs" />
     <Compile Include="OrElseTest.cs" />
+    <Compile Include="HashMapTest.cs" />
     <Compile Include="VariousTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Evaluation\Evaluation.csproj">
+      <Project>{5a821c27-792a-44cf-b7cd-a6647bb65cc0}</Project>
+      <Name>Evaluation</Name>
+    </ProjectReference>
     <ProjectReference Include="..\STM\STM.csproj">
       <Project>{7f2c2267-8643-451a-b8c1-8552be152475}</Project>
       <Name>STM</Name>

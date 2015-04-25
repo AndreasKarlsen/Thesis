@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Evaluation.Common
 {
-    interface IHashMap<in K,V>
+    public interface IMap<K,V>
     {
         bool ContainsKey(K key);
         V Get(K key);

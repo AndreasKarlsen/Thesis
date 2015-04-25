@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
@@ -8,10 +9,8 @@ using System.Threading.Tasks;
 
 namespace Evaluation.Common
 {
-    public class HashMap<K,V> : IHashMap<K,V>
+    public class HashMap<K,V> : BaseHashMap<K,V>, IEnumerable<KeyValuePair<K,V>>
     {
-        private const int DefaultNrBuckets = 16;
-        private const double LoadFactor = 0.75D;
 
         private Node[] _buckets;
         private int _threshold;
@@ -27,11 +26,6 @@ namespace Evaluation.Common
             _threshold = CalulateThreshold(nrNuckets);
         }
 
-        private int CalulateThreshold(int nrNuckets)
-        {
-            return (int)(nrNuckets * LoadFactor);
-        }
-
     #region Utility
 
         private Node[] MakeBuckets(int nrBuckets)
@@ -39,18 +33,7 @@ namespace Evaluation.Common
             return new Node[nrBuckets];
         }
 
-        public bool ContainsKey(K key)
-        {
-            var bucket = GetBucket(key);
-            return SearchBucket(bucket, key) != null;
-        }
-
-        private int GetHashCode(K key)
-        {
-            var hashCode = key.GetHashCode();
-            return hashCode < 0 ? 0 - hashCode : hashCode;
-        }
-
+   
         private int GetBucketIndex(K key)
         {
             return GetBucketIndex(_buckets, key);
@@ -112,7 +95,14 @@ namespace Evaluation.Common
 
     #endregion Utility
 
-        public V Get(K key)
+        public override bool ContainsKey(K key)
+        {
+            var bucket = GetBucket(key);
+            return SearchBucket(bucket, key) != null;
+        }
+
+
+        public override V Get(K key)
         {
             var bucket = GetBucket(key);
             var node = SearchBucket(bucket, key);
@@ -124,13 +114,23 @@ namespace Evaluation.Common
             return node.Value;
         }
 
-        public void Add(K key, V value)
+        public override void Add(K key, V value)
         {
             var bucketIndex = GetBucketIndex(key);
-            InsertInBucket(CreateNode(key, value), bucketIndex);
+            var bucket = GetBucket(bucketIndex);
+            var node = SearchBucket(bucket, key);
+
+            if (node != null)
+            {
+                node.Value = value;
+            }
+            else
+            {
+                InsertInBucket(CreateNode(key, value), bucket, bucketIndex);
+            }
         }
 
-        public bool AddIfAbsent(K key, V value)
+        public override bool AddIfAbsent(K key, V value)
         {
             var bucketIndex = GetBucketIndex(key);
             var bucket = GetBucket(bucketIndex);
@@ -142,7 +142,7 @@ namespace Evaluation.Common
             return true;
         }
 
-        public bool Remove(K key)
+        public override bool Remove(K key)
         {
             var bucketIndex = GetBucketIndex(key);
             var node = GetBucket(bucketIndex);
@@ -177,7 +177,7 @@ namespace Evaluation.Common
         {
             if (Size >= _threshold)
             {
-                Resize();
+                //Resize();
             }
         }
 
@@ -202,13 +202,29 @@ namespace Evaluation.Common
         }
 
 
-        public V this[K key]
+        public override V this[K key]
         {
             get { return Get(key); }
             set { Add(key, value); }
         }
 
-        public int Size { get; private set; }
+        public  IEnumerator<KeyValuePair<K, V>> GetEnumerator()
+        {
+            for (int i = 0; i < _buckets.Length; i++)
+            {
+                var node = _buckets[i];
+                while (node != null)
+                {
+                    yield return new KeyValuePair<K, V>(node.Key,node.Value);
+                    node = node.Next;
+                }
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
 
         private class Node
         {
