@@ -80,7 +80,7 @@ namespace STMUnitTest
             const int t2From = -1000;
             const int t2To = 0;
             const int expectedSize = 2000;
-            var map = new StmHashMap<int, int>();
+            var map = new StmHashMapRetry<int, int>();
 
             var t1 = new Thread(() => MapAdd(map, t1From, t1To));
             var t2 = new Thread(() => MapAdd(map, t2From, t2To));

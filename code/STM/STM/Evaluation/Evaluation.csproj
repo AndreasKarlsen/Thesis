@@ -53,6 +53,7 @@
     <Compile Include="Common\IMap.cs" />
     <Compile Include="Common\IStartable.cs" />
     <Compile Include="Common\SCStats.cs" />
+    <Compile Include="Library\StmHashMapRetry.cs" />
     <Compile Include="Library\DiningPhilosophers.cs" />
     <Compile Include="Library\SantaClausImpl\Elf.cs" />
     <Compile Include="Library\SantaClausImpl\Reindeer.cs" />
