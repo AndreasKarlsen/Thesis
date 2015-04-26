@@ -734,8 +734,15 @@ For each argument node in the syntax tree the transformation goes trough the fol
 In \bsref{sec:sync_design} the design of conditional synchronization through the use of \bscode{retry} is described. As \bscode{retry} is a keyword employed as a statement, we need to identify all \bscode{retry} keywords and replace them with a method invocation to the static method \bscode{STMSystem.Retry} defined in the \ac{STM} library, described in \bsref{subsec:impl_retry}. The library then carries out the effect of the \bscode{retry} statement. To warn programmers of unintended behavior,  analysis generating a warning if the retry statement is used outside of an \bscode{atomic} or \bscode{orelse} block, has has been implemented. 
 
 \section{Design \& Integration revisited}
+This section describes areas in which the initial prototype implementation described in this chapter, conflicts with the intended design and language integration described in \bsref{chap:stm_design}.
 
-\subsection{Atomic Local Variables and Fields}
+\subsection{Transactional Local Variables and Fields}
+As described in \bsref{subsec:extension_field} and \bsref{subsec:local_variables} local variables and fields of type $T$ declared \bscode{atomic} are transformed to declarations with a type equal to $T$'s corresponding \ac{STM} type. As part of this process the local variable or field is initialized to \ac{STM} object of the correct type, using any initializer expression if presents. If not the default value of for the variable is initialized to the default value of type $T$ trough the \ac{STM} object parameter less constructor. 
+
+For fields this presents no issues as fields are always initialized to the default value of their type if no initializer expression is presents\cite[p. 93]{csharp2013specificaiton}. This is however not the case for local variables. The C\# compiler generates and error if a local variable is access before it has been assigned a value\cite[p. 96]{csharp2013specificaiton}. As \bscode{atomic} local variables are always initialized this error will never occur for such variables, which can lead to unintended behavior in cases where the programmer forgets to assign a \bscode{atomic} local variable. In such cases the default value of the \bscode{atomic} local variables original type will be the value accessed, potentially leading to some confusion.
+
+In order to provide the same error messages for \bscode{atomic} local variables as for regular C\# local variables the flow analysis detecting whether a given local variable has been assigned a value when it is accessed, must be extended to track both initial assignment as part of the deceleration, as well as assignment to \bscode{STM} objects \bscode{Value} as opposed to assignments directly to the variable. Such analysis has however not been included in the initial prototype descried in this chapter.
+
 \kasper[inline]{Always initialized}
 \subsection{Atomic Optional Parameters}
 C\# requires that the default value given when declaring a optional parameter is one of the following\cite[p. 309]{csharp2013specificaiton}:
