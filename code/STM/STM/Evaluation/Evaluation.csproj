@@ -61,6 +61,7 @@
     <Compile Include="Library\SantaClausProblem.cs" />
     <Compile Include="Library\StmHashMap.cs" />
     <Compile Include="Locking\LockingDiningPhilosophers.cs" />
+    <Compile Include="Locking\LockingHashMap.cs" />
     <Compile Include="Locking\SantaClausImpl\LockingElf.cs" />
     <Compile Include="Locking\SantaClausImpl\LockingReindeer.cs" />
     <Compile Include="Locking\SantaClausImpl\LockingSanta.cs" />

@@ -14,6 +14,6 @@ namespace Evaluation.Common
         bool AddIfAbsent(K key, V value);
         bool Remove(K k);
         V this[K key] { get; set; }
-        int Size { get; }      
+        int Count { get; }      
     }
 }

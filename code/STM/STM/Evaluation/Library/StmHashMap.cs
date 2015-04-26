@@ -45,7 +45,7 @@ namespace Evaluation.Library
 
         #region Utility
 
-        private Node CreatNode(K key, V value)
+        private Node CreateNode(K key, V value)
         {
             return new Node(key,value);
         }
@@ -53,12 +53,6 @@ namespace Evaluation.Library
         private int GetBucketIndex(K key)
         {
             return GetBucketIndex(_buckets.Value.Length, key);
-        }
-
-        private int GetBucketIndex(int length, K key)
-        {
-            var hasCode = GetHashCode(key);
-            return hasCode % length;
         }
 
         private Node FindNode(K key)
@@ -115,7 +109,7 @@ namespace Evaluation.Library
                 else
                 {
                     //Else inser the node
-                    bucketVar.Value = bucketVar.Value.Add(CreatNode(key, value));
+                    bucketVar.Value = bucketVar.Value.Add(CreateNode(key, value));
                     _size++;
                     ResizeIfNeeded();
                 }
@@ -134,7 +128,7 @@ namespace Evaluation.Library
                 if (node == null)
                 {
                     //If node is not found key does not exist so insert
-                    bucketVar.Value = bucketVar.Value.Add(CreatNode(key, value));
+                    bucketVar.Value = bucketVar.Value.Add(CreateNode(key, value));
                     _size++;
                     ResizeIfNeeded();
                     return true;
@@ -239,7 +233,7 @@ namespace Evaluation.Library
             set { Add(key, value); }
         }
 
-        public override int Size
+        public override int Count
         {
             get { return _size.Value; }
         }

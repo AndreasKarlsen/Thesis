@@ -82,7 +82,7 @@ namespace Evaluation.Common
 
             if (checkCondition)
             {
-                Size++;
+                Count++;
                 ResizeIfNeeded();
             }
            
@@ -154,7 +154,7 @@ namespace Evaluation.Common
             }
             else if (node.Key.Equals(key))
             {
-                Size--;
+                Count--;
                 _buckets[bucketIndex] = node.Next;
                 return true;
             }
@@ -166,7 +166,7 @@ namespace Evaluation.Common
                 //node.Next == null || node.Next.Key == key
                 if (node.Next == null) return false;
 
-                Size--;
+                Count--;
                 node.Next = node.Next.Next;
                 return true;
             }
@@ -175,7 +175,7 @@ namespace Evaluation.Common
 
         private void ResizeIfNeeded()
         {
-            if (Size >= _threshold)
+            if (Count >= _threshold)
             {
                 //Resize();
             }

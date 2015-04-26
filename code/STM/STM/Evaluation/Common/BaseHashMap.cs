@@ -18,8 +18,7 @@ namespace Evaluation.Common
         public abstract bool AddIfAbsent(K key, V value);
         public abstract bool Remove(K k);
         public abstract V this[K key] { get; set; }
-        public virtual int Size {  get; protected set; }
-
+        public virtual int Count {  get; protected set; }
 
         protected int CalulateThreshold(int nrNuckets)
         {
@@ -30,6 +29,16 @@ namespace Evaluation.Common
         {
             var hashCode = key.GetHashCode();
             return hashCode < 0 ? 0 - hashCode : hashCode;
+        }
+
+        protected int GetBucketIndex(int length, K key)
+        {
+            return GetBucketIndex(length, GetHashCode(key));
+        }
+
+        protected int GetBucketIndex(int length, int hashCode)
+        {
+            return hashCode % length;
         }
 
 

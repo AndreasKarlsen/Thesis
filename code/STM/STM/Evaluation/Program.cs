@@ -18,7 +18,8 @@ namespace Evaluation
             //SantaClausProblem.Start();
             //LockingSantaClausProblem.Start();
             //HashMapTest();
-            STMHashMapSequentialTest();
+            //STMHashMapSequentialTest();
+            LockingHashMapSequentialTest();
             Console.ReadKey();
         }
 
@@ -33,14 +34,14 @@ namespace Evaluation
             {
                 map.Add(i, i);
             }
-            Console.WriteLine(map.Size);
+            Console.WriteLine(map.Count);
 
             for (var i = -50; i < 50; i++)
             {
                 map.AddIfAbsent(i, i);
             }
 
-            Console.WriteLine(map.Size);
+            Console.WriteLine(map.Count);
 
             for (var i = -50; i < 50; i++)
             {
@@ -62,13 +63,18 @@ namespace Evaluation
             {
                 map.Remove(i);
             }
-            Console.WriteLine(map.Size);
+            Console.WriteLine(map.Count);
 
         }
 
         private static void STMHashMapSequentialTest()
         {
             MapTest(new StmHashMap<int, int>());
+        }
+
+        private static void LockingHashMapSequentialTest()
+        {
+            MapTest(new LockingHashMap<int, int>());
         }
     }
 }
