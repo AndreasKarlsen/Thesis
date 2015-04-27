@@ -1,6 +1,6 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Roslyn Extension}{0}{Februar 10, 2015}{}{../../}
-The chapter describes how the Roslyn C\# compiler is extended to support the constructs of \stmnamesp described in \bsref{chap:stm_design}. \bsref{sec:roslyn_extension_strategy} describes the overall strategy, \bsref{sec:roslyn_lexer_parser_changes} describes the changes made to the lexer and parser while \bsref{sec:syntax_tree_transformations} presents examples of the transformations made on the syntax tree by the extension.
+The chapter describes how the Roslyn C\# compiler is extended to support the constructs of \stmnamesp described in \bsref{chap:stm_design}. \bsref{sec:roslyn_extension_strategy} describes the overall strategy, \bsref{sec:roslyn_lexer_parser_changes} describes the changes made to the lexer and parser while \bsref{sec:syntax_tree_transformations} presents examples of the transformations made on the syntax tree by the extension.\toby{Tilføj testing section}
 \label{chap:roslyn_extension}
 \section{Extension Strategy}
 \label{sec:roslyn_extension_strategy}
@@ -96,7 +96,7 @@ Declaration of transactional local variables, fields and parameters does not req
 
 
 \subsection{Parser Changes}
-As described in \bsref{subsec:roslyn_first_phase} the C\# parser uses a recursive decent strategy implemented by hand. As it is customary for recursive decent implementations, each construct has a method responsible for parsing that particular construct. For the new \bscode{atomic}, \bscode{orelse} and \bscode{retry} such a method has been added, while the methods for parsing local variables, fields, parameters and properties have been modified to allow for an atomic modifier, as well as generating error messages for any unsupported modifier combinations such as \bscode{atomic const} and \bscode{readonly const}. Errors are associated with the erroneous nodes as it is customary for the compiler. A later compilation phase generates error messages and cancels code emission if any errors were present.
+As described in \bsref{subsec:roslyn_first_phase} the C\# parser uses a recursive descent strategy implemented by hand. As it is customary for recursive descent implementations, each construct has a method responsible for parsing that particular construct. For the new \bscode{atomic}, \bscode{orelse} and \bscode{retry} such a method has been added, while the methods for parsing local variables, fields, parameters and properties have been modified to allow for an atomic modifier, as well as generating error messages for any unsupported modifier combinations such as \bscode{atomic const} and \bscode{readonly const}. Errors are associated with the erroneous nodes as it is customary for the compiler. A later compilation phase generates error messages and cancels code emission if any errors were present.
 
 \bsref{lst:parse_atomic_block} shows the \bscode{ParseAtomicBlock} method responsible for parsing an \bscode{atomic} block. Line \ref{line:ab_keyword} parses an \bscode{atomic} keyword returning a token representing the keyword. Line \ref{line:ab_block} parses the block of statements representing the transaction body. Lines \ref{line:ab_orelse_start} to line \ref{line:ab_orelse_end} parses any \bscode{orelse} blocks associated with the \bscode{atomic} statement, if any are present. Line \ref{line:ab_allocate} allocates a \bscode{SyntaxListBuilder}. The \bscode{Allocate} method reuses existing space if possible, in order to limit the overhead of allocation. Line \ref{line:ab_parse_orelse} delegates the parsing of the actual \bscode{orelse} block to its corresponding method. Line \ref{line:ab_free} frees the space allocated by the call on line \ref{line:ab_allocate}. The \bscode{try finally} construct ensures that the space is freed in case of an exception. Finally on line \ref{line:ab_return} the syntax factory is used to create the \bscode{AtomicStatementSyntax} that is returned.
 
@@ -732,6 +732,66 @@ For each argument node in the syntax tree the transformation goes trough the fol
 
 \subsection{Retry}
 In \bsref{sec:sync_design} the design of conditional synchronization through the use of \bscode{retry} is described. As \bscode{retry} is a keyword employed as a statement, we need to identify all \bscode{retry} keywords and replace them with a method invocation to the static method \bscode{STMSystem.Retry} defined in the \ac{STM} library, described in \bsref{subsec:impl_retry}. The library then carries out the effect of the \bscode{retry} statement. To warn programmers of unintended behavior,  analysis generating a warning if the retry statement is used outside of an \bscode{atomic} or \bscode{orelse} block, has has been implemented. 
+
+\section{Testing}
+Unit testing is employed to ensure the Roslyn extension fulfills the design decisions of \stmnamesp and the integration with existing language features described in \bsref{chap:stm_design}. Each \ac{STM} construct and each integration with an existing language feature is covered by at least a single unit test. Furthermore, integration with disallowed existing language features is tested, f.x. there is a unit test that ensures an error is produced if the programmer tries to declare a method with an atomic optional parameter. This results in a rather extensive test suite, which is valuable in relation to the correctness of all \ac{STM} constructs and integration with language features. Furthermore it is especially valuable in relation to maintenance and further development of the Roslyn extension, f.x. it allows for big code changes, as the test suite can be run afterwards to ensure the extension still works correctly. Additionally, Roslyn is still under heavy development, which means radical changes may happen. The test suite can beneficial to test if the extension still works, if new changes are made to Roslyn.
+
+%maintenance espceially valuable
+%allow to make big changes to code, without you have to worry if you maybe broke somehting
+
+%ensure
+
+%also in relation to maintaining the STM inte
+%also when new stm constructs or langague features are added.
+%especailly important for Roslyn, as it is an early project, which has frequent changes, and therefore important to see if the extension still works correctly.
+
+
+%test setup (eller beskriv en case)
+
+%
+
+%extensive test suite
+
+
+%ERRORS: (hvordan smides de) - er det her det skal besrkives?
+	%STM diagnostic for semantic errors
+	%errors i paraser, kan bruge ErrorCode Enum osv.
+
+%some more than one
+
+%Every STM construct is tested and all the stm construct integrations with exsisting langague features is tested.
+
+%test suite of 29 tests. 
+
+%The tests further help.
+
+
+%fordele
+
+%procedure
+
+%also in relation to maintenance and further integration
+
+To ensure the roslyn extension works correctly, unit testing is employed.
+
+%Hvordan det er gjort?
+	%lav en en initial fil og kør med csc, hvorefter output tjekkes for errors, warnings eller exception (og exit code), hvor til sidst der tjekkes at den compilede fil stemmerovens med en fil man selv har lavet , det beskriver hvordan det compilede resultat skal se ud.
+
+%the different scenarios
+	% integration between exisisting langague features, discovered in section bla bla (stm design, tror jeg)
+
+
+Unit tests hav
+
+The roslyn 
+%
+
+%ensure that the stm integration with C# is correct and that it continues to do so when adding additonal features (i forhold til at integere med andre constructs/features eksisterence i sproget allerede).
+	%also in relation to when new things are added to roslyn, then being able to pull from the git repository and ensure the stm integration remains working correctly.
+
+%extensive tests suite
+
+%adding a new feature or integration with another feature will not have unwanted consequnces on already implemented stm features
 
 \section{Design \& Integration revisited}
 This section describes areas in which the initial prototype implementation described in this chapter, conflicts with the intended design and language integration described in \bsref{chap:stm_design}.
