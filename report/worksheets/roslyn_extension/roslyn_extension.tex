@@ -824,22 +824,18 @@ That is, the case involving a \bscode{atomic} argument and parameter. For the ca
 	\item $T \quad -> \quad \bscode{atomic} \quad T$
 	\item $\bscode{atomic} \quad T \quad -> \quad T$
 \end{itemize}
-the behavior is however different. Due to the type mismatch between the argument and parameter, a intermediate local variable is passed as the actual argument and the original argument is only assigned just after the call finishes. This conflicts with traditional C\# where any assignment to a \bscode{ref/out} parameter takes effect immediately\cite[p. 76]{sestoft2011c}. If the parameter is declared \bscode{atomic} and the method call is wrapped in a \bscode{atomic} block the impact of the difference in timing is negated as any assignments to atomic variables take effect when the transaction commits. However if the call is not wrapped in a atomic block the difference in timing can have unintended consequences, especially when considering concurrent execution. Due to this issue alternative ways of handling \bscode{atomic ref/out} parameters where investigate. These where:
+the behavior is however different. Due to the type mismatch between the argument and parameter, a intermediate local variable is passed as the actual argument and the original argument is only assigned just after the call finishes. This conflicts with traditional C\# where any assignment to a \bscode{ref/out} parameter takes effect immediately\cite[p. 76]{sestoft2011c}. If the parameter is declared \bscode{atomic} and the method call is wrapped in a \bscode{atomic} block the impact of the difference in timing is negated as any assignments to atomic variables take effect when the transaction commits. However if the call is not wrapped in a atomic block the difference in timing can have unintended consequences, especially when considering concurrent execution. Due to this issue a number of ways for handling \bscode{atomic ref/out} parameters and arguments where investigate. These where:
 \begin{enumerate}
-	\item Disallowing \bscode{atomic ref/out} parameters
+	\item Warning the programmer if one of the two problematic cases is utilized
 	\item Disallowing the two problematic cases described above
-	\item Disallowing \bscode{atomic ref/out} parameters and \bscode{atomic} variables as \bscode{ref/out} arguments
+	\item Disallowing \bscode{atomic ref/out} parameters
 \end{enumerate}
+In C\#, passing a volatile field as \bscode{ref/out} result in the field being treated as non volatile within the method body\cite{csharpVolatileRef}. If such a operation is detected the compiler creates a warning informing the programmer of the change in semantics. The same approach could be taken whenever one of the two problematic cases described earlier are detected.
+
 Disallowing \bscode{atomic ref/out} parameters, preventing the programmer from declaring \bscode{atomic ref/out} parameters, removes the timing issues present in the cases where a intermediate \bscode{atomic} variable is required. However the ability to pass a atomic variable by reference is lost and the case of passing a variable of type \bscode{atomic} $T$ into a parameter of type $T$ is still unsolved.
 
-Disallowing \bscode{ref/out} the cases where both a \bscode{atomic} and non \bscode{atomic} variable/parameter is involved removes the cases where the desired timing can not be provided. However it, for example, non longer be possible to pass a atomic integer into a \bsref{out} integer parameter such as that of \bscode{System.Int32.TryParse}. As a result the programmer is more restricted when using \bscode{atomic} variables.
+Disallowing \bscode{ref/out} the cases where both a \bscode{atomic} and non \bscode{atomic} variable/parameter is involved removes the cases where the desired timing can not be provided. However it will, for example, non longer be possible to pass a atomic integer into a \bsref{out} integer parameter such as that of \bscode{Int32.TryParse}. As a result the programmer is more restricted when using \bscode{atomic} variables.
 
-The final option involves disallowing both \bscode{atomic ref/out} parameters and \bscode{atomic} variables as \bscode{ref/out} arguments. Here the distinguishing 
+For the initial prototype presented in this chapter the first option of warning the programmer of the change in semantics has been selected. This ensures that the change in semantics is not hidden from the programmer thereby allowing her to adapt the program. The impact of the feature will be closely observed throughout the evaluation with the aim of determining the final form of the feature, or even if the feature should be part of the language at all.
 
- 
-Requiring that the argument passed to a parameter of type \bscode{atomic} $T$ to be a variable of the same type. 
- 
-\kasper[inline]{timing, out error before and after}
-Changes to design due to limited implementation possibilities.
-\kasper[inline]{\bscode{atomic} variable altid initializeret}
 \worksheetend
