@@ -628,17 +628,17 @@ As described in \bsref{subsec:stm_desgin_value_parameters} \stmnamesp support va
 \subsubsection{Ref/Out Arguments}
 Supporting \bscode{atomic} \bscode{ref} and \bscode{out} parameters, as described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters}, presents a problem due to the type mismatch as a result of transforming the parameters. \bscode{ref} and \bscode{out} parameters require the argument to be a assignable variable of the same type as the parameter. As the type of the parameter is transformed, a variable of type $T$ can not be passed directly as \bscode{ref} or \bscode{out} to a \bscode{atomic} parameter of type $T$.
 
-Four different cases exist for passing \bscode{ref} and \bscode{out} parameters. There are:
+Four different cases exist for passing \bscode{ref} and \bscode{out} parameters. There are: 
 \begin{enumerate}
-	\item $T$ $\quad->\quad$ \bscode{atomic} $T$
-	\item \bscode{atomic} $T$ $\quad->\quad$ $T$
-	\item \bscode{atomic} $T$ $\quad->\quad$ \bscode{atomic} $T$
-	\item $T$ $\quad->\quad$ $T$
+	\item $T \quad -> \quad \bscode{atomic} \quad T$
+	\item $\bscode{atomic} \quad T \quad -> \quad T$
+	\item $\bscode{atomic} \quad T \quad->\quad \bscode{atomic} \quad T$
+	\item $T \quad->\quad T$
 \end{enumerate} 
-where $T$ is some type, \bscode{atomic} $T$ is $T$'s corresponding \ac{STM} type and $T$ $\quad->\quad$ \bscode{atomic} $T$ describes passing an argument of type $T$ into a parameter of the \ac{STM} type corresponding to $T$. The third and fourth cases are handle by the C\# compiler so transformation must only be applied in cases one and two.
+where $T$ is some arbitrary type, $\text{ } \bscode{atomic} \quad  T$ is $T$'s corresponding \ac{STM} type and $\text{ } \bscode{atomic} \quad T \quad -> \quad T$ describes passing an argument of type $T$ into a parameter of the \ac{STM} type corresponding to $T$. The third and fourth cases are handle by the C\# compiler so transformation must only be applied in cases one and two.
 For each argument node in the syntax tree the transformation goes trough the following steps:
 \begin{enumerate}
-	\item Determine whether the argument represents one of the two previously described case. If not no transformation is applied
+	\item Determine whether the argument represents one of the two previously described case. If not, no transformation is applied
 	\item Construct a syntax node for a local variable which type is equal to that of the parameter, initializing it using the original argument and insert it just before the method call
 	\item Replace the original argument with a identifier equal to the name of the previously generated intermediate local variable passed using the same modifier as the original argument
 	\item Construct a assignment syntax node assigning the value of the intermediate local variable to the original argument and insert it just after the method call
@@ -744,7 +744,7 @@ For fields this presents no issues as fields are always initialized to the defau
 In order to provide the same error messages for \bscode{atomic} local variables as for regular C\# local variables the flow analysis detecting whether a given local variable has been assigned a value when it is accessed, must be extended to track both initial assignment as part of the deceleration, as well as assignment to \bscode{STM} objects \bscode{Value} as opposed to assignments directly to the variable. Such analysis has however not been included in the initial prototype descried in this chapter.
 
 \kasper[inline]{Always initialized}
-\subsection{Atomic Optional Parameters}
+\subsection{Transactional Optional Parameters}
 C\# requires that the default value given when declaring a optional parameter is one of the following\cite[p. 309]{csharp2013specificaiton}:
 \begin{enumerate}
 	\item A constant expression
@@ -754,7 +754,31 @@ C\# requires that the default value given when declaring a optional parameter is
 As described in \bsref{subsec:roslyn_extension_parameters} the transformation of a \bscode{atomic} parameter transforms the type of the parameter to one of the \ac{STM} types. Providing a default value to a \bscode{atomic} parameter therefore amounts to initializing a new \ac{STM} object with the same type as the parameter supplying the defined default value to its constructor. All \ac{STM} types are however reference types and the creation of a new \ac{STM} object can therefore, per the three rules described above, not be supplied as the replacement default value as this would result in a compile time error. As such default values for transactional value parameters are not implemented in the initial prototype delivered along with this report. Analysis has been implemented to produce an error if a \bscode{atomic} value parameter is given a default value, signaling that it should be optional.
 
 
-\subsection{Atomic Ref/Out Parameters}
+\subsection{Transactional Ref/Out Parameters \& Arguments}
+As described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters} the intended design was that assignment to transactional \bscode{ref/out} parameters take effect when the transaction in which the assignment takes place commits. This behavior hold for the case:
+\begin{itemize}
+	\item $\bscode{atomic} \quad T \quad->\quad \bscode{atomic} \quad T$
+\end{itemize}
+That is, the case involving a \bscode{atomic} argument and parameter. For the cases:
+\begin{itemize}
+	\item $T \quad -> \quad \bscode{atomic} \quad T$
+	\item $\bscode{atomic} \quad T \quad -> \quad T$
+\end{itemize}
+the behavior is however different. Due to the type mismatch between the argument and parameter, a intermediate local variable is passed as the actual argument and the original argument is only assigned just after the call finishes. This conflicts with traditional C\# where any assignment to a \bscode{ref/out} parameter takes effect immediately\cite[p. 76]{sestoft2011c}. If the parameter is declared \bscode{atomic} and the method call is wrapped in a \bscode{atomic} block the impact of the difference in timing is negated as any assignments to atomic variables take effect when the transaction commits. However if the call is not wrapped in a atomic block the difference in timing can have unintended consequences, especially when considering concurrent execution. Due to this issue alternative ways of handling \bscode{atomic ref/out} parameters where investigate. These where:
+\begin{enumerate}
+	\item Disallowing \bscode{atomic ref/out} parameters
+	\item Disallowing the two problematic cases described above
+	\item Disallowing \bscode{atomic ref/out} parameters and \bscode{atomic} variables as \bscode{ref/out} arguments
+\end{enumerate}
+Disallowing \bscode{atomic ref/out} parameters, preventing the programmer from declaring \bscode{atomic ref/out} parameters, removes the timing issues present in the cases where a intermediate \bscode{atomic} variable is required. However the ability to pass a atomic variable by reference is lost and the case of passing a variable of type \bscode{atomic} $T$ into a parameter of type $T$ is still unsolved.
+
+Disallowing \bscode{ref/out} the cases where both a \bscode{atomic} and non \bscode{atomic} variable/parameter is involved removes the cases where the desired timing can not be provided. However it, for example, non longer be possible to pass a atomic integer into a \bsref{out} integer parameter such as that of \bscode{System.Int32.TryParse}. As a result the programmer is more restricted when using \bscode{atomic} variables.
+
+The final option involves disallowing both \bscode{atomic ref/out} parameters and \bscode{atomic} variables as \bscode{ref/out} arguments. Here the distinguishing 
+
+ 
+Requiring that the argument passed to a parameter of type \bscode{atomic} $T$ to be a variable of the same type. 
+ 
 \kasper[inline]{timing, out error before and after}
 Changes to design due to limited implementation possibilities.
 \kasper[inline]{\bscode{atomic} variable altid initializeret}
