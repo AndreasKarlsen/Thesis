@@ -626,16 +626,16 @@ As described in \bsref{subsec:stm_desgin_value_parameters} \stmnamesp support va
 \end{lstlisting}
 
 \subsubsection{Ref/Out Arguments}
-Supporting \bscode{atomic} \bscode{ref} and \bscode{out} parameters, as described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters}, presents a problem due to the type mismatch as a result of transforming the parameters. \bscode{ref} and \bscode{out} parameters require the argument to be a assignable variable of the same type as the parameter. As the type of the parameter is transformed, a variable of type $T$ can not be passed directly as \bscode{ref} or \bscode{out} to a \bscode{atomic} parameter of type $T$.
+Supporting \bscode{atomic} \bscode{ref} and \bscode{out} parameters, as described in \bsref{subsubsec:trans_ref_out_args}, presents a problem due to the type mismatch as a result of transforming the parameters. \bscode{ref} and \bscode{out} parameters require the argument to be an assignable variable of the same type as the parameter. As the type of the parameter is transformed, a variable of type $T$ can not be passed directly as \bscode{ref} or \bscode{out} to an \bscode{atomic} parameter of type $T$.
 
-Four different cases exist for passing \bscode{ref} and \bscode{out} parameters. There are: 
+Four different cases exist for passing \bscode{ref} and \bscode{out} parameters. These are:
 \begin{enumerate}
-	\item $T \quad -> \quad \bscode{atomic} \quad T$
-	\item $\bscode{atomic} \quad T \quad -> \quad T$
-	\item $\bscode{atomic} \quad T \quad->\quad \bscode{atomic} \quad T$
-	\item $T \quad->\quad T$
+	\item $T$ $\quad \rightarrow \quad$ \bscode{atomic} $T$
+	\item \bscode{atomic} $T$ $\quad \rightarrow\quad$ $T$
+	\item \bscode{atomic} $T$ $\quad \rightarrow\quad$ \bscode{atomic} $T$
+	\item $T$ $\quad \rightarrow \quad$ $T$
 \end{enumerate} 
-where $T$ is some arbitrary type, $\text{ } \bscode{atomic} \quad  T$ is $T$'s corresponding \ac{STM} type and $\text{ } \bscode{atomic} \quad T \quad -> \quad T$ describes passing an argument of type $T$ into a parameter of the \ac{STM} type corresponding to $T$. The third and fourth cases are handle by the C\# compiler so transformation must only be applied in cases one and two.
+where $T$ is some arbitrary type, $\text{ } \bscode{atomic} \quad  T$ is $T$'s corresponding \ac{STM} type and $\text{ } \bscode{atomic} \quad T \quad \rightarrow \quad T$ describes passing an argument of type $T$ into a parameter of the \ac{STM} type corresponding to $T$. The third and fourth cases are handle by the C\# compiler so transformation must only be applied in cases one and two.
 For each argument node in the syntax tree the transformation goes trough the following steps:
 \begin{enumerate}
 	\item Determine whether the argument represents one of the two previously described case. If not, no transformation is applied
@@ -644,7 +644,7 @@ For each argument node in the syntax tree the transformation goes trough the fol
 	\item Construct a assignment syntax node assigning the value of the intermediate local variable to the original argument and insert it just after the method call
 \end{enumerate}
 
-\bsref{lst:before_atomic_ref} shows a example containing method three method calls each of which which fall in one of the categories which require transformation. Applying the transformation to the example presented in \bsref{lst:after_atomic_ref} produces a syntax tree representing the code shown in \bsref{lst:after_atomic_ref}. Line \ref{line:aref1} of \bsref{lst:before_atomic_ref} is transformed to lines \ref{line:aref1_after_1} to \ref{line:aref1_after_3} of \bsref{lst:after_atomic_ref}. As the parameter is \bscode{atomic} the local variable inserted on line \ref{line:aref1_after_1} is of the parameters corresponding \ac{STM} type. The argument to the method call has been replaced as seen on line \ref{line:aref1_after_2}. The assignment on line \ref{line:aref1_after_3} transfers the value back to the original argument. Line \ref{line:aref2} of \bsref{lst:before_atomic_ref} is not transformed as it represents the case \bscode{atomic} $T$ $\quad->\quad$ \bscode{atomic} $T$. Line \ref{line:aref3} of \bsref{lst:before_atomic_ref} is transformed much like \ref{line:aref1}, except the generated local field is of type \bscode{int} instead of a \ac{STM} type, as the parameter is not declared \bscode{atomic}. C\# requires the argument for a \bscode{ref} or \bscode{out} parameter to be a variable. For the case $T$ $\quad->\quad$ \bscode{atomic} $T$ and \bscode{atomic} $T$ $\quad->\quad$ $T$, analysis has been implemented to generate an compile time error if the original argument does not correspond to a variable, as this would otherwise always be the case.
+\bsref{lst:before_atomic_ref} shows an example containing method three method calls each of which which fall in one of the categories which require transformation. Applying the transformation to the example presented in \bsref{lst:after_atomic_ref} produces a syntax tree representing the code shown in \bsref{lst:after_atomic_ref}. Line \ref{line:aref1} of \bsref{lst:before_atomic_ref} is transformed to lines \ref{line:aref1_after_1} to \ref{line:aref1_after_3} of \bsref{lst:after_atomic_ref}. As the parameter is \bscode{atomic} the local variable inserted on line \ref{line:aref1_after_1} is of the parameters corresponding \ac{STM} type. The argument to the method call has been replaced as seen on line \ref{line:aref1_after_2}. The assignment on line \ref{line:aref1_after_3} transfers the value back to the original argument. Line \ref{line:aref2} of \bsref{lst:before_atomic_ref} is not transformed as it represents the case \bscode{atomic} $T$ $\quad \rightarrow \quad$ \bscode{atomic} $T$. Line \ref{line:aref3} of \bsref{lst:before_atomic_ref} is transformed much like \ref{line:aref1}, except the generated local field is of type \bscode{int} instead of a \ac{STM} type, as the parameter is not declared \bscode{atomic}. C\# requires the argument for a \bscode{ref} or \bscode{out} parameter to be a variable. For the case $T$ $\quad \rightarrow \quad$ \bscode{atomic} $T$ and \bscode{atomic} $T$ $\quad \rightarrow \quad$ $T$, analysis has been implemented to generate an compile time error if the original argument does not correspond to a variable, as this would otherwise always be the case.
 
 %In order simplify the language and maintain the same semantics whenever a atomic parameter or variable is passed as an argument or 
 
@@ -736,95 +736,80 @@ In \bsref{sec:sync_design} the design of conditional synchronization through the
 \section{Testing}
 Unit testing is employed to ensure the Roslyn extension fulfills the design decisions of \stmnamesp and the integration with existing language features described in \bsref{chap:stm_design}. Each \ac{STM} construct and each integration with an existing language feature is covered by at least a single unit test. Furthermore, integration with disallowed existing language features is tested, f.x. there is a unit test that ensures an error is produced if the programmer tries to declare a method with an atomic optional parameter. This results in a rather extensive test suite, which is valuable in relation to the correctness of all \ac{STM} constructs and integration with language features. Furthermore it is especially valuable in relation to maintenance and further development of the Roslyn extension, f.x. it allows for big code changes, as the test suite can be run afterwards to ensure the extension still works correctly. Additionally, Roslyn is still under heavy development, which means radical changes may happen. The test suite can beneficial to test if the extension still works, if new changes are made to Roslyn.
 
-%maintenance espceially valuable
-%allow to make big changes to code, without you have to worry if you maybe broke somehting
+In \bsref{lst:empty_atomic_block} is shown an example of a unit test for an empty atomic block. On line \ref{line:ab_finalstr} the string that is to be compiled is generated using the bscode{MakeSkeletonWithMain} method, which generates a test namespace, class and main method, with the supplied string arguments \bscode{strInClass} and \bscode{strInMain} included. Afterwards the string is written to a test file, which is used as argument in the method on line \ref{line:ab_runcsc}, which executes \bscode{csc.exe} (C\# command line compiler) and returns a \bscode{CmdRes} object that contains the command line output. On line \ref{line:ab_assertcsc} it is checked that the command line output does not contains any warning, error or invalid exitcode. For unit tests that check error generations, f.x. an illegal existing language featured is used with an \ac{STM} construct, this step is not present, instead \bscode{CmdRed} can be checked if it contains the expected error or warning. On line \ref{line:ab_expecstr} the expected result of compilation string is generated and on line \ref{line:ab_compiledstr} the actual compilation string is fetched. In order to retrieve the actual compilation string, csc.exe is extended with an additional argument called \bscode{stmiout}, which writes the source code after \ac{STM} transformation to the specified path. This argument was used in the method on line \ref{line:ab_runcsc}. Finally on line \ref{line:ab_asserteq} the expected string and the actually compiled string is checked for equality, if equal the test passes and otherwise it fails. Before checking for equality, the \bscode{AssertEqualStings} method removes unimportant parts of the string, such as whitespace, newlines, tabs and carriage returns.
 
-%ensure
+\begin{lstlisting}[label=lst:empty_atomic_block,
+  caption={Empty Atomic Block Unit Test},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, Test}]  % Start your code-block
+  [Test]
+  public void AtomicBlockEmpty()
+  {
+  		string finalStr = MakeSkeletonWithMain(~\label{line:ab_finalstr}~
+  			strInClass: "",
+  			strInMain: "atomic{\n\t\t\t"+ 
+  				"}");
+  		StringToTestFile(finalStr);~\label{line:ab_strtofile}~
+  		CmdRes res = RunCscWithOutAndStmIOut();~\label{line:ab_runcsc}~
+  		AssertCmdRes(res);~\label{line:ab_assertcsc}~
+  		
+  		string expecStr = MakeSkeletonWithMain(~\label{line:ab_expecstr}~
+  			strInClass: "",
+  			strInMain: STM.STMNameSpace + ".STMSystem.Atomic(" +
+  				"() =>" +
+  				"{" +
+  				"});");
+			string compiledStr =~\label{line:ab_compiledstr}~ TestFileToString(currentCompiledCsFile);
+			AssertEqualStrings(expecStr, compiledStr);~\label{line:ab_asserteq}~
+  }
+\end{lstlisting}
 
-%also in relation to maintaining the STM inte
-%also when new stm constructs or langague features are added.
-%especailly important for Roslyn, as it is an early project, which has frequent changes, and therefore important to see if the extension still works correctly.
-
-
-%test setup (eller beskriv en case)
-
-%
-
-%extensive test suite
-
-
+\toby[i]{Hvad med errors? Errorcode og stm diagnostics bag?}
 %ERRORS: (hvordan smides de) - er det her det skal besrkives?
 	%STM diagnostic for semantic errors
 	%errors i paraser, kan bruge ErrorCode Enum osv.
 
-%some more than one
-
-%Every STM construct is tested and all the stm construct integrations with exsisting langague features is tested.
-
-%test suite of 29 tests. 
-
-%The tests further help.
-
-
-%fordele
-
-%procedure
-
-%also in relation to maintenance and further integration
-
-To ensure the roslyn extension works correctly, unit testing is employed.
-
-%Hvordan det er gjort?
-	%lav en en initial fil og kør med csc, hvorefter output tjekkes for errors, warnings eller exception (og exit code), hvor til sidst der tjekkes at den compilede fil stemmerovens med en fil man selv har lavet , det beskriver hvordan det compilede resultat skal se ud.
-
-%the different scenarios
-	% integration between exisisting langague features, discovered in section bla bla (stm design, tror jeg)
-
-
-Unit tests hav
-
-The roslyn 
-%
-
-%ensure that the stm integration with C# is correct and that it continues to do so when adding additonal features (i forhold til at integere med andre constructs/features eksisterence i sproget allerede).
-	%also in relation to when new things are added to roslyn, then being able to pull from the git repository and ensure the stm integration remains working correctly.
-
-%extensive tests suite
-
-%adding a new feature or integration with another feature will not have unwanted consequnces on already implemented stm features
-
-\section{Design \& Integration revisited}
+\section{Design \& Integration Revisited}
 This section describes areas in which the initial prototype implementation described in this chapter, conflicts with the intended design and language integration described in \bsref{chap:stm_design}.
 
 \subsection{Transactional Local Variables and Fields}
-As described in \bsref{subsec:extension_field} and \bsref{subsec:local_variables} local variables and fields of type $T$ declared \bscode{atomic} are transformed to declarations with a type equal to $T$'s corresponding \ac{STM} type. As part of this process the local variable or field is initialized to \ac{STM} object of the correct type, using any initializer expression if presents. If not the default value of for the variable is initialized to the default value of type $T$ trough the \ac{STM} object parameter less constructor. 
+As described in \bsref{subsec:extension_field} and \bsref{subsec:local_variables} local variables and fields of type $T$ declared \bscode{atomic} are transformed to declarations with a type equal to $T$'s corresponding \ac{STM} type. As part of this process the local variable or field is initialized to \ac{STM} object of the correct type, using any initializer expression if present. If not the default value of the variable is initialized to the default value of type $T$ through the \ac{STM} object's parameter less constructor. 
 
-For fields this presents no issues as fields are always initialized to the default value of their type if no initializer expression is presents\cite[p. 93]{csharp2013specificaiton}. This is however not the case for local variables. The C\# compiler generates and error if a local variable is access before it has been assigned a value\cite[p. 96]{csharp2013specificaiton}. As \bscode{atomic} local variables are always initialized this error will never occur for such variables, which can lead to unintended behavior in cases where the programmer forgets to assign a \bscode{atomic} local variable. In such cases the default value of the \bscode{atomic} local variables original type will be the value accessed, potentially leading to some confusion.
+For fields this presents no issues as fields are always initialized to the default value of their type if no initializer expression is presents\cite[p. 93]{csharp2013specificaiton}. This is however not the case for local variables. The C\# compiler generates an error if a local variable is accessed before it has been assigned a value\cite[p. 96]{csharp2013specificaiton}. As \bscode{atomic} local variables are always initialized this error will never occur for such variables, which can lead to unintended behavior in cases where the programmer forgets to assign an \bscode{atomic} local variable. In such cases the default value of the \bscode{atomic} local variables original type will be the value accessed, potentially leading to some confusion.
 
 In order to provide the same error messages for \bscode{atomic} local variables as for regular C\# local variables the flow analysis detecting whether a given local variable has been assigned a value when it is accessed, must be extended to track both initial assignment as part of the deceleration, as well as assignment to \bscode{STM} objects \bscode{Value} as opposed to assignments directly to the variable. Such analysis has however not been included in the initial prototype descried in this chapter.
 
 \kasper[inline]{Always initialized}
 \subsection{Transactional Optional Parameters}
-C\# requires that the default value given when declaring a optional parameter is one of the following\cite[p. 309]{csharp2013specificaiton}:
+C\# requires that the default value given when declaring an optional parameter is one of the following\cite[p. 309]{csharp2013specificaiton}:
 \begin{enumerate}
 	\item A constant expression
 	\item An expression of the form \bscode{new S()} where \bscode{S} is a value type
 	\item An expression of the form \bscode{default(S)} where \bscode{S} is a value type
 \end{enumerate}
-As described in \bsref{subsec:roslyn_extension_parameters} the transformation of a \bscode{atomic} parameter transforms the type of the parameter to one of the \ac{STM} types. Providing a default value to a \bscode{atomic} parameter therefore amounts to initializing a new \ac{STM} object with the same type as the parameter supplying the defined default value to its constructor. All \ac{STM} types are however reference types and the creation of a new \ac{STM} object can therefore, per the three rules described above, not be supplied as the replacement default value as this would result in a compile time error. As such default values for transactional value parameters are not implemented in the initial prototype delivered along with this report. Analysis has been implemented to produce an error if a \bscode{atomic} value parameter is given a default value, signaling that it should be optional.
+As described in \bsref{subsec:roslyn_extension_parameters} the transformation of an \bscode{atomic} parameter transforms the type of the parameter to one of the \ac{STM} types. Providing a default value to an \bscode{atomic} parameter therefore amounts to initializing a new \ac{STM} object with the same type as the parameter supplying the defined default value to its constructor. All \ac{STM} types are however reference types and the creation of a new \ac{STM} object can therefore, per the three rules described above, not be supplied as the replacement default value as this would result in a compile time error. As such default values for transactional value parameters are not implemented in the initial prototype delivered along with this report. Analysis has been implemented to produce an error if an \bscode{atomic} value parameter is given a default value.
 
 
 \subsection{Transactional Ref/Out Parameters \& Arguments}
-As described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters} the intended design was that assignment to transactional \bscode{ref/out} parameters take effect when the transaction in which the assignment takes place commits. This behavior hold for the case:
+As described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters} the intended design was that assignment to transactional \bscode{ref/out} parameters take effect when the transaction in which the assignment takes place commits. This behavior holds true for the case:
 \begin{itemize}
-	\item $\bscode{atomic} \quad T \quad->\quad \bscode{atomic} \quad T$
+	\item $\bscode{atomic} \quad T \quad \rightarrow \quad \bscode{atomic} \quad T$
 \end{itemize}
-That is, the case involving a \bscode{atomic} argument and parameter. For the cases:
+That is, the case involving an \bscode{atomic} argument and parameter. For the cases:
 \begin{itemize}
-	\item $T \quad -> \quad \bscode{atomic} \quad T$
-	\item $\bscode{atomic} \quad T \quad -> \quad T$
+	\item $T \quad \rightarrow \quad \bscode{atomic} \quad T$
+	\item $\bscode{atomic} \quad T \quad \rightarrow \quad T$
 \end{itemize}
-the behavior is however different. Due to the type mismatch between the argument and parameter, a intermediate local variable is passed as the actual argument and the original argument is only assigned just after the call finishes. This conflicts with traditional C\# where any assignment to a \bscode{ref/out} parameter takes effect immediately\cite[p. 76]{sestoft2011c}. If the parameter is declared \bscode{atomic} and the method call is wrapped in a \bscode{atomic} block the impact of the difference in timing is negated as any assignments to atomic variables take effect when the transaction commits. However if the call is not wrapped in a atomic block the difference in timing can have unintended consequences, especially when considering concurrent execution. Due to this issue a number of ways for handling \bscode{atomic ref/out} parameters and arguments where investigate. These where:
+the behavior is however different. Due to the type mismatch between the argument and parameter, an intermediate local variable is passed as the actual argument and the original argument is only assigned just after the call finishes. This conflicts with traditional C\# where any assignment to a \bscode{ref/out} parameter takes effect immediately\cite[p. 76]{sestoft2011c}. If the parameter is declared \bscode{atomic} and the method call is wrapped in an \bscode{atomic} block the impact of the difference in timing is negated as any assignments to atomic variables take effect when the transaction commits. However if the call is not wrapped in a atomic block the difference in timing can have unintended consequences, especially when considering concurrent execution. Due to this issue a number of ways for handling \bscode{atomic ref/out} parameters and arguments were investigated. These were:
 \begin{enumerate}
 	\item Warning the programmer if one of the two problematic cases is utilized
 	\item Disallowing the two problematic cases described above
@@ -834,8 +819,10 @@ In C\#, passing a volatile field as \bscode{ref/out} result in the field being t
 
 Disallowing \bscode{atomic ref/out} parameters, preventing the programmer from declaring \bscode{atomic ref/out} parameters, removes the timing issues present in the cases where a intermediate \bscode{atomic} variable is required. However the ability to pass a atomic variable by reference is lost and the case of passing a variable of type \bscode{atomic} $T$ into a parameter of type $T$ is still unsolved.
 
-Disallowing \bscode{ref/out} the cases where both a \bscode{atomic} and non \bscode{atomic} variable/parameter is involved removes the cases where the desired timing can not be provided. However it will, for example, non longer be possible to pass a atomic integer into a \bsref{out} integer parameter such as that of \bscode{Int32.TryParse}. As a result the programmer is more restricted when using \bscode{atomic} variables.
+Disallowing \bscode{ref/out} the cases where both an \bscode{atomic} and non \bscode{atomic} variable/parameter is involved removes the cases where the desired timing can not be provided. However it will, for example, non longer be possible to pass a atomic integer into a \bscode{out} integer parameter such as that of \bscode{Int32.TryParse}. As a result the programmer is more restricted when using \bscode{atomic} variables.
 
-For the initial prototype presented in this chapter the first option of warning the programmer of the change in semantics has been selected. This ensures that the change in semantics is not hidden from the programmer thereby allowing her to adapt the program. The impact of the feature will be closely observed throughout the evaluation with the aim of determining the final form of the feature, or even if the feature should be part of the language at all.
+For the initial prototype presented in this chapter the first option of warning the programmer of the change in semantics has been selected. This ensures that the change in semantics is not hidden from the programmer thereby allowing her to adapt the program. The impact of the feature will be closely observed throughout the evaluation with the aim of determining the final form of the feature, or even if the feature should be part of the language at all.\andreas{We MUST follow up on this in the evaluation}
+
+\toby[i]{Fejl med variable \bscode{i} ikke er initialiseret, hvis man prøver at returnere \bscode{i}, hvor \bscode{i} bliver assigned i en indre nested atomic.}
 
 \worksheetend

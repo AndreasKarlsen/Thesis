@@ -21,6 +21,7 @@ The \bscode{retry} construct described in \bsref{sec:req_conditional} requires k
 
 \subsection{Library Implementation}
 As described in \bsref{}\kasper{HUSK REFERENCE!} the \ac{STM} system of \stmnamesp must be implemented as a .NET library. The strategy employed must not entail details which require changes to the runtime system as seen by a number of \ac{STM} implementations\cite{mohamedin2013bytestm}\cite{harris2003language}. Furthermore we aim at providing a library with an \ac{API} that facilitates use from both compiler generated code and regular C\# programs.\andreas{Forklar hvorfor, eller skriv udvid problem formulering}
+\andreas[inline]{Overvej at flytte dette til et andet kapitel}
 
 \subsection{Progress Guarantee}
 \ac{STM} algorithms can coarsely be divided into blocking and non-blocking algorithms\cite[p. 47]{harris2010transactional}. Blocking algorithms employ some form of locking in order to ensure atomicity, while non-blocking do not\cite[p. 59]{herlihy2012art}. Non-blocking algorithms guarantee that the failure of one thread does not keep other threads from making progress\cite[p. 47]{harris2010transactional}\cite[p. 142]{herlihy1991wait}\cite[p. 59]{herlihy2012art}. This  makes it impossible to employ locking, as the failure of some thread $T$, which is holding a lock, will keep other threads from acquiring the lock, and thereby from progressing. Non-blocking algorithms can further be distinguished by the progress guarantees they provide. 
