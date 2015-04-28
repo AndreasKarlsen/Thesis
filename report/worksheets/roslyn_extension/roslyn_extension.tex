@@ -626,16 +626,16 @@ As described in \bsref{subsec:stm_desgin_value_parameters} \stmnamesp support va
 \end{lstlisting}
 
 \subsubsection{Ref/Out Arguments}
-Supporting \bscode{atomic} \bscode{ref} and \bscode{out} parameters, as described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters}, presents a problem due to the type mismatch as a result of transforming the parameters. \bscode{ref} and \bscode{out} parameters require the argument to be a assignable variable of the same type as the parameter. As the type of the parameter is transformed, a variable of type $T$ can not be passed directly as \bscode{ref} or \bscode{out} to a \bscode{atomic} parameter of type $T$.
+Supporting \bscode{atomic} \bscode{ref} and \bscode{out} parameters, as described in \bsref{subsubsec:trans_ref_out_args}, presents a problem due to the type mismatch as a result of transforming the parameters. \bscode{ref} and \bscode{out} parameters require the argument to be an assignable variable of the same type as the parameter. As the type of the parameter is transformed, a variable of type $T$ can not be passed directly as \bscode{ref} or \bscode{out} to a \bscode{atomic} parameter of type $T$.
 
-Four different cases exist for passing \bscode{ref} and \bscode{out} parameters. There are: 
+Four different cases exist for passing \bscode{ref} and \bscode{out} parameters. These are:
 \begin{enumerate}
-	\item $T \quad -> \quad \bscode{atomic} \quad T$
-	\item $\bscode{atomic} \quad T \quad -> \quad T$
-	\item $\bscode{atomic} \quad T \quad->\quad \bscode{atomic} \quad T$
-	\item $T \quad->\quad T$
+	\item $T$ $\quad \rightarrow \quad$ \bscode{atomic} $T$
+	\item \bscode{atomic} $T$ $\quad \rightarrow\quad$ $T$
+	\item \bscode{atomic} $T$ $\quad \rightarrow\quad$ \bscode{atomic} $T$
+	\item $T$ $\quad \rightarrow \quad$ $T$
 \end{enumerate} 
-where $T$ is some arbitrary type, $\text{ } \bscode{atomic} \quad  T$ is $T$'s corresponding \ac{STM} type and $\text{ } \bscode{atomic} \quad T \quad -> \quad T$ describes passing an argument of type $T$ into a parameter of the \ac{STM} type corresponding to $T$. The third and fourth cases are handle by the C\# compiler so transformation must only be applied in cases one and two.
+where $T$ is some arbitrary type, $\text{ } \bscode{atomic} \quad  T$ is $T$'s corresponding \ac{STM} type and $\text{ } \bscode{atomic} \quad T \quad \rightarrow \quad T$ describes passing an argument of type $T$ into a parameter of the \ac{STM} type corresponding to $T$. The third and fourth cases are handle by the C\# compiler so transformation must only be applied in cases one and two.
 For each argument node in the syntax tree the transformation goes trough the following steps:
 \begin{enumerate}
 	\item Determine whether the argument represents one of the two previously described case. If not, no transformation is applied
@@ -644,7 +644,7 @@ For each argument node in the syntax tree the transformation goes trough the fol
 	\item Construct a assignment syntax node assigning the value of the intermediate local variable to the original argument and insert it just after the method call
 \end{enumerate}
 
-\bsref{lst:before_atomic_ref} shows a example containing method three method calls each of which which fall in one of the categories which require transformation. Applying the transformation to the example presented in \bsref{lst:after_atomic_ref} produces a syntax tree representing the code shown in \bsref{lst:after_atomic_ref}. Line \ref{line:aref1} of \bsref{lst:before_atomic_ref} is transformed to lines \ref{line:aref1_after_1} to \ref{line:aref1_after_3} of \bsref{lst:after_atomic_ref}. As the parameter is \bscode{atomic} the local variable inserted on line \ref{line:aref1_after_1} is of the parameters corresponding \ac{STM} type. The argument to the method call has been replaced as seen on line \ref{line:aref1_after_2}. The assignment on line \ref{line:aref1_after_3} transfers the value back to the original argument. Line \ref{line:aref2} of \bsref{lst:before_atomic_ref} is not transformed as it represents the case \bscode{atomic} $T$ $\quad->\quad$ \bscode{atomic} $T$. Line \ref{line:aref3} of \bsref{lst:before_atomic_ref} is transformed much like \ref{line:aref1}, except the generated local field is of type \bscode{int} instead of a \ac{STM} type, as the parameter is not declared \bscode{atomic}. C\# requires the argument for a \bscode{ref} or \bscode{out} parameter to be a variable. For the case $T$ $\quad->\quad$ \bscode{atomic} $T$ and \bscode{atomic} $T$ $\quad->\quad$ $T$, analysis has been implemented to generate an compile time error if the original argument does not correspond to a variable, as this would otherwise always be the case.
+\bsref{lst:before_atomic_ref} shows an example containing method three method calls each of which which fall in one of the categories which require transformation. Applying the transformation to the example presented in \bsref{lst:after_atomic_ref} produces a syntax tree representing the code shown in \bsref{lst:after_atomic_ref}. Line \ref{line:aref1} of \bsref{lst:before_atomic_ref} is transformed to lines \ref{line:aref1_after_1} to \ref{line:aref1_after_3} of \bsref{lst:after_atomic_ref}. As the parameter is \bscode{atomic} the local variable inserted on line \ref{line:aref1_after_1} is of the parameters corresponding \ac{STM} type. The argument to the method call has been replaced as seen on line \ref{line:aref1_after_2}. The assignment on line \ref{line:aref1_after_3} transfers the value back to the original argument. Line \ref{line:aref2} of \bsref{lst:before_atomic_ref} is not transformed as it represents the case \bscode{atomic} $T$ $\quad \rightarrow \quad$ \bscode{atomic} $T$. Line \ref{line:aref3} of \bsref{lst:before_atomic_ref} is transformed much like \ref{line:aref1}, except the generated local field is of type \bscode{int} instead of a \ac{STM} type, as the parameter is not declared \bscode{atomic}. C\# requires the argument for a \bscode{ref} or \bscode{out} parameter to be a variable. For the case $T$ $\quad \rightarrow \quad$ \bscode{atomic} $T$ and \bscode{atomic} $T$ $\quad \rightarrow \quad$ $T$, analysis has been implemented to generate an compile time error if the original argument does not correspond to a variable, as this would otherwise always be the case.
 
 %In order simplify the language and maintain the same semantics whenever a atomic parameter or variable is passed as an argument or 
 
