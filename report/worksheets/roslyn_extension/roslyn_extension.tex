@@ -736,62 +736,47 @@ In \bsref{sec:sync_design} the design of conditional synchronization through the
 \section{Testing}
 Unit testing is employed to ensure the Roslyn extension fulfills the design decisions of \stmnamesp and the integration with existing language features described in \bsref{chap:stm_design}. Each \ac{STM} construct and each integration with an existing language feature is covered by at least a single unit test. Furthermore, integration with disallowed existing language features is tested, f.x. there is a unit test that ensures an error is produced if the programmer tries to declare a method with an atomic optional parameter. This results in a rather extensive test suite, which is valuable in relation to the correctness of all \ac{STM} constructs and integration with language features. Furthermore it is especially valuable in relation to maintenance and further development of the Roslyn extension, f.x. it allows for big code changes, as the test suite can be run afterwards to ensure the extension still works correctly. Additionally, Roslyn is still under heavy development, which means radical changes may happen. The test suite can beneficial to test if the extension still works, if new changes are made to Roslyn.
 
-%maintenance espceially valuable
-%allow to make big changes to code, without you have to worry if you maybe broke somehting
+In \bsref{lst:empty_atomic_block} is shown an example of a unit test for an empty atomic block. On line \ref{line:ab_finalstr} the string that is to be compiled is generated using the bscode{MakeSkeletonWithMain} method, which generates a test namespace, class and main method, with the supplied string arguments \bscode{strInClass} and \bscode{strInMain} included. Afterwards the string is written to a test file, which is used as argument in the method on line \ref{line:ab_runcsc}, which executes \bscode{csc.exe} (C\# command line compiler) and returns a \bscode{CmdRes} object that contains the command line output. On line \ref{line:ab_assertcsc} it is checked that the command line output does not contains any warning, error or invalid exitcode. For unit tests that check error generations, f.x. an illegal existing language featured is used with an \ac{STM} construct, this step is not present, instead \bscode{CmdRed} can be checked if it contains the expected error or warning. On line \ref{line:ab_expecstr} the expected result of compilation string is generated and on line \ref{line:ab_compiledstr} the actual compilation string is fetched. In order to retrieve the actual compilation string, csc.exe is extended with an additional argument called \bscode{stmiout}, which writes the source code after \ac{STM} transformation to the specified path. This argument was used in the method on line \ref{line:ab_runcsc}. Finally on line \ref{line:ab_asserteq} the expected string and the actually compiled string is checked for equality, if equal the test passes and otherwise it fails. Before checking for equality, the \bscode{AssertEqualStings} method removes unimportant parts of the string, such as whitespace, newlines, tabs and carriage returns.
 
-%ensure
+\begin{lstlisting}[label=lst:empty_atomic_block,
+  caption={Empty Atomic Block Unit Test},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, Test}]  % Start your code-block
+  [Test]
+  public void AtomicBlockEmpty()
+  {
+  		string finalStr = MakeSkeletonWithMain(~\label{line:ab_finalstr}~
+  			strInClass: "",
+  			strInMain: "atomic{\n\t\t\t"+ 
+  				"}");
+  		StringToTestFile(finalStr);~\label{line:ab_strtofile}~
+  		CmdRes res = RunCscWithOutAndStmIOut();~\label{line:ab_runcsc}~
+  		AssertCmdRes(res);~\label{line:ab_assertcsc}~
+  		
+  		string expecStr = MakeSkeletonWithMain(~\label{line:ab_expecstr}~
+  			strInClass: "",
+  			strInMain: STM.STMNameSpace + ".STMSystem.Atomic(" +
+  				"() =>" +
+  				"{" +
+  				"});");
+			string compiledStr =~\label{line:ab_compiledstr}~ TestFileToString(currentCompiledCsFile);
+			AssertEqualStrings(expecStr, compiledStr);~\label{line:ab_asserteq}~
+  }
+\end{lstlisting}
 
-%also in relation to maintaining the STM inte
-%also when new stm constructs or langague features are added.
-%especailly important for Roslyn, as it is an early project, which has frequent changes, and therefore important to see if the extension still works correctly.
-
-
-%test setup (eller beskriv en case)
-
-%
-
-%extensive test suite
-
-
+\toby[i]{Hvad med errors? Errorcode og stm diagnostics bag?}
 %ERRORS: (hvordan smides de) - er det her det skal besrkives?
 	%STM diagnostic for semantic errors
 	%errors i paraser, kan bruge ErrorCode Enum osv.
-
-%some more than one
-
-%Every STM construct is tested and all the stm construct integrations with exsisting langague features is tested.
-
-%test suite of 29 tests. 
-
-%The tests further help.
-
-
-%fordele
-
-%procedure
-
-%also in relation to maintenance and further integration
-
-To ensure the roslyn extension works correctly, unit testing is employed.
-
-%Hvordan det er gjort?
-	%lav en en initial fil og kør med csc, hvorefter output tjekkes for errors, warnings eller exception (og exit code), hvor til sidst der tjekkes at den compilede fil stemmerovens med en fil man selv har lavet , det beskriver hvordan det compilede resultat skal se ud.
-
-%the different scenarios
-	% integration between exisisting langague features, discovered in section bla bla (stm design, tror jeg)
-
-
-Unit tests hav
-
-The roslyn 
-%
-
-%ensure that the stm integration with C# is correct and that it continues to do so when adding additonal features (i forhold til at integere med andre constructs/features eksisterence i sproget allerede).
-	%also in relation to when new things are added to roslyn, then being able to pull from the git repository and ensure the stm integration remains working correctly.
-
-%extensive tests suite
-
-%adding a new feature or integration with another feature will not have unwanted consequnces on already implemented stm features
 
 \section{Design \& Integration revisited}
 This section describes areas in which the initial prototype implementation described in this chapter, conflicts with the intended design and language integration described in \bsref{chap:stm_design}.
