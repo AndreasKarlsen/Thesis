@@ -17,7 +17,6 @@ namespace Evaluation.Language
         {
             var rBuffer = new Queue<Reindeer>();
             var eBuffer = new Queue<Elf>();
-            
             var santa = new Santa(rBuffer, eBuffer);
             santa.Start();
 
@@ -209,32 +208,8 @@ namespace Evaluation.Language
             _rBuffer = rBuffer;
             _eBuffer = eBuffer;
         }
-
-        private WakeState SleepUntilAwoken()
-        {
-            atomic
-            {
-                if (_rBuffer.Count != SantaClausProblem.NR_REINDEER)
-                {
-                    retry;
-                }
-
-                return WakeState.ReindeerBack;
-            }
-            orelse
-            {
-                
-                if (_eBuffer.Count != SantaClausProblem.MAX_ELFS)
-                {
-                    retry;
-                }
-
-                return WakeState.ElfsIncompetent;
-            }
-        }
-
-
-        public Task Start()
+		
+		public Task Start()
         {
             return Task.Run(() =>
             {
@@ -253,6 +228,28 @@ namespace Evaluation.Language
                     }
                 }
             });
+        }
+
+        private WakeState SleepUntilAwoken()
+        {
+            atomic
+            {
+                if (_rBuffer.Count != SantaClausProblem.NR_REINDEER)
+                {
+                    retry;
+                }
+
+                return WakeState.ReindeerBack;
+            }
+            orelse
+            {
+                if (_eBuffer.Count != SantaClausProblem.MAX_ELFS)
+                {
+                    retry;
+                }
+
+                return WakeState.ElfsIncompetent;
+            }
         }
 
         private void HandleReindeer()

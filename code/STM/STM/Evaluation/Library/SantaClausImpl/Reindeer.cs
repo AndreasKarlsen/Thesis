@@ -50,7 +50,6 @@ namespace Evaluation.Library.SantaClausImpl
                         }
                     });
 
-
                     //Wait for santa to be ready
                     STMSystem.Atomic(() =>
                     {
