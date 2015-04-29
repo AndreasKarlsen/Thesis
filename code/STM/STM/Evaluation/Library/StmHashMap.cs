@@ -20,10 +20,10 @@ namespace Evaluation.Library
             
         }
 
-        public StmHashMap(int nrNuckets)
+        public StmHashMap(int nrBuckets)
         {
-            _buckets.Value = MakeBuckets(nrNuckets);
-            _threshold.Value = CalulateThreshold(nrNuckets);
+            _buckets.Value = MakeBuckets(nrBuckets);
+            _threshold.Value = CalculateThreshold(nrBuckets);
         }
 
         /// <summary>
@@ -108,7 +108,7 @@ namespace Evaluation.Library
                 }
                 else
                 {
-                    //Else inser the node
+                    //Else insert the node
                     bucketVar.Value = bucketVar.Value.Add(CreateNode(key, value));
                     _size++;
                     ResizeIfNeeded();
@@ -163,8 +163,8 @@ namespace Evaluation.Library
                 }
             }
 
-            //Calculate new resize threashold and assign the rehashed backing array
-            _threshold.Value = CalulateThreshold(newBucketSize);
+            //Calculate new resize threshold and assign the rehashed backing array
+            _threshold.Value = CalculateThreshold(newBucketSize);
             _buckets.Value = newBuckets;
         }
 

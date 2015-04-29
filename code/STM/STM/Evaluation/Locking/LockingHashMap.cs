@@ -41,7 +41,7 @@ namespace Evaluation.Locking
             }
             _buckets = MakeBuckets(size);
             _locks = MakeLocks(nrLocks);
-            _threshold = CalulateThreshold(size);
+            _threshold = CalculateThreshold(size);
         }
 
 
@@ -96,7 +96,7 @@ namespace Evaluation.Locking
 
         private Node FindNode(IEnumerable<Node> bucket, K key)
         {
-            return bucket.FirstOrDefault(n => n.Key.Equals(key)); ;
+            return bucket.FirstOrDefault(n => n.Key.Equals(key));
         }
 
         private void LockAll()
@@ -266,7 +266,7 @@ namespace Evaluation.Locking
                             }
 
                             //Calculate new resize threashold and assign the rehashed backing array
-                            _threshold = CalulateThreshold(newBucketSize);
+                            _threshold = CalculateThreshold(newBucketSize);
                             _buckets = newBuckets;
                         }
                         finally
