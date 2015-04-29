@@ -182,7 +182,7 @@ namespace LanguagedBasedHashMap
 
         private IEnumerator<KeyValuePair<K, V>> BuildEnumerator()
         {
-            var backingArray = _buckets;
+            Bucket[] backingArray = _buckets;
             Thread.MemoryBarrier();
             //Thread.MemoryBarrier();  Forces the compiler to not move the local variable into the loop header
             //This is important as the iterator will otherwise start iterating over a resized backing array 
@@ -235,7 +235,7 @@ namespace LanguagedBasedHashMap
             public atomic ImmutableList<Node> Value { get; set; }
             public Bucket()
             {
-                Value = ImmutableList<Node>.Create();
+                Value = ImmutableList.Create<Node>();
             }
         }
 
