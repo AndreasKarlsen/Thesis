@@ -72,6 +72,15 @@ namespace Evaluation.Library.SantaClausImpl
         {
             Console.WriteLine("All reindeer are back!");
 
+            //Call reindeer from the warming hut
+            STMSystem.Atomic(() =>
+            {
+                foreach (var reindeer in _rBuffer)
+                {
+                    reindeer.CallToSleigh();
+                }
+            });
+
             //Setup the sleigh
             STMSystem.Atomic(() =>
             {
