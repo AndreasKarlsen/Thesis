@@ -51,7 +51,6 @@ namespace Evaluation.Library
                     Thread.Sleep(100);
                     Console.WriteLine("Eat count: " + ++eatCounter);
 
-
                     STMSystem.Atomic(() =>
                     {
                         left.Value = true;
