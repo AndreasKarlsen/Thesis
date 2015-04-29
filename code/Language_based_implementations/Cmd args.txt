@@ -1,0 +1,1 @@
+C:\Users\Andreas\Documents\Code\Thesis\code\Language_based_implementations> C:\Users\Andreas\Documents\Code\roslyn-fork\Binaries\Debug\csc.exe /r:Evaluation.exe /r:ReadOnlyCollectionsInterfaces.dll /r:Spring.Threading.dll /r:STM.dll /r:System.Collections.Immutable.Net40.dll /lib:. /out:LanguageHashmap.exe .\ConcurrentHashMap.cs

@@ -1,52 +1,46 @@
-﻿using System;
-using System.Collections.Generic;
-using Evaluation.Common;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using STM.Implementation.Lockbased;
 using System.Collections.Immutable;
+using System.Collections.Generic;
+using Evaluation.Common;
 
-namespace Evaluation.Library
+
+namespace LanguagedBasedHashMap
 {
-    public class StmHashMapRetry<K,V> : BaseHashMap<K,V>
+    public class StmHashMap<K,V> : BaseHashMap<K,V>
     {
-        //TMVar to (array of TMVars to (ImmutableList of nodes) )
-        private readonly TMVar<TMVar<ImmutableList<Node>>[]> _buckets = new TMVar<TMVar<ImmutableList<Node>>[]>(); 
-        private readonly TMInt _threshold = new TMInt();
-        private TMInt _size = new TMInt();
-        private readonly TMVar<bool> _resizing = new TMVar<bool>(); 
+        private atomic Bucket[] _buckets;
+        private atomic int _threshold;
+        private atomic int _size;
 
-        public StmHashMapRetry() : this(DefaultNrBuckets)
+        public StmHashMap() : this(DefaultNrBuckets)
         {
-            
+
         }
 
-        public StmHashMapRetry(int nrNuckets)
+        public StmHashMap(int nrBuckets)
         {
-            _buckets.Value = MakeBuckets(nrNuckets);
-            _threshold.Value = CalculateThreshold(nrNuckets);
+            _buckets = MakeBuckets(nrBuckets);
+            _threshold = CalculateThreshold(nrBuckets);
         }
 
-        /// <summary>
-        /// Creates and initializes the backing array
-        /// </summary>
-        /// <param name="nrBuckets"></param>
-        /// <returns></returns>
-        private TMVar<ImmutableList<Node>>[] MakeBuckets(int nrBuckets)
+        private Bucket[] MakeBuckets(int nrBuckets)
         {
-            var temp = new TMVar<ImmutableList<Node>>[nrBuckets];
-            for (var i = 0; i < nrBuckets; i++)
+            var temp = new Bucket[nrBuckets]();
+            for (int i = 0; i < nrBuckets; i++)
             {
-                temp[i] = new TMVar<ImmutableList<Node>>(ImmutableList.Create<Node>()); 
+                temp[i] = new Bucket();
             }
-
             return temp;
         }
-
 
         #region Utility
 
         private Node CreateNode(K key, V value)
         {
-            return new Node(key,value);
+            return new Node(key, value);
         }
 
         private int GetBucketIndex(K key)
@@ -78,72 +72,49 @@ namespace Evaluation.Library
 
         public override V Get(K key)
         {
-            return STMSystem.Atomic(() =>
+            atomic
             {
-                if (_resizing)
-                {
-                    STMSystem.Retry();
-                }
-
                 var node = FindNode(key);
-                if (node == null)
+                if(node == null)
                 {
                     //If node == null key is not present in dictionary
                     throw new KeyNotFoundException("Key not found. Key: " + key);
                 }
-
-                return node.Value.Value;
-            });
+                return node.Value;
+            }
         }
 
         public override void Add(K key, V value)
         {
-            STMSystem.Atomic(() =>
+            atomic
             {
-                if (_resizing)
-                {
-                    STMSystem.Retry();
-                }
-
                 var bucketIndex = GetBucketIndex(key);
                 //TMVar wrapping the immutable chain list
-                var bucketVar = _buckets.Value[bucketIndex];
+                var bucketVar = _buckets[bucketIndex];
                 var node = FindNode(key, bucketVar.Value);
-                
+
                 if (node != null)
                 {
                     //If node is not null key exist in map. Update the value
-                    node.Value.Value = value;
+                    node.Value = value;
                 }
                 else
                 {
-                    //Else inser the node
+                    //Else insert the node
                     bucketVar.Value = bucketVar.Value.Add(CreateNode(key, value));
                     _size++;
                     ResizeIfNeeded();
                 }
-            });
-
-            var resize = STMSystem.Atomic(() => ResizeIfNeeded());
-            if (resize)
-            {
-                STMSystem.Atomic(Resize);
             }
-            
         }
 
         public override bool AddIfAbsent(K key, V value)
         {
-            var result = STMSystem.Atomic(() =>
+            atomic
             {
-                if (_resizing)
-                {
-                    STMSystem.Retry();
-                }
-
                 var bucketIndex = GetBucketIndex(key);
                 //TMVar wrapping the immutable chain list
-                var bucketVar = _buckets.Value[bucketIndex];
+                var bucketVar = _buckets[bucketIndex];
                 var node = FindNode(key, bucketVar.Value);
 
                 if (node == null)
@@ -156,29 +127,14 @@ namespace Evaluation.Library
                 }
 
                 return false;
-            });
-
-            if (result)
-            {
-                var resize = STMSystem.Atomic(() => ResizeIfNeeded());
-                if (resize)
-                {
-                    STMSystem.Atomic(Resize);
-                }
             }
-
-            return result;
         }
-
-        private bool ResizeIfNeeded()
+        private void ResizeIfNeeded()
         {
-            if (_size.Value >= _threshold.Value)
+            if (_size >= _threshold)
             {
-                _resizing.Value = true;
-                return true;
+                Resize();
             }
-
-            return false;
         }
 
         private void Resize()
@@ -190,32 +146,26 @@ namespace Evaluation.Library
             //For each key in the map rehash
             for (var i = 0; i < _buckets.Value.Length; i++)
             {
-                var bucket = _buckets.Value[i];
+                var bucket = _buckets[i];
                 foreach (var node in bucket.Value)
                 {
                     var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
-                    newBuckets[bucketIndex].Value = newBuckets[bucketIndex].Value.Add(node);
+                    newBuckets[bucketIndex].Value = newBuckets[bucketIndex].Add(node);
                 }
             }
 
-            //Calculate new resize threashold and assign the rehashed backing array
+            //Calculate new resize threshold and assign the rehashed backing array
             _threshold.Value = CalculateThreshold(newBucketSize);
             _buckets.Value = newBuckets;
-            _resizing.Value = false;
         }
 
         public override bool Remove(K key)
         {
-            return STMSystem.Atomic(() =>
+            atomic
             {
-                if (_resizing)
-                {
-                    STMSystem.Retry();
-                }
-
                 var bucketIndex = GetBucketIndex(key);
                 //TMVar wrapping the immutable chain list
-                var bucketVar = _buckets.Value[bucketIndex];
+                var bucketVar = _buckets[bucketIndex];
                 var node = FindNode(key, bucketVar.Value);
 
                 if (node != null)
@@ -227,23 +177,19 @@ namespace Evaluation.Library
                 }
 
                 return false;
-            });
-        }
-
-        public override V this[K key]
-        {
-            get { return Get(key); }
-            set { Add(key, value); }
-        }
-
-        public override int Count
-        {
-            get { return _size.Value; }
+            }
         }
 
         private IEnumerator<KeyValuePair<K, V>> BuildEnumerator()
         {
-            var backingArray = _buckets.Value;
+            var backingArray = _buckets;
+            Thread.MemoryBarrier();
+            //Thread.MemoryBarrier();  Forces the compiler to not move the local variable into the loop header
+            //This is important as the iterator will otherwise start iterating over a resized backing array 
+            // if a resize happes during iteration.
+            //Result if allowed could be the same key value pair being iterated over more than once or not at all
+            //This way the iterator only iterates over one backing array if a resize occurs those changes are not taken into account
+            //Additions or removals are still possible during iteration => same guarantee as System.Collections.Concurrent.ConcurrentDictionary
             for (var i = 0; i < backingArray.Length; i++)
             {
                 var bucket = backingArray[i];
@@ -256,19 +202,53 @@ namespace Evaluation.Library
 
         public override IEnumerator<KeyValuePair<K, V>> GetEnumerator()
         {
-            return STMSystem.Atomic(() => BuildEnumerator());
+            atomic
+            {
+                var list = new List<KeyValuePair<K, V>>(_size);
+                for (var i = 0; i < _buckets.Length; i++)
+                {
+                    var bucket = _buckets[i];
+                    foreach (var node in bucket.Value)
+                    {
+                        list.Add(new KeyValuePair<K, V>(node.Key, node.Value));
+                    }
+                }
+                return list.GetEnumerator();
+            }
+        }
+
+
+        public override V this[K key]
+        {
+            get { return Get(key); }
+            set { Add(key, value); }
+        }
+
+        public override int Count
+        {
+            get { return _size; }
+        }
+
+        private class Bucket
+        {
+            public atomic ImmutableList<Node> Value { get; set; }
+            public Bucket()
+            {
+                Value = ImmutableList<Node>.Create();
+            }
         }
 
         private class Node
         {
             public K Key { get; private set; }
-            public TMVar<V> Value { get; private set; }
+            public atomic V Value { get; private set; }
 
             public Node(K key, V value)
             {
                 Key = key;
-                Value = new TMVar<V>(value);
+                Value = value;
             }
         }
     }
+
 }

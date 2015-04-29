@@ -22,12 +22,12 @@ namespace Evaluation.Library
                 var reindeer = new Reindeer(i, rBuffer);
                 reindeer.Start();
             }
-            /*
+            
             for (int i = 0; i < SCStats.NR_ELFS; i++)
             {
                 var elf = new Elf(i, eBuffer);
                 elf.Start();
-            }*/
+            }
         }
     }
 }
