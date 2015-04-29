@@ -20,9 +20,9 @@ namespace Evaluation.Common
         public abstract V this[K key] { get; set; }
         public virtual int Count {  get; protected set; }
 
-        protected int CalulateThreshold(int nrNuckets)
+        protected int CalculateThreshold(int nrBuckets)
         {
-            return (int)(nrNuckets * LoadFactor);
+            return (int)(nrBuckets * LoadFactor);
         }
 
         protected int GetHashCode(K key)

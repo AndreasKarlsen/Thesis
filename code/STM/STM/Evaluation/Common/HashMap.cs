@@ -20,10 +20,10 @@ namespace Evaluation.Common
             
         }
 
-        public HashMap(int nrNuckets)
+        public HashMap(int nrBuckets)
         {
-            _buckets = MakeBuckets(nrNuckets);
-            _threshold = CalulateThreshold(nrNuckets);
+            _buckets = MakeBuckets(nrBuckets);
+            _threshold = CalculateThreshold(nrBuckets);
         }
 
     #region Utility
@@ -177,7 +177,7 @@ namespace Evaluation.Common
         {
             if (Count >= _threshold)
             {
-                //Resize();
+                Resize();
             }
         }
 
@@ -197,7 +197,7 @@ namespace Evaluation.Common
                 }
             }
 
-            _threshold = CalulateThreshold(newBucketSize);
+            _threshold = CalculateThreshold(newBucketSize);
             _buckets = newBuckets;
         }
 
