@@ -531,6 +531,9 @@ As described in \bsref{sec:stm_req_opacity} providing opacity requires ensuring 
 \end{lstlisting}
 
 \section{Testing}
+In order to ensure that the \ac{STM} library executes transactions in accordance to the requirements defined in \bsref{sec:stm_requirements}, a number of unit tests have been created. The defined tests cover areas such as the execution of transactions, nesting, retry, orelse, strong atomicity and exceptions in transactions. Besides these tests a number of tests based on a transactional queue and hashmap implemented has been created. Where the first set of test cover smaller parts of the \ac{STM} library the second set of tests cover the \ac{STM} library as a whole, ensuring that the library can be utilized for real world scenarios.
+
+ 
 
 %\kasper[inline]{obstruction freedom useful in practice}
 %\kasper[inline]{pending commit, permissiveness}

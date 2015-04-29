@@ -1,6 +1,6 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Evaluation}{1}{Marts 2, 2015}{Andreas}{../../}
-This chapter evaluates \stmnamesp, its associated \ac{STM} library and locking in C\# according to the characteristics defined in \cite[p. 15-21]{dpt907e14trending}. The evaluation will facilitate a conclusion on whether or not language integrated \ac{STM} is a valid alternative to locking as well as discerning whether language integration of \ac{STM} provides any advantages over library based \ac{STM} in terms of usability.
+This chapter evaluates \stmname, its associated \ac{STM} library and locking in C\# according to the characteristics defined in \cite[p. 15-21]{dpt907e14trending}. The evaluation will facilitate a conclusion on whether or not language integrated \ac{STM} is a valid alternative to locking as well as discerning whether language integration of \ac{STM} provides any advantages over library based \ac{STM} in terms of usability.
 \label{chap:evaluation}
 \section{Selected Problems}
 As described in \bsref{sec:problem_statement} the evaluation will be conducted by comparing the characteristics of each approach based on a number of concurrent implementations. For this purpose these concurrent problems have been selected:
@@ -9,7 +9,7 @@ As described in \bsref{sec:problem_statement} the evaluation will be conducted b
 \item The santa clause problem\cite{trono1994new}
 \item A concurrent hashmap implementation\cite[p. 253]{cormen2009introduction}
 \end{enumerate}
-The dinning philosophers problem represents a well known concurrency problem which highlights some of the pitfalls associated with locking. The santa clause problem encompasses a high degree of modeling as well as requiring complex synchronization. As such, employing this problem helps investigate whether \ac{STM} provides any advantages over locking in such scenarios. Finally a concurrent hashmap implementation represents a real world problem, which benefits from fine grained synchronization and is used in many concurrent implementations. Together these problems provide a varied perspective by exerting different aspects of each approach such as: waiting on one of multiple conditions and fine grained synchronization.
+The dinning philosophers problem represents a well known concurrency problem which highlights some of the pitfalls associated with locking. The Santa Claus problem encompasses a high degree of modeling as well as requiring complex synchronization. As such, employing this problem helps investigate whether \ac{STM} provides any advantages over locking in such scenarios. Finally a concurrent hashmap implementation represents a real world problem, which benefits from fine grained synchronization and is used in many concurrent implementations. Together these problems provide a varied perspective by exerting different aspects of each approach such as: waiting on one of multiple conditions and fine grained synchronization.
 
 \section{Evaluation Approach}
 For each of the selected problem a implementation will be created using, locking, library based \ac{STM} and language based \ac{STM}. Based on these implementations each concurrency approach will be evaluated according to the characteristic defined in our previous work 

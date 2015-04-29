@@ -117,7 +117,8 @@ namespace Evaluation.Language
 
         private Queue<Reindeer> reindeerBuffer;
         private atomic bool _workingForSanta = false;
-        private atomic bool _waitingOnSanta = false;
+        private atomic bool _waitingAtSleigh = false;
+		private atomic bool _waitingInHut = false;
 
         public Reindeer(int id, Queue<Reindeer> buffer)
         {
@@ -136,15 +137,24 @@ namespace Evaluation.Language
                     atomic
                     {
                         reindeerBuffer.Enqueue(this);
-                        _waitingOnSanta = true;
+                        _waitingInHut = true;
                     }
 
                     Console.WriteLine("Reindeer {0} is back",ID);
 
+					//Waiting in the warming hut
+                    atomic
+                    {
+                        if (_waitingInHut)
+                        {
+                            retry;
+                        }
+                    }
+					
                     //Wait for santa to be ready
                     atomic
                     {
-                        if (_waitingOnSanta)
+                        if (_waitingAtSleigh)
                         {
                             retry;
                         }
@@ -164,11 +174,20 @@ namespace Evaluation.Language
             });
         }
 
+		public void CallToSleigh()
+        {
+            atomic
+            {
+                _waitingInHut = false;
+                _waitingAtSleigh = true;
+            }
+        }
+		
         public void HelpDeliverPresents()
         {
             atomic
             {
-                _waitingOnSanta = false;
+                _waitingAtSleigh = false;
                 _workingForSanta = true;
             }
            
@@ -240,6 +259,15 @@ namespace Evaluation.Language
         {
             Console.WriteLine("All reindeer are back!");
 
+			//Call reindeer from the warming hut
+            atomic
+            {
+                foreach (var reindeer in _rBuffer)
+                {
+                    reindeer.CallToSleigh();
+                }
+            }
+			
             //Setup the sleigh
             atomic
             {
