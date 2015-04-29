@@ -13,18 +13,20 @@ namespace Evaluation.Locking.SantaClausImpl
         private Queue<LockingReindeer> _rBuffer;
         private Queue<LockingElf> _eBuffer;
         private Semaphore _santaHandle;
-        private Semaphore _reindeerWaiting;
+        private Semaphore _sleigh;
+        private Semaphore _warmingHut;
         private Semaphore _reindeerDone;
         private Semaphore _elfsWaiting;
         private Semaphore _elfsDone;
 
         public LockingSanta(Queue<LockingReindeer> rBuffer, Queue<LockingElf> eBuffer, Semaphore santaHandle, 
-            Semaphore reindeerWaiting, Semaphore reindeerDone, Semaphore elfsWaiting, Semaphore elfsDone)
+            Semaphore sleigh, Semaphore warmingHut, Semaphore reindeerDone, Semaphore elfsWaiting, Semaphore elfsDone)
         {
             _rBuffer = rBuffer;
             _eBuffer = eBuffer;
             _santaHandle = santaHandle;
-            _reindeerWaiting = reindeerWaiting;
+            _sleigh = sleigh;
+            _warmingHut = warmingHut;
             _reindeerDone = reindeerDone;
             _elfsWaiting = elfsWaiting;
             _elfsDone = elfsDone;
@@ -54,8 +56,11 @@ namespace Evaluation.Locking.SantaClausImpl
                         case WakeState.ReindeerBack:
                             Console.WriteLine("All reindeer are back!");
 
+                            //Release reindeers from warming hut
+                            _warmingHut.Release(SCStats.NR_REINDEER);
+
                             //Setup the sleigh
-                            _reindeerWaiting.Release(SCStats.NR_REINDEER);
+                            _sleigh.Release(SCStats.NR_REINDEER);
 
                             //Deliver presents
                             Console.WriteLine("Santa delivering presents");
@@ -64,7 +69,6 @@ namespace Evaluation.Locking.SantaClausImpl
                             //Release reindeer
                             _rBuffer.Clear();
                             _reindeerDone.Release(SCStats.NR_REINDEER);
-
                             Console.WriteLine("Reindeer released");
                             break;
                         case WakeState.ElfsIncompetent:

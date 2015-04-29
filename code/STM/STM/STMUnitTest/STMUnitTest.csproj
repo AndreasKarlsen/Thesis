@@ -63,6 +63,7 @@
     <Compile Include="LockTest.cs" />
     <Compile Include="OrElseTest.cs" />
     <Compile Include="HashMapTest.cs" />
+    <Compile Include="ExceptionTest.cs" />
     <Compile Include="VariousTest.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -16,14 +16,16 @@ namespace Evaluation.Locking.SantaClausImpl
         private Semaphore _santaHandle;
         private Semaphore _sleigh;
         private Semaphore _doneDelivering;
+        private Semaphore _warmingHut;
 
 
-        public LockingReindeer(int id, Queue<LockingReindeer> buffer, Semaphore santaHandle, Semaphore sleigh, Semaphore doneDelivering)
+        public LockingReindeer(int id, Queue<LockingReindeer> buffer, Semaphore santaHandle, Semaphore sleigh, Semaphore warmingHut, Semaphore doneDelivering)
         {
             ID = id;
             _reindeerBuffer = buffer;
             _santaHandle = santaHandle;
             _sleigh = sleigh;
+            _warmingHut = warmingHut;
             _doneDelivering = doneDelivering;
         }
         
@@ -33,7 +35,7 @@ namespace Evaluation.Locking.SantaClausImpl
             {
                 while (true)
                 {
-                    //Yey vaication
+                    //Tan on the beaches in the Pacific until Chistmas is close
                     Thread.Sleep(100 * _randomGen.Next(10));
 
                     lock (_reindeerBuffer)
@@ -47,6 +49,9 @@ namespace Evaluation.Locking.SantaClausImpl
 
                     //Console.WriteLine("Reindeer {0} is back",ID);
 
+                    //Block early arrivals
+                    _warmingHut.WaitOne();
+
                     //Wait for santa to be ready
                     _sleigh.WaitOne();
 
@@ -54,7 +59,7 @@ namespace Evaluation.Locking.SantaClausImpl
 
                     //Wait for delivery to be done
                     _doneDelivering.WaitOne();
-                    
+                    //Head back to Pacific islands
                 }
             });
         }

@@ -16,7 +16,8 @@ namespace Evaluation.Library.SantaClausImpl
 
         private readonly Queue<Reindeer> _reindeerBuffer;
         private readonly TMVar<bool> _workingForSanta = new TMVar<bool>(false);
-        private readonly TMVar<bool> _waitingOnSanta = new TMVar<bool>(false);
+        private readonly TMVar<bool> _waitingAtSleigh = new TMVar<bool>(false);
+        private readonly TMVar<bool> _waitingInHut = new TMVar<bool>(false);
 
         public Reindeer(int id, Queue<Reindeer> buffer)
         {
@@ -35,15 +36,25 @@ namespace Evaluation.Library.SantaClausImpl
                     STMSystem.Atomic(() =>
                     {
                         _reindeerBuffer.Enqueue(this);
-                        _waitingOnSanta.Value = true;
+                        _waitingInHut.Value = true;
                     });
 
                     Console.WriteLine("Reindeer {0} is back",ID);
 
+                    //Waiting in the warming hut
+                    STMSystem.Atomic(() =>
+                    {
+                        if (_waitingInHut)
+                        {
+                            STMSystem.Retry();
+                        }
+                    });
+
+
                     //Wait for santa to be ready
                     STMSystem.Atomic(() =>
                     {
-                        if (_waitingOnSanta)
+                        if (_waitingAtSleigh)
                         {
                             STMSystem.Retry();
                         }
@@ -63,11 +74,20 @@ namespace Evaluation.Library.SantaClausImpl
             });
         }
 
+        public void CallToSleigh()
+        {
+            STMSystem.Atomic(() =>
+            {
+                _waitingInHut.Value = false;
+                _waitingAtSleigh.Value = true;
+            });
+        }
+
         public void HelpDeliverPresents()
         {
             STMSystem.Atomic(() =>
             {
-                _waitingOnSanta.Value = false;
+                _waitingAtSleigh.Value = false;
                 _workingForSanta.Value = true;
             });
         }

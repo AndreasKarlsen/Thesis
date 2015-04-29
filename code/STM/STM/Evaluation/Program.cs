@@ -15,11 +15,11 @@ namespace Evaluation
         {
             //DiningPhilosophers.Start();
             //LockingDiningPhilosophers.Start();
-            //SantaClausProblem.Start();
+            SantaClausProblem.Start();
             //LockingSantaClausProblem.Start();
             //HashMapTest();
             //STMHashMapSequentialTest();
-            LockingHashMapSequentialTest();
+            //LockingHashMapSequentialTest();
             Console.ReadKey();
         }
 

@@ -54,7 +54,6 @@ namespace Evaluation.Locking.SantaClausImpl
                     _waitingToAsk.WaitOne();
 
                     //Asking questions
-
                     _doneAsking.WaitOne();
 
                     //Allow a new elf to visit santa
