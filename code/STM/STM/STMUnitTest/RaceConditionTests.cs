@@ -38,7 +38,10 @@ namespace STMUnitTest
 
             });
 
-            var t2 = new Task(() => STMSystem.Atomic(() => result.Value = 12));
+            var t2 = new Task(() => STMSystem.Atomic(() => 
+                {
+                    result.Value = 12;
+                }));
 
             t1.Start();
             t2.Start();
