@@ -31,20 +31,20 @@ The dining philosophers implementations must:
 
 The santa clause problem implementations must:
 \begin{itemize}
-	\item Follow the requirements defined in \cite{trono1994new} while still utilizing advantageous features of the approach.
+	\item Follow the requirements defined in \cite{trono1994new}
+	\item Utilizing advantageous features of the approach.
 \end{itemize}
 
 The concurrent hashmap implementations must:
 \begin{itemize}
 	\item Encompass fined grained synchronization, allowing multiple threads to operate on the hashmap simultaneously.
 \end{itemize}
-
- The dining philosophers implementations must include
- The implementations in their full length can be found in the appendix.
+The implementations in their full length can be found in the appendix.
 
 
 \section{Evaluation of Characteristics}
 \subsection{Implicit or Explicit Concurrency}
+All of the selected concurrency approaches relies on starting threads in order to introduce concurrency as well as manually specifying critical regions using ether locks or the \bscode{atomic} block. The two \ac{STM} based approaches however have implicit elements as \ac{STM} allows them to hide the details of how synchronization is achieved. Locking in C\# on the other hand requires explicit stating how synchronization is to be achieved. As such we say that locking in C\# i resides a the explicit concurrency extreme while \stmnamesp and the \ac{STM} library resides slightly more towards the implicit concurrency end of the spectrum. The placement of the three concurrency approaches on the implicit - explicit concurrency spectrum is depicted in \bsref{fig:char_implicit_explicit}.
 
 \begin{figure}[htbp]
 \centering
@@ -53,8 +53,10 @@ The concurrent hashmap implementations must:
 \label{fig:char_implicit_explicit}
 \end{figure}
 
-\subsection{Fault Restrictive or Expressive Model}
+\subsection{Fault Restrictive or Expressive}
+Locking presents the programmer with a set of tools aimed at solving concurrency problems but does little to guarantee their correct usage. Locking in C\# provides the \bscode{lock} statement\cite[p. 102]{csharp2013specificaiton}, which defines a scope within which a given lock is help. The \bscode{lock} statements handles lock acquisition and release removing the threat of programmers unintentionally missing to release a acquired lock. The lock statement is however only applicable in some scenarios and does, for example, not support timeouts on lock acquisition. As such we say that locking in C\# resides at the expressive end of the spectrum.
 
+The \ac{STM} based approaches delegate the details of how synchronization is achieved to the underling \ac{STM}, allowing \ac{STM} based concurrency to avoid some of the errors associated with locking, such as deadlocks. The \ac{STM} based approaches however rely on shared memory for communication and require programmers to define transaction scopes and introduce concurrency by starting threads. As such the \ac{STM} based approaches reside towards the expressive end of the spectrum but contain elements of fault restrictions pulling it more towards the fault restrictive extreme than was the case for locking. The placement of the three concurrency approaches on the fault restrictive - expressivey spectrum is depicted in \bsref{fig:char_fault_expressive}. 
 \begin{figure}[htbp]
 \centering
  \includegraphics[width=0.9\textwidth]{\rootpath/worksheets/evaluation/figures/char_fault_expressive} 
@@ -62,8 +64,9 @@ The concurrent hashmap implementations must:
 \label{fig:char_fault_expressive}
 \end{figure}
 
-\subsection{Pessimistic or Optimistic Model}
-
+\subsection{Pessimistic or Optimistic}
+Locking assumes that error are common and therefor allows only a single thread to access a given critical region at a time, by enforcing mutual exclusion. As such locking is a inherently pessimistic concurrency approach. \ac{STM} on the other hand allows multiple threads to proceed simultaneously, correcting any errors that may occur by aborting and re executing transactions. As such \ac{STM} takes a optimistic approach to concurrency.
+Therefore we say that \stmnamesp and the \ac{STM} library resides at the optimistic extreme of the pessimistic - optimistic spectrum while locking resides at the pessimistic extreme. The placement of the three concurrency approaches on the fault restrictive - expressivey spectrum is depicted in \bsref{fig:char_pes_opti}. 
 \begin{figure}[htbp]
 \centering
  \includegraphics[width=0.9\textwidth]{\rootpath/worksheets/evaluation/figures/char_pessimistic_optemistic} 
