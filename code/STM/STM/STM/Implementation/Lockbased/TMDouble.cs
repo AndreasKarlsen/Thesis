@@ -23,7 +23,7 @@ namespace STM.Implementation.Lockbased
          #region Inc Dec
          public void Inc()
          {
-             if (Transaction.LocalTransaction.Status == Transaction.TransactionStatus.Active)
+             if (Transaction.LocalTransaction.Status == Transaction.TransactionStatus.Committed)
              {
                  STMSystem.Atomic(() =>
                  {
@@ -38,7 +38,7 @@ namespace STM.Implementation.Lockbased
 
          public void Dec()
          {
-             if (Transaction.LocalTransaction.Status == Transaction.TransactionStatus.Active)
+             if (Transaction.LocalTransaction.Status == Transaction.TransactionStatus.Committed)
              {
                  STMSystem.Atomic(() =>
                  {
