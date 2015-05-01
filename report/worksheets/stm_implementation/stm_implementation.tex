@@ -458,6 +458,7 @@ If the transaction is nested within another transaction the else case on line 11
     return true;
   }
 \end{lstlisting}
+
 \subsection{Providing Strong Atomicity}
 \label{sec:stm_impl_providing_strong_atomicity}
 As described in \bsref{sec:stm_requirements} the \ac{STM} system must support strong atomicity. In \bsref{sec:stm_imple_internal_detials_write} and \bsref{sec:stm_imple_internal_detials_read} it is described how the \ac{STM} system is able to detect whether or not read and write operations occur inside or outside a transaction and take different actions based on this information. In the case of a non-transactional read the system reads the most recently committed value as described in \bsref{sec:stm_imple_internal_detials_read}, ensuring that no uncommitted values can be read. A non-transactional write is more complicated as the \ac{STM} system must ensure atomicty between both non-transactional access and transactional access. To that extent the approach described by Hindman et al. in \cite{hindman2006atomicity} of executing non-transactional access as optimized mini transaction is adopted. As no value is read during a non-transactional write, a non-transactional write in the context of the TL\rom{2} algorithm consist only of 
