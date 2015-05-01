@@ -24,9 +24,19 @@ Giving each concurrency approach a visual placement allows for improved communic
 \section{Implementations}
 To ensure common ground between all implementations of a particular problem, a set of requirements detailing common factors which must be true for all implementations of a particular problem has been created.
 
-The dining philosophers implementations must encompass:
+The dining philosophers implementations must:
 \begin{itemize}
-	\item  two 100 milliseconds thread sleeps. One to exemplify the act of eating as well as one upon completing a attempt to eat exemplifying a waiting period before attempting to eat again.
+	\item Encompass two 100 milliseconds thread sleeps. One to exemplify the act of eating as well as one upon completing a attempt to eat exemplifying a waiting period before attempting to eat again.
+\end{itemize}
+
+The santa clause problem implementations must:
+\begin{itemize}
+	\item Follow the requirements defined in \cite{trono1994new} while still utilizing advantageous features of the approach.
+\end{itemize}
+
+The concurrent hashmap implementations must:
+\begin{itemize}
+	\item Encompass fined grained synchronization, allowing multiple threads to operate on the hashmap simultaneously.
 \end{itemize}
 
  The dining philosophers implementations must include
