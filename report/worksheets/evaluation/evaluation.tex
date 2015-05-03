@@ -107,6 +107,10 @@ As mentioned in \bsref{sec:readability} and \bsref{sec:writablity}, the evaluati
 \end{figure}
 
 \subsubsection{Low or High Level of Abstraction}\label{subsec:level_of_abstraction}
+Locking is tightly coupled with the process thread model of the underlying \ac{OS}, utilizing shared memory for communication and primitives such as \ac{CAS} to implement the locks them selves\cite[p. 1990]{scott2011sync}. Locking leaves it up to the programmer to define how mutual exclusion should be provided, leaving the programmer vulnerable to issues such as deadlocks and priority inversion. C\# offers a number of abstractions for mitigating such issue. These include the \bscode{lock} keyword described earlier and the static methods of the \bscode{Waithandle} class. The \bscode{lock} keyword frees the programmer for having to reason about whether the acquired lock is released in all scenarios, but is not applicable in all cases. If for example a timeout on the acquisition of a lock is require or a more advanced form of lock, such as a semaphore is required, the \bscode{lock} keyword is not directly applicable. This can also been seen in the implementations for the evaluation. Both the locking dinning philosophers implementation and the lock based concurrency hashmap implementation requires the use of the monitor class instead of the lock keyword for acquiring a lock with a timeout. The dinning philosophers implementation requires the second lock to be taken with a timeout and the concurrency hashmap implementation uses a timeout with acquiring the lock on resizing the backing array. Furthermore the flow of the locking santa clause problem implementation uses semaphores to signal between santa, the elfs and the reindeer. The \bscode{lock} keyword does not provide such capabilities.
+
+
+
 \begin{figure}[htbp]
 \centering
  \includegraphics[width=0.9\textwidth]{\rootpath/worksheets/evaluation/figures/char_level_of_abstraction} 
