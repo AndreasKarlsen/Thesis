@@ -137,7 +137,7 @@ namespace Evaluation.Locking
         public override bool ContainsKey(K key)
         {
             var hashCode = GetHashCode(key);
-            lock (_locks[hashCode])
+            lock (_locks[GetLockIndex(hashCode)])
             {
                 var bucket = _buckets[GetBucketIndex(hashCode)];
                 return FindNode(bucket, key) != null;
@@ -154,7 +154,7 @@ namespace Evaluation.Locking
 
                 if (node == null)
                 {
-                    //If node is null key is not in map
+                    //If node is null, key is not in map
                     throw new KeyNotFoundException("Key not found. Key: "+key);
                 }
 
@@ -172,7 +172,7 @@ namespace Evaluation.Locking
 
                 if (node != null)
                 {
-                    //If node is not null key exist in map. Update the value
+                    //If node is not null, key exist in map. Update the value
                     node.Value = value;
                 }
                 else
@@ -184,7 +184,6 @@ namespace Evaluation.Locking
                         _size++;
                     }
                     ResizeIfNeeded();
-                    
                 }
             }
         }
@@ -203,7 +202,6 @@ namespace Evaluation.Locking
                 lock (_sizeLock)
                 {
                     _size++;
-                   
                 }
                 ResizeIfNeeded();
                 return true;
@@ -265,7 +263,7 @@ namespace Evaluation.Locking
                                 }
                             }
 
-                            //Calculate new resize threashold and assign the rehashed backing array
+                            //Calculate new resize threshold and assign the rehashed backing array
                             _threshold = CalculateThreshold(newBucketSize);
                             _buckets = newBuckets;
                         }

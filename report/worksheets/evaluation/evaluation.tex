@@ -12,8 +12,8 @@ As described in \bsref{sec:problem_statement} the evaluation will be conducted b
 The dining philosophers problem represents a well known concurrency problem which highlights some of the pitfalls associated with locking. The Santa Claus problem encompasses a high degree of modeling and requires complex synchronization. As such, employing this problem helps investigate whether \ac{STM} provides any advantages over locking in such scenarios. Finally a concurrent hashmap implementation represents a real world problem, which benefits from fine grained synchronization and is used in many concurrent implementations. Together these problems provide a varied perspective by exerting different aspects of each approach such as: waiting on one of multiple conditions and fine grained synchronization.
 
 \section{Evaluation Approach}
-For each of the selected problem a implementation will be created using, locking, library based \ac{STM} and language based \ac{STM}. Based on these implementations each concurrency approach will be evaluated according to the characteristic defined in our previous work 
-\cite[p. 15-21]{dpt907e14trending}. While each of these characteristic range from one extreme to another, a concurrency approach may not reside at on of these extreme, but more likely somewhere in between. Therefore, as part of the evaluation, each concurrency approach will be given a placement on the spectrum of each characteristic, according to the finding of the evaluation. In order to visualize this placement a scale similar to one presented in \bsref{fig:evel_example} is employed. Here \bscode{X} and \bscode{Y} represent the two extremes of the spectrum while the indicators represent the placement of each of the concurrency approaches on the spectrum. As an example \bscode{X} and \bscode{Y} could be low and high writability, \bsref{fig:evel_example} then shows that each of the concurrency approaches resides more towards the high writability end of the spectrum.
+For each of the selected problems an implementation will be created using, locking, library based \ac{STM} and language based \ac{STM}. Based on these implementations each concurrency approach will be evaluated according to the characteristic defined in our previous work 
+\cite[p. 15-21]{dpt907e14trending}. While each of these characteristics range from one extreme to another, e.g. high or low readability, a concurrency approach may not reside at one of these extremes, but more likely somewhere in between. Therefore, as part of the evaluation, each concurrency approach will be given a placement on the spectrum of each characteristic, according to the finding of the evaluation. In order to visualize this placement a scale similar to one presented in \bsref{fig:evel_example} is employed. Here \bscode{X} and \bscode{Y} represent the two extremes of the spectrum while the indicators represent the placement of each of the concurrency approaches on the spectrum. As an example \bscode{X} and \bscode{Y} could be low and high writability, \bsref{fig:evel_example} then shows that each of the concurrency approaches resides more towards the high writability end of the spectrum.
 \begin{figure}[ht!]
 \centering
 \includegraphics[scale=0.5]{\rootpath/worksheets/evaluation/figures/eval_example}
@@ -26,23 +26,23 @@ To ensure common ground between all implementations of a particular problem, a s
 
 The dining philosophers implementations must:
 \begin{itemize}
-	\item Encompass two 100 milliseconds thread sleeps. One to exemplify the act of eating as well as one upon completing a attempt to eat exemplifying a waiting period before attempting to eat again.
+	\item Encompass two 100 milliseconds thread sleeps. One to exemplify the act of eating as well as one upon completing an attempt to eat exemplifying a waiting period before attempting to eat again.
 \end{itemize}
 
 The santa clause problem implementations must:
 \begin{itemize}
 	\item Follow the requirements defined in \cite{trono1994new}
-	\item Utilizing advantageous features of the approach.
+	\item Utilize advantageous features of the approach.
 \end{itemize}
 
 The concurrent hashmap implementations must:
 \begin{itemize}
 	\item Encompass fined grained synchronization, allowing multiple threads to operate on the hashmap simultaneously.
 \end{itemize}
-The implementations in their full length can be found in the appendix.
-
+The implementations in their full length can be found in the appendix.\toby{indsæt et reference når de indsætts}
 
 \section{Evaluation of Characteristics}
+\toby[i]{Noget intro tekst her, ellers kan sektionen vel ligeså godt slettes og undersektioner gøres til sektioner?}
 \subsection{Implicit or Explicit Concurrency}
 All of the selected concurrency approaches relies on starting threads in order to introduce concurrency as well as manually specifying critical regions using ether locks or the \bscode{atomic} block. The two \ac{STM} based approaches however have implicit elements as \ac{STM} allows them to hide the details of how synchronization is achieved. Locking in C\# on the other hand requires explicit stating how synchronization is to be achieved. As such we say that locking in C\# i resides a the explicit concurrency extreme while \stmnamesp and the \ac{STM} library resides slightly more towards the implicit concurrency end of the spectrum. The placement of the three concurrency approaches on the implicit - explicit concurrency spectrum is depicted in \bsref{fig:char_implicit_explicit}.
 
