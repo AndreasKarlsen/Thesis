@@ -107,35 +107,13 @@ As mentioned in \bsref{sec:readability} and \bsref{sec:writablity}, the evaluati
 \end{figure}
 
 \subsubsection{Low or High Level of Abstraction}\label{subsec:level_of_abstraction}
-Locking is tightly coupled with the hardware architecture through hardware instructions such as Test-and-set and Compare-and-swap\cite[p. 1990]{scott2011sync}. Furthermore low-level abstraction threads is used in order to introduce concurrency. Additionally the programmer have to state exactly how synchronization should be applied using locks. Therefore locking is placed close to the low level of abstraction extreme of the spectrum. However the C\# \bscode{lock} statement, which provides a small abstraction over the release of a lock, keeps it from being at the extreme.
+Locking is tightly coupled with the hardware architecture through hardware instructions such as Test-and-set and Compare-and-swap\cite[p. 1990]{scott2011sync}. Furthermore low-level abstraction threads is used in order to introduce concurrency. Additionally the programmer have to state exactly how synchronization should be applied using locks. C\# offers the lock \bscode{lock} statement which provides a small abstraction over the release of a lock. The \bscode{lock} statement is however not applicable in all cases. If for example a timeout on the acquisition of a lock is require or a more advanced form of lock, such as a semaphore is required, the \bscode{lock} keyword is not directly applicable. This can also been seen in the implementations for the evaluation. Both the locking dinning philosophers implementation and the lock based concurrency hashmap implementation requires the use of the monitor class instead of the lock keyword for acquiring a lock with a timeout. The dinning philosophers implementation requires the second lock to be taken with a timeout and the concurrency hashmap implementation uses a timeout with acquiring the lock on resizing the backing array. Furthermore the flow of the locking santa clause problem implementation uses semaphores to signal between santa, the elfs and the reindeer. The \bscode{lock} keyword does not provide such capabilities. Ultimately locking in C\# is placed close to the low level of abstraction extreme of the spectrum with the small abstractions provided keeping it from being at the extreme. 
 
-The \ac{STM} approaches also rely on threads, but provide a more high level of abstraction approach for synchronization. \ac{STM} uses transactions, where code segments is marked and the details of how synchronization is achieved is abstracted away to the \ac{STM} system. However the isolation level can pose a threat to the level of abstraction of transactions, as under weak isolation the \ac{STM} will not take non-transactional code into account and the programmer must therefore manage it themselves. In the case of \stmnamesp this is not problematic, as it facilities strong atomicity, as described in \bsref{sec:design_strong_weak_atomicity} and the \ac{STM} system will therefore manage both transactional and non-transactional code. Based on the above, the general \ac{STM} approach lies between the middle and high end of the spectrum, where the main negative factors is that the programmer still have to manage threads and mark regions of code that should be synchronized.
+The \ac{STM} approaches also rely on threads, but provides a higher level of abstraction for synchronization. \ac{STM} uses transactions, where code segments is marked and the details of how synchronization is achieved is abstracted away to the \ac{STM} system. However the isolation level can pose a threat to the level of abstraction of transactions, as under weak isolation the \ac{STM} will not take non-transactional code into account and the programmer must therefore manage it themselves. In the case of \stmnamesp this is not problematic, as it facilities strong atomicity, as described in \bsref{sec:design_strong_weak_atomicity} and the \ac{STM} system will therefore manage both transactional and non-transactional code. Based on the above, the general \ac{STM} approach lies between the middle and high end of the spectrum, where the main negative factors is that the programmer still have to manage threads and mark regions of code that should be synchronized.
 As to the actual placements, there are also some differences in the level of abstraction in 
 
-As to the language \ac{STM} and library \ac{STM} individually, there are some differences in the level of abstraction. Library \ac{STM} requires the programmer to use static method calls, wrap transactional code in lambdas, wrap transactional variables in a \bscode{TMVar}, use the \bscode{Value} property when getting or setting a value, supply \bscode{orelse} transactions as arguments to the atomic method call and write return in front of the static method call if the lambda within can return a value. Many of these concerns is abstracted away or handled more gracefully in the language based \ac{STM}.\toby{Evt. refer ned til expressivity, hvor det vil blive vist med et kodeeksempel. Evt. også sig at de kan se kodeeksemplet dernede (Ellers skal jeg sætte det herop og refere dernede til det herop.} Language \ac{STM} is therefore considered to have a higher level of abstraction than library \ac{STM}.
+As to the language \ac{STM} and library \ac{STM} individually, some differences in the level of abstraction exist. Library \ac{STM} requires the programmer to use static method calls, wrap transactional code in lambdas, wrap transactional variables in a \bscode{TMVar}, use the \bscode{Value} property when getting or setting a value, supply \bscode{orelse} transactions as arguments to the atomic method call and write return in front of the static method call if a method is to return the value computed by a transaction. Many of these concerns is abstracted away or handled more gracefully in the language based \ac{STM}.   \bsref{lst:lib_SleepUntilAwoken} and \bsref{lst:lang_SleepUntilAwoken} presents a implementation of the \bscode{SleepUntilAwoken} method from the library and language based santa clause problem implementations respectively. The \bscode{return} statement on line \ref{line:lib_sleep_return} of \bsref{lst:lib_SleepUntilAwoken} is not present in the language based implementation as it is abstracted away by \stmnamesp. Furthermore the static method call and creation of lambas to represent transaction bodies on line \ref{line:lib_sleep_return} is abstracted away by the \bscode{atomic} block and orelse block on lines \ref{line:lang_sleep_atomic} and \ref{line:lang_sleep_orelse} of \bsref{lst:lang_SleepUntilAwoken}.
 
-The placement of the three concurrency approaches on the low level of abstraction - high level of abstraction spectrum is depicted in \bsref{fig:char_level_of_abstraction}. 
-
-\toby[i]{Måske tilføj noget med: obstructed by transactions combining poorly with some existing language constructs, such as exceptions and IO, as described in Section 5.2.3 and Section 5.2.4. (for at begrunde ikke så høj placering)}
-
-\begin{figure}[htbp]
-\centering
- \includegraphics[width=0.9\textwidth]{\rootpath/worksheets/evaluation/figures/char_level_of_abstraction} 
- \caption{Concurrency approaches on the low - high level of abstraction spectrum}
-\label{fig:char_level_of_abstraction}
-\end{figure}
-
-\subsubsection{Low or High Expressivity}\label{subsec:expressivity}
-\toby[i]{Ikke færdig endnu}
-
-%noget generelt først om expressivity også forklar ud fra eksempel mellem library og lang base
-
-%evt. prøv at tælle tegn i en library og i en langauge based
-A code example from the santa claus problem is shown in the library and language in  \bsref{lst:lib_SleepUntilAwoken} \bsref{lst:lang_SleepUntilAwoken}, respectively. The method ensures that santa sleeps until he is awoken by either three elfs at his door, or all reindeers back from vacation ready to fly his sleigh. \bsref{lst:lang_SleepUntilAwoken} shows the atomic keyword abstracting a static call.
-
-\toby[i]{Evt. indsæt eksmpel på brug af en tmvar og noget med brug af value property}
-
-\toby[i]{Evt. refer til appendix hvor kodeeksmeplerne kommer fra præcist}
 \begin{lstlisting}[label=lst:lib_SleepUntilAwoken,
   caption={\bscode{SleepUntilAwoken} Method - \ac{STM} Library},
   language=Java,  
@@ -152,7 +130,7 @@ A code example from the santa claus problem is shown in the library and language
 
   private WakeState SleepUntilAwoken()
   {
-    return STMSystem.Atomic(() =>
+    return STMSystem.Atomic(() =>~\label{line:lib_sleep_return}~
     {
       if (_rBuffer.Count != SCStats.NR_REINDEER)
       {
@@ -160,7 +138,7 @@ A code example from the santa claus problem is shown in the library and language
       }
       return WakeState.ReindeerBack;
     },
-      () =>
+      () =>~\label{line:lib_t2_def}~
       {
         if (_eBuffer.Count != SCStats.MAX_ELFS)
         {
@@ -187,7 +165,7 @@ A code example from the santa claus problem is shown in the library and language
 
   private WakeState SleepUntilAwoken()
   {
-    atomic
+    atomic~\label{line:lang_sleep_atomic}~
     {
       if (_rBuffer.Count != SantaClausProblem.NR_REINDEER)
       {
@@ -195,7 +173,7 @@ A code example from the santa claus problem is shown in the library and language
       }
       return WakeState.ReindeerBack;
     }
-    orelse
+    orelse~\label{line:lang_sleep_orelse}~
     {
       if (_eBuffer.Count != SantaClausProblem.MAX_ELFS)
       {
@@ -205,6 +183,30 @@ A code example from the santa claus problem is shown in the library and language
     }
   }
 \end{lstlisting}
+
+ Furthermore, where the \ac{STM} library  exposes transactional variables as special \ac{STM} types, \stmnamesp instead allows variables to be marked as \bscode{atomic}, letting the programmer use the variable as if it was of the original type, even though the type is changed as part of the compilation process. Language \ac{STM} is therefore considered to have a higher level of abstraction than library \ac{STM}. \ac{STM} however combines poorly with irreversible actions, that is action which can not be rolled back in case a transaction aborts such \ac{IO}. Neither the \ac{STM} library non \stmnamesp offers a solution to this problem reducing their level of abstraction.
+
+The placement of the three concurrency approaches on the low level of abstraction - high level of abstraction spectrum is depicted in \bsref{fig:char_level_of_abstraction}. 
+
+\begin{figure}[htbp]
+\centering
+ \includegraphics[width=0.9\textwidth]{\rootpath/worksheets/evaluation/figures/char_level_of_abstraction} 
+ \caption{Concurrency approaches on the low - high level of abstraction spectrum}
+\label{fig:char_level_of_abstraction}
+\end{figure}
+
+\subsubsection{Low or High Expressivity}\label{subsec:expressivity}
+\toby[i]{Ikke færdig endnu}
+
+%noget generelt først om expressivity også forklar ud fra eksempel mellem library og lang base
+
+%evt. prøv at tælle tegn i en library og i en langauge based
+A code example from the santa claus problem is shown in the library and language in  \bsref{lst:lib_SleepUntilAwoken} \bsref{lst:lang_SleepUntilAwoken}, respectively. The method ensures that santa sleeps until he is awoken by either three elfs at his door, or all reindeers back from vacation ready to fly his sleigh. \bsref{lst:lang_SleepUntilAwoken} shows the atomic keyword abstracting a static call.
+
+\toby[i]{Evt. indsæt eksmpel på brug af en tmvar og noget med brug af value property}
+
+\toby[i]{Evt. refer til appendix hvor kodeeksmeplerne kommer fra præcist}
+
 
 
 \begin{figure}[htbp]
