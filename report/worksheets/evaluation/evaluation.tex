@@ -55,7 +55,7 @@ The two \ac{STM} based approaches have implicit elements\toby{Ved ikke om man ka
 \end{figure}
 
 \subsection{Fault Restrictive or Expressive}
-Locking presents the programmer with a set of tools aimed at solving concurrency problems but does little to guarantee correct usage. Locking in C\# provides the \bscode{lock} statement\cite[p. 102]{csharp2013specificaiton}, which defines a scope within which a given lock is help.\toby{forstår ikke helt slutningen af sætningen} The \bscode{lock} statement handles lock acquisition and release which removes the threat of programmers unintentionally missing to release an acquired lock. The lock statement is however only applicable in some scenarios and does, for example, not support timeouts on lock acquisition. Thus, we say that locking in C\# resides at the expressive end of the spectrum.
+Locking presents the programmer with a set of tools aimed at solving concurrency problems but does little to guarantee their correct usage. Locking in C\# provides the \bscode{lock} statement\cite[p. 102]{csharp2013specificaiton}, which defines a scope within which a given lock is held. The \bscode{lock} statement handles lock acquisition and release which removes the threat of programmers unintentionally missing to release an acquired lock. The lock statement is however only applicable in some scenarios and does, for example, not support timeouts on lock acquisition. As such, we say that locking in C\# resides at the expressive end of the spectrum.
 
 The \ac{STM} based approaches delegate the details of how synchronization is achieved to the underling \ac{STM} system, allowing \ac{STM} based concurrency to avoid some of the errors associated with locking, such as deadlocks. The \ac{STM} based approaches however still rely on shared memory for communication and require programmers to define transaction scopes and introduce concurrency by starting threads. As such the \ac{STM} based approaches reside towards the expressive end of the spectrum but contain elements of fault restrictions pulling it more towards the fault restrictive extreme than locking. The placement of the three concurrency approaches on the fault restrictive - expressive spectrum is depicted in  \bsref{fig:char_fault_expressive}. 
 \begin{figure}[htbp]
@@ -161,10 +161,9 @@ The placement of the three concurrency approaches on the low - high orthogonalit
 \subsubsection{Low or High Level of Abstraction}\label{subsec:level_of_abstraction}
 Locking is tightly coupled with the hardware architecture through hardware instructions such as Test-and-set and Compare-and-swap\cite[p. 1990]{scott2011sync}. Furthermore low-level abstraction threads is used in order to introduce concurrency. Additionally the programmer have to state exactly how synchronization should be applied using locks. C\# offers the lock \bscode{lock} statement which provides a small abstraction over the release of a lock. The \bscode{lock} statement is however not applicable in all cases. If for example a timeout on the acquisition of a lock is require or a more advanced form of lock, such as a semaphore is required, the \bscode{lock} keyword is not directly applicable. This can also been seen in the implementations for the evaluation. Both the locking dining philosophers implementation and the lock based concurrency hashmap implementation requires the use of the monitor class instead of the lock keyword for acquiring a lock with a timeout. The dining philosophers implementation requires the second lock to be taken with a timeout and the concurrency hashmap implementation uses a timeout with acquiring the lock on resizing the backing array. Furthermore the flow of the locking santa clause problem implementation uses semaphores to signal between santa, the elfs and the reindeer. The \bscode{lock} keyword does not provide such capabilities. Ultimately locking in C\# is placed close to the low level of abstraction extreme of the spectrum with the small abstractions provided keeping it from being at the extreme. 
 
-The \ac{STM} approaches also rely on threads, but provides a higher level of abstraction for synchronization. \ac{STM} uses transactions, where code segments is marked and the details of how synchronization is achieved is abstracted away to the \ac{STM} system. However the isolation level can pose a threat to the level of abstraction of transactions, as under weak isolation the \ac{STM} will not take non-transactional code into account and the programmer must therefore manage it themselves. In the case of \stmnamesp this is not problematic, as it facilities strong atomicity, as described in \bsref{sec:design_strong_weak_atomicity} and the \ac{STM} system will therefore manage both transactional and non-transactional code. Based on the above, the general \ac{STM} approach lies between the middle and high end of the spectrum, where the main negative factors is that the programmer still have to manage threads and mark regions of code that should be synchronized.
-As to the actual placements, there are also some differences in the level of abstraction in 
+The \ac{STM} approaches also rely on threads, but provides a higher level of abstraction for synchronization. \ac{STM} uses transactions, where code segments is marked and the details of how synchronization is achieved is abstracted away to the \ac{STM} system. However the isolation level can pose a threat to the level of abstraction of transactions, as under weak isolation \ac{STM} will not take non-transactional code into account and the programmer must therefore manage it themselves. In the case of \stmnamesp this is not problematic, as it facilities strong atomicity, as described in \bsref{sec:design_strong_weak_atomicity} and the \ac{STM} system will therefore manage both transactional and non-transactional code. Based on the above, the general \ac{STM} approach lies between the middle and high end of the spectrum, where the main negative factors is that the programmer still have to manage threads and mark regions of code that should be synchronized.
 
-As to the language \ac{STM} and library \ac{STM} individually, some differences in the level of abstraction exist. Library \ac{STM} requires the programmer to use static method calls, wrap transactional code in lambdas, wrap transactional variables in a \bscode{TMVar}, use the \bscode{Value} property when getting or setting a value, supply \bscode{orelse} transactions as arguments to the atomic method call and write return in front of the static method call if a method is to return the value computed by a transaction. Many of these concerns is abstracted away or handled more gracefully in the language based \ac{STM}.   \bsref{lst:lib_SleepUntilAwoken} and \bsref{lst:lang_SleepUntilAwoken} presents a implementation of the \bscode{SleepUntilAwoken} method from the library and language based santa clause problem implementations respectively. The \bscode{return} statement on line \ref{line:lib_sleep_return} of \bsref{lst:lib_SleepUntilAwoken} is not present in the language based implementation as it is abstracted away by \stmnamesp. Furthermore the static method call and creation of lambas to represent transaction bodies on line \ref{line:lib_sleep_return} is abstracted away by the \bscode{atomic} block and orelse block on lines \ref{line:lang_sleep_atomic} and \ref{line:lang_sleep_orelse} of \bsref{lst:lang_SleepUntilAwoken}.
+As to the language \ac{STM} and library \ac{STM} individually, some differences in the level of abstraction exist. Library \ac{STM} requires the programmer to use static method calls, wrap transactional code in lambdas, wrap transactional variables in a \bscode{TMVar}, use the \bscode{Value} property when getting or setting a value, supply \bscode{orelse} transactions as arguments to the atomic method call, and write return in front of the static method call if a method must return the value computed by a transaction. Many of these concerns is abstracted away or handled more gracefully in the language based \ac{STM}. \bsref{lst:lib_SleepUntilAwoken} and \bsref{lst:lang_SleepUntilAwoken} presents an implementation of the \bscode{SleepUntilAwoken} method from the library and language based santa clause problem implementations, respectively. The method ensures that santa sleeps until he is awoken by either three elfs at his door, or all reindeers back from vacation ready to fly his sleigh. The \bscode{return} statement on line \ref{line:lib_sleep_return} of \bsref{lst:lib_SleepUntilAwoken} is not present in the language based implementation as it is abstracted away by \stmnamesp. Furthermore the static method call and creation of lambas to represent transaction bodies on line \ref{line:lib_sleep_return} is abstracted away by the \bscode{atomic} block and orelse block on lines \ref{line:lang_sleep_atomic} and \ref{line:lang_sleep_orelse} of \bsref{lst:lang_SleepUntilAwoken}.
 
 \begin{lstlisting}[label=lst:lib_SleepUntilAwoken,
   caption={\bscode{SleepUntilAwoken} Method - \ac{STM} Library},
@@ -248,16 +247,55 @@ The placement of the three concurrency approaches on the low level of abstractio
 \end{figure}
 
 \subsubsection{Low or High Expressivity}\label{subsec:expressivity}
-\toby[i]{Ikke færdig endnu}
+%The expressivity of the approaches are closely related to their level of abstraction. 
+Locking in C\# is mainly accomplished by the use of the \bscode{lock} keyword, which provide a convenient way to acquire and release a lock on a resource. However it is not always sufficient, instead the \bscode{Monitor} class can be used which provides additional functionality, such as the \bscode{TryEnter} method. Furthermore, there are a number of other special case locking primitives in C\#\cite{microsoftSyncPrim} i.e. \bscode{Mutex}, \bscode{Semaphore}, \bscode{SpinLock} and \bscode{ReaderWriterLock}, that can help the programmer specify synchronization. These primitives enable convenient ways to express exactly how synchronization should be applied by the use of locks and it therefore affects the expressivity positively. However as locking uses constructs close to the hardware primitives and there are a number of concurrency related issues with locking, such as deadlocks, the expressivity of locking suffers. This limits how much the programmer can concisely and conveniently express the intended functionality. Locking in C\# is therefore placed towards low expressivity, being drawn a bit towards the middle of the spectrum because of the many convenient locking primitives in C\#.
+
+
+%However the expressivity is also closely related to the level of abstraction, which in the case of locking is low, as it uses threads and locks low level construct.
+
+%concurrency related issues 
+
+%great deal of computation accomplished with a small program
+
+\toby[i]{Evt. eksempel(er) fra nogle af implementationerne}
+
+%and therefore affects the expressivity positively
+
+%Convenient ways to express exactly how synchronization should be applied
+	%However problems, because of the low level constructs and the concurrency issues that follows with this such as deadlocks (which the programmer must handle themselves)
+		%limitis the focus programmers can put into concisely express intended functionality
+
+%STM 
+
+
+%Provides a number of helpful keywords, and classes - however stil low-level abstractions with threads and locks. Also there are a number of issues that 
+
+%There 
+
+%close to the 
+
+%hvilke constructs approachen har
+	%lock keyword
+	%monitor
+	%mutex
+	%spinlock
+	%readwriterlock
+	%semaphore
+
+%Lib
+%expressivity:
+%great deal of computation accomplished with a small program
+	%fx. retry
+%convenient ways of specifying computations
+
 
 %noget generelt først om expressivity også forklar ud fra eksempel mellem library og lang base
 
 %evt. prøv at tælle tegn i en library og i en langauge based
-A code example from the santa claus problem is shown in the library and language in  \bsref{lst:lib_SleepUntilAwoken} \bsref{lst:lang_SleepUntilAwoken}, respectively. The method ensures that santa sleeps until he is awoken by either three elfs at his door, or all reindeers back from vacation ready to fly his sleigh. \bsref{lst:lang_SleepUntilAwoken} shows the atomic keyword abstracting a static call.
 
-\toby[i]{Evt. indsæt eksmpel på brug af en tmvar og noget med brug af value property}
+%\toby[i]{Evt. indsæt eksmpel på brug af en tmvar og noget med brug af value property}
 
-\toby[i]{Evt. refer til appendix hvor kodeeksmeplerne kommer fra præcist}
+%\toby[i]{Evt. refer til appendix hvor kodeeksmeplerne kommer fra præcist}
 
 
 
