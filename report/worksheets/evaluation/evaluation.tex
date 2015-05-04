@@ -88,9 +88,38 @@ As mentioned in \bsref{sec:readability} and \bsref{sec:writablity}, the evaluati
 \end{figure}
 
 \subsubsection{Low or High Orthogonality}\label{subsec:orthogonality}
-Locking encompasses only a small number of constructs aimed at aiding in different concurrency scenarios. These construct can be combined to handle complex concurrency issues. Some of these combinations are however erroneous producing hard to debug problems such as deadlocks. Locking does not put any restraints on the language features with which it can be combined and may therefore seam to be highly orthogonal. The thread of deadlocks when combining lock based implementations or employing multiple locks limits its orthogonality keeping it from reaching the high orthogonality extreme. Locking in C\# provides no solutions to these issues. As a result we say that locking in C\# resides just above the middle of the spectrum towards the high orthogonality end of the spectrum.
+Locking encompasses only a small number of constructs aimed at aiding in different concurrency scenarios. These construct can be combined to handle complex concurrency issues. Some of these combinations are however erroneous producing hard to debug problems such as deadlocks. Locking does not put any restraints on the language features with which it can be combined and may therefore seam to be highly orthogonal. The threat  of deadlocks when combining lock based implementations or employing multiple locks limits its orthogonality keeping it from reaching the high orthogonality extreme. Locking in C\# provides no solutions to these issues. As a result we say that locking in C\# resides just above the middle of the spectrum towards the high orthogonality end of the spectrum.
 
-\ac{STM} removes the issue of deadlocks and allows \ac{STM} based code segments to be combined using transactional nesting. \ac{STM} however combines poorly with irreversible actions, that is action which can not be rolled back in case a transaction aborts such \ac{IO}. Neither the \ac{STM} library non \stmnamesp offers a solution to this problem reducing their orthogonality.
+\ac{STM} removes the issue of deadlocks and allows \ac{STM} based code segments to be combined using transactional nesting. \ac{STM} however combines poorly with irreversible actions, that is action which can not be rolled back in case a transaction aborts such \ac{IO}. Neither the \ac{STM} library non \stmnamesp offers a solution to this problem reducing their orthogonality. 
+
+The \ac{STM} library uses special types for transactional variables, requiring the programmer to access the \bscode{Value} property whenever a assignment is to take place. Implicit conversion ensures that a object of one of the special \ac{STM} can, in most cases, be used as if it was an object of the type its wrapping. However this is not possible in all cases. \bsref{lst:lib_implicit_conversion} shows a equality comparison of two transactional variables using the \ac{STM} library. The comparison on line \ref{line:lib_equality} requires the programmer to access the \bscode{Value} property of the \bscode{TMVar} objects as implicit conversion will not be used if the \bscode{TMVars}'s are compared directly, resulting in reference comparison of the \bscode{TMVar} objects producing a incorrect result. A similar problem exist when calling a method on a \bscode{TMVar} object, implicit conversion does not allow methods of the wrapped type to be called on the \bscode{TMVar} directly. Such cases reduce the orthogonality of the \ac{STM} library. The \ac{STM} library however still benefits from the advantages provided by \ac{STM} and is place just above locking on the spectrum.
+
+\begin{lstlisting}[label=lst:lib_implicit_conversion,
+  caption={Equality comparison of \bscode{TMVar<bool>}},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, bool}]  % Start your code-block
+
+  public bool TestMethod()
+  {
+    TMVar<bool> v1 = new TMVar<bool>(false);
+    TMVar<bool> v2 = new TMVar<bool>(false);
+    return v1.Value == v2.Value;~\label{line:lib_equality}~
+  }
+\end{lstlisting}
+\stmnamesp treats transactional variables as object of their original type, allowing the programmer to compare the value of and call methods on  the value of a transactional variable as described above, without having to reason about implicit conversion or manually accessing the \bscode{Value} property. Therefore \stmname is placed more towards the high orthogonality end of the spectrum than the other two approaches. 
+
+The placement of the three concurrency approaches on the low - high orthogonality spectrum is depicted in \bsref{fig:char_orthogonality}.
+
+
 %orthogonality
 %locking deadlocks
 %types in language
@@ -191,7 +220,7 @@ As to the language \ac{STM} and library \ac{STM} individually, some differences 
   }
 \end{lstlisting}
 
- Furthermore, where the \ac{STM} library  exposes transactional variables as special \ac{STM} types, \stmnamesp instead allows variables to be marked as \bscode{atomic}, letting the programmer use the variable as if it was of the original type, even though the type is changed as part of the compilation process. Language \ac{STM} is therefore considered to have a higher level of abstraction than library \ac{STM}. As described previously \ac{STM} however combines poorly with irreversible actions leaving it up to the programmer to correctly handle actions such as \ac{IO} in combination with transactions. As neither the \ac{STM} library nor \stmnamesp presents a solution to this problem their level of abstraction is reduced.
+ Furthermore, where the \ac{STM} library exposes transactional variables as special \ac{STM} types, \stmnamesp instead allows variables to be marked as \bscode{atomic}, letting the programmer use the variable as if it was of the original type, even though the type is changed as part of the compilation process. Language \ac{STM} is therefore considered to have a higher level of abstraction than library \ac{STM}. As described previously \ac{STM} however combines poorly with irreversible actions leaving it up to the programmer to correctly handle actions such as \ac{IO} in combination with transactions. As neither the \ac{STM} library nor \stmnamesp presents a solution to this problem their level of abstraction is reduced.
 
 The placement of the three concurrency approaches on the low level of abstraction - high level of abstraction spectrum is depicted in \bsref{fig:char_level_of_abstraction}. 
 
