@@ -79,15 +79,81 @@ Therefore we say that \stmnamesp and the \ac{STM} library resides at the optimis
 The evaluation of readability and writability are based on a number of shared criteria: Simplicity, Orthogonality, Data Types, and Syntax Design. The last two comes in addition to the criteria used in the evaluation model defined in our prior work\cite[p. 16-21]{dpt907e14trending}. The reason being, that it is now a concurrency approach in a language, and not the isolated concurrency model. In addition to the shared criteria, writability is based on the level of abstraction and expressivity.
 %that of simplicity and orthogonality as well as a number of other considerations. Simplicity and orthogonality is described in the following sections followed by a final evaluation of readability.
 \subsubsection{Low or High Simplicity}\label{subsec:simplicity}
-Locking in itself is only a single construct in C\#. The construct is simple due to its low level of functionality, and requires the programmer to explicitly make usage of the construct to ensure correct synchronization. Both library based \ac{STM} and \stmname takes a more declarative approach than locking when specifying what needs to be synchronized, thus it is simpler as the programmer do not have to worry about the lower level details.\andreas{Skal vi have usability study ind igen?} In the case where conditional synchronization is needed, both forms of \ac{STM} can leverage the \bscode{retry} functionality and make the program wait until changes happens to the variables of the transaction.\andreas{Retry i santa example} In C\# a \bscode{Monitor} enables waiting until a lock has been freed, but contrary to \bscode{retry} this is not on a declarative level.
+Locking in itself is only a single construct in C\#. The construct is simple due to its low level of functionality, and requires the programmer to explicitly make usage of the construct to ensure correct synchronization. Both library based \ac{STM} and \stmname takes a more declarative approach than locking when specifying what needs to be synchronized, thus it is simpler as the programmer do not have to worry about the lower level details.\andreas{Skal vi have usability study ind igen?} In the case where conditional synchronization is needed, both forms of \ac{STM} can leverage the \bscode{retry} functionality and make the program wait until changes happens to the variables of the transaction. In C\# a \bscode{Monitor} enables waiting until a lock has been freed, but contrary to \bscode{retry} this is not on a declarative level. This is shown in the Santa Claus example in \bsref{lst:lock_elf} and \bsref{lst:lang_elf}.
 
 Library based \ac{STM} uses existing constructs, but does not support the implicit dependency between the static calls, e.g. \bscode{retry} only takes effect inside an \bscode{atomic} call. Additionally, the \ac{STM} types provided must be used to be tracked in transaction. These types causes a type mismatch when used together with standard types, thus making the library more complex to use. This issue is eased by providing implicit type conversion on the \ac{STM} types, but the implicit conversion is not possible in all cases. In the cases where it is not, the programmer must access the non-\ac{STM} type by the \bscode{Value} property available on all \ac{STM} types. 
 
 \stmnamesp introduces additional language constructs which lowers the simplicity of the language. It does however increase the simplicity of using the \ac{STM} part, e.g. using \bscode{retry} outside of an \bscode{atomic} block will result in a warning. Additionally, \bscode{atomic} can also be used to modify fields, local variable and parameters, making them traceable in transactions without having to use specific types. This simplifies interaction between code requiring \bscode{atomic} variables and code that does not. 
 
 
+\begin{lstlisting}[label=lst:lock_elf,
+  caption={Santa \bscode{Start} Method - C\# locking},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out}]  % Start your code-block
 
-\andreas[inline]{Example of .value from library contra direct use of atomic type. Maybe also of retry}
+  ...
+  //Only a fixed amount of elfs can go to santa at a time
+  _maxElfs.WaitOne();
+  lock (_buffer)
+  {
+      _buffer.Enqueue(this);
+      if (_buffer.Count == SCStats.MAX_ELFS) _santaHandle.Release();
+  }
+
+  Console.WriteLine("Elf {0} at the door", ID);
+  _waitingToAsk.WaitOne();  //Wait for santa to be ready
+  _doneAsking.WaitOne();  //Asking questions
+  _maxElfs.Release();  //Allow a new elf to visit santa
+  ...
+\end{lstlisting}
+
+\begin{lstlisting}[label=lst:lang_elf,
+  caption={Santa \bscode{Start} Method - \stmname},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out}]  % Start your code-block
+
+  ...
+  atomic
+  {
+      if (_buffer.Count == SantaClausProblem.MAX_ELFS) retry;
+      _buffer.Enqueue(this);
+      _waitingToAsk = true;
+  }
+  Console.WriteLine("Elf {0} at the door", ID);
+  //Waiting on santa
+  atomic
+  {
+      if (_waitingToAsk) retry; 
+  }
+  //Asking question
+  //Done asking
+  atomic
+  {
+      if (!_questionAsked) retry; 
+      _questionAsked = false;
+  }
+  ...
+\end{lstlisting}
+
+\andreas[inline]{Example of .value from library contra direct use of atomic type (Hashmap impl).}
 
 \begin{figure}[htbp]
 \centering
