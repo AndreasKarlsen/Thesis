@@ -824,8 +824,11 @@ Disallowing \bscode{atomic ref/out} parameters, preventing the programmer from d
 
 Disallowing \bscode{ref/out} the cases where both an \bscode{atomic} and non \bscode{atomic} variable/parameter are involved removes the cases where the desired timing cannot be provided. However, it will, for example, no longer be possible to pass an \bscode{atomic} integer into an \bscode{out} integer parameter such as that of \bscode{Int32.TryParse.} Such restrictions limits the flexibility when using \bscode{atomic} variables, and the programmer needs to circumvent this,  by the use of intermediate variables which clutters the intention of the code, and reduces the readability.
 
-For the initial prototype presented in this chapter the first option of warning the programmer of the change in semantics has been selected. This ensures that the change in semantics is not hidden from the programmer thereby allowing her to adapt the program. \andreas{Write something about the approach done in c\# with volatile fields passed into methods}.The impact of the feature will be closely observed throughout the evaluation with the aim of determining the final form of the feature, or even if the feature should be part of the language at all.\andreas{We MUST follow up on this in the evaluation}
+For the initial prototype presented in this chapter the first option of warning the programmer of the change in semantics has been selected. This ensures that the change in semantics is not hidden from the programmer thereby allowing her to adapt the program. 
 
+The impact of the feature will be closely observed throughout the evaluation with the aim of determining the final form of the feature, or even if the feature should be part of the language at all.\andreas{We MUST follow up on this in the evaluation}
+
+\andreas{Write something about the approach done in c\# with volatile fields passed into methods}.
 \toby[i]{Fejl med variable \bscode{i} ikke er initialiseret, hvis man prøver at returnere \bscode{i}, hvor \bscode{i} bliver assigned i en indre nested atomic.}
 
 \worksheetend
