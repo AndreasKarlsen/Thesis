@@ -316,55 +316,98 @@ The placement of the three concurrency approaches on the low level of abstractio
 %The expressivity of the approaches are closely related to their level of abstraction. 
 Locking in C\# is mainly accomplished by the use of the \bscode{lock} keyword, which provide a convenient way to acquire and release a lock on a resource. However it is not always sufficient, instead the \bscode{Monitor} class can be used which provides additional functionality, such as the \bscode{TryEnter} method. Furthermore, there are a number of other special case locking primitives in C\#\cite{microsoftSyncPrim} i.e. \bscode{Mutex}, \bscode{Semaphore}, \bscode{SpinLock} and \bscode{ReaderWriterLock}, that can help the programmer specify synchronization. These primitives enable convenient ways to express exactly how synchronization should be applied by the use of locks and it therefore affects the expressivity positively. The fact that locking uses constructs close to the hardware primitives and that  locking is prone to a number of concurrency related issues, such as deadlocks, causes its expressivity to be lowered. Locking in C\# gives the programmer control over many low level details concerning how synchronization is applied but at the same time requires the programmer to specify these details. This along with the threat of deadlocks and other issues limits how the programmer can concisely and conveniently express the intended functionality. Locking in C\# is therefore placed towards low expressivity, being drawn a bit towards the middle of the spectrum because of the many convenient locking primitives in C\#.
 
+\ac{STM} also builds upon threads which limits its expressivity. Transactions however represent a more declarative and expressive approach than locking, as the programmer only have to specify critical regions and the \ac{STM} system will then manage exactly how synchronization is applied. This affects the expressivity both positively and negatively, as it accomplishes a great deal of computation with little code, but it also denies the programmer the possibility to express low level synchronization details. Furthermore \ac{STM} eliminates the issues of deadlocks which makes it more convenient to express synchronization, as the programmer does not have to reason about it. However, neither in the \ac{STM} library or \stmname there exists not a convenient way to express irreversible actions, such as exceptions and \ac{IO}, the programmer is left alone in ensuring these actions works correctly with transactions, which negativity affects the expressivity. Based on the above, the general \ac{STM} approach is placed between the middle and high end of the spectrum.
 
-%However the expressivity is also closely related to the level of abstraction, which in the case of locking is low, as it uses threads and locks low level construct.
+As to \stmname and library \ac{STM}, there are some differences in how expressive the approach is. The expressiveness of the approach is closely related to the level of abstraction of the approach, described in \bsref{subsec:level_of_abstraction}.\toby{Måske er det fakitsk syntax design som der skal referes til, og det måske skal være forklaret i også} As described in that section, library \ac{STM} requires the programmer to put extra effort into expressing the intended functionality e.g. wrapping transactional code in lambdas, wrapping transactional variables in \bscode{TMVar} types and using the \bscode{Value} property when getting or setting a value on a transactional variable. That is abstracted away in \stmname which makes it more expressive as much it provides a more convenient and less tedious way of specifying computations. However, the abstraction that \stmname provides, also denies the programmer to express certain computations which is possible in library \ac{STM}. In library \ac{STM}, transactional variables are defined using transactional types, such as \bscode{TMInt}, which means that it is possible to create an array or list containing these types, e.g. \bscode{TMInt[]} defines an array of \bscode{TMInt} types. In \stmname it does not treat transactional variables as transactional types, but instead as regular types with an \bscode{atomic} keyword modifier\toby{Hvad type modifer er det præcist?} e.g. \bscode{atomic int}. The result is that it is not possible to define a list or array of transactional variables, at least not directly, which negatively affects the expressivity of \stmname. 
 
-%concurrency related issues 
+The need to define an array of transactional types was experienced in the hashmap implementations, which uses it to represent the buckets of the hashmap. \bsref{lst:lib_Buckets} and \bsref{lst:lang_Buckets} shows how the hashmap buckets are defined in the \ac{STM} library and \stmname, respectively. In the library \ac{STM} example on line \ref{lst:lib_Buckets} the buckets are defined directly. The type of the \bscode{\_buckets} field will be explained gradually. The inner \bscode{Node} type, is a simple class which represents a key value pair, where the value is a transactional variable. The \bscode{Node} is wrapped in an \bscode{ImmutableList} which represents the collision list of a given bucket. The list is immutable for the \ac{STM} system to be able to track changes to the list, as the tracking granularity is only on variables, as described in \bsref{sec:tracking}, and if it was a regular list which changed, the \ac{STM} system would not notice it. The \bscode{ImmutableList} is wrapped in a \bscode{TMVar} for the \ac{STM} system to track changes to the list, each of these then represent a single bucket which is why there is an array of these types. Finally this array is also wrapped in a \bscode{TMVar}.\toby{Ikke helt hunderede hvorfor den er wrapped i to tmvars - kan vi ellers ikke tracke?} In the \stmname example on line \ref{line:lang_bucket} it is not possible to define the array of transactional variables directly, so a wrapper type called \bscode{Bucket} defined on line \ref{line:lang_bucket_class} is used.
 
-%great deal of computation accomplished with a small program
+\toby[i]{Evt. slet definitionerne af node klasserne}
+\begin{lstlisting}[label=lst:lib_Buckets,
+  caption={HashMap Buckets Array - \ac{STM} Library},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out}]  % Start your code-block
+  
+  public class StmHashMap<K,V> : BaseHashMap<K,V>
+  {
+    //TMVar to (array of TMVars to (ImmutableList of nodes) )
+    private readonly TMVar<TMVar<ImmutableList<Node>>[]> _buckets =~\label{line:lib_bucket}~
+    new TMVar<TMVar<ImmutableList<Node>>[]>();
+  
+    ...  //Other code
+  
+    private class Node
+    {
+      public K Key { get; private set; }
+      public TMVar<V> Value { get; private set; }
+      public Node(K key, V value)
+      {
+        Key = key;
+        Value = new TMVar<V>(value);
+      }
+    }
+  }
+\end{lstlisting}
 
-\toby[i]{Evt. eksempel(er) fra nogle af implementationerne}
+\begin{lstlisting}[label=lst:lang_Buckets,
+  caption={HashMap Buckets Array - \stmname},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out}]  % Start your code-block
+  
+  public class StmHashMap<K,V> : BaseHashMap<K,V>
+  {
+    private atomic Bucket[] _buckets;~\label{line:lang_bucket}~
+  
+    ... //Other code
+    
+    private class Bucket~\label{line:lang_bucket_class}~
+    {
+      public atomic ImmutableList<Node> Value { get; set; }
+      public Bucket()
+      {
+        Value = ImmutableList.Create<Node>();
+      }
+    }
+  
+    private class Node
+    {
+      public K Key { get; private set; }
+      public atomic V Value { get; set; }
+      public Node(K key, V value)
+      {
+        Key = key;
+        Value = value;
+      }
+    }
+  }
+\end{lstlisting}
 
-%and therefore affects the expressivity positively
+Ultimately \stmname is considered to have a higher expressivity than library \ac{STM} because of the higher level of abstraction that it facilitates which reflects positively on the expressivity. However as \stmname denies the programmer the possibility to express certain computations, it does not have a much higher expressivity than library \ac{STM}.\toby{Hvad siger i til den her forklaring og valg?}
 
-%Convenient ways to express exactly how synchronization should be applied
-	%However problems, because of the low level constructs and the concurrency issues that follows with this such as deadlocks (which the programmer must handle themselves)
-		%limitis the focus programmers can put into concisely express intended functionality
+The placement of the three concurrency approaches on the low expressivity - high expressivity spectrum is depicted in \bsref{fig:char_expressivity}. 
 
-%STM 
-
-
-%Provides a number of helpful keywords, and classes - however stil low-level abstractions with threads and locks. Also there are a number of issues that 
-
-%There 
-
-%close to the 
-
-%hvilke constructs approachen har
-	%lock keyword
-	%monitor
-	%mutex
-	%spinlock
-	%readwriterlock
-	%semaphore
-
-%Lib
 %expressivity:
 %great deal of computation accomplished with a small program
 	%fx. retry
 %convenient ways of specifying computations
-
-
-%noget generelt først om expressivity også forklar ud fra eksempel mellem library og lang base
-
-%evt. prøv at tælle tegn i en library og i en langauge based
-
-%\toby[i]{Evt. indsæt eksmpel på brug af en tmvar og noget med brug af value property}
-
-%\toby[i]{Evt. refer til appendix hvor kodeeksmeplerne kommer fra præcist}
-
-
-
 \begin{figure}[htbp]
 \centering
  \includegraphics[width=0.9\textwidth]{\rootpath/worksheets/evaluation/figures/char_expressivity} 
