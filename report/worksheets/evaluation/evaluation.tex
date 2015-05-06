@@ -43,7 +43,6 @@ The implementations in their full length can be found in the appendix.\toby{inds
 
 \section{Evaluation of Characteristics}
 All of the selected concurrency approaches relies on starting threads in order to introduce concurrency as well as manually specifying critical regions using ether locks or the \bscode{atomic} block. 
-\toby[i]{Noget intro tekst her, ellers kan sektionen vel ligeså godt slettes og undersektioner gøres til sektioner?}
 \subsection{Implicit or Explicit Concurrency}
 The two \ac{STM} based approaches have implicit elements\toby{Ved ikke om man kan sige det med elements? Måske brug features istedet, eller formuler det til at det det er mere implicit eller mere mod den implicitte ende? (elements udtrykket er brugt i næste subsektion også)} as \ac{STM} allows them to hide the details synchronization. Locking in C\# on the other hand requires explicit stating how synchronization is to be achieved. As such we say that locking in C\# resides close to the explicit concurrency extreme\toby{har vi en grund til at den ikke ligger på explicit? - vil Lone nok spørge} while \stmnamesp and the \ac{STM} library resides slightly more towards the implicit concurrency end of the spectrum. The placement of the three concurrency approaches on the implicit - explicit concurrency spectrum is depicted in \bsref{fig:char_implicit_explicit}.
 
