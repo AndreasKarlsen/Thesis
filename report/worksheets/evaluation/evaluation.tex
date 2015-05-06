@@ -211,8 +211,6 @@ The placement of the three concurrency approaches on the low - high orthogonalit
 \label{fig:char_orthogonality}
 \end{figure}
 
-\subsubsection{Data Types}\label{subsec:datatypes}
-
 \subsubsection{Syntax Design}\label{subsec:syntaxdesign}
 
 \subsubsection{Low or High Readability}\label{subsec:char_readability}
@@ -416,6 +414,14 @@ The placement of the three concurrency approaches on the low expressivity - high
 \end{figure}
 
 \subsubsection{Low or High Writability}
+As discussed in \bsref{subsec:level_of_abstraction} locking in C\# has a low level of abstraction due to its usage of low level constructs. While the \bscode{lock} statement provides a abstraction over the acquisition and release of a lock providing increased writability in cases where it is applicable, the writability of locking in C\# is reduced as a result of the low level of abstraction. The \ac{STM} libraries level of abstraction is said to be be just above the middle towards the high level of abstraction end of the spectrum, while \stmname is said to have a higher level of abstraction than the \ac{STM} library. This positively impacts the writability of the \ac{STM} library and \stmname.
+
+Locking in C\# presents a number of different tools, such as \bscode{Semaphore}'s and \bscode{SpinLock}'s for defining synchronization. These tools are however still prone to common locking problems, such as deadlocks, resulting in a low expressivity score which negatively impacts its writability. The expressivity of the \ac{STM} library resides above the middle of the spectrum. The expressivity of the \ac{STM} library is limited due to the requirements of wrapping transactional code in lambdas, wrapping transactional variables in \bscode{TMVar} types and using the \bscode{Value} property when getting or setting a value on a transactional variable, hindering the programmer in concisely expressing  the intended behavior and resulting in reduced writability. \stmname removes these burdens from the programmer, by delegating them to the compiler, resulting in a higher expressivity score and improved writability.
+
+
+
+
+
 \begin{figure}[htbp]
 \centering
  \includegraphics[width=0.9\textwidth]{\rootpath/worksheets/evaluation/figures/char_writability} 
