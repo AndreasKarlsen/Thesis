@@ -94,14 +94,14 @@ In C\# it is possible to name variables by reserved keywords, by prefixing the n
 \subsubsection{Low or High Simplicity}\label{subsec:simplicity}
 Locking is based on the idea of mutual exclusion. C\# supplies a number of different constructs, with slight variations, for defining synchronization using locking. Applying locking correctly in complex scenarios is considered to be hard\cite[p. 56]{sutter2005software}. Mainly due to the number of errors that can arise, such as deadlocks. 
 
-Locking requires the programmer to explicitly state how synchronization is to be applied. Both library based \ac{STM} and \stmname takes a more declarative approach than locking when specifying what needs to be synchronized, thus it is simpler as the programmer does not have to worry about the lower level details.\andreas{Skal vi have usability study ind igen?}\toby{Jaaaaaaaaaa!} In the case where conditional synchronization is needed, both forms of \ac{STM} can leverage the \bscode{retry} functionality and make a transaction block until the variables previously read by the transaction are changed by another transaction. In C\# a \bscode{Monitor} enables waiting until a lock has been freed, but contrary to \bscode{retry} this is not on a declarative level. This is shown in the Santa Claus example in \bsref{lst:lock_elf} and \bsref{lst:lang_elf}.\toby{Evt. kort forklaring af hvordan det fungerer og hvad der foregår?}
+Locking requires the programmer to explicitly state how synchronization is to be applied. Both library based \ac{STM} and \stmname takes a more declarative approach than locking when specifying what needs to be synchronized, thus it is simpler as the programmer does not have to worry about the lower level details.\andreas{Skal vi have usability study ind igen?}\toby{Jaaaaaaaaaa!} In the case where conditional synchronization is needed, both forms of \ac{STM} can leverage the \bscode{retry} functionality and make a transaction block until the variables previously read by the transaction are changed by another transaction. In C\# a \bscode{Monitor} enables waiting until a lock has been freed, but contrary to \bscode{retry} this is not on a declarative level. This is shown in the ConcurrentHashMap example in \bsref{llst:lock_add_hashmap} and \bsref{lst:lang_add_hashmap}, where the need for different locks for different critical regions is clearly displayed. In \bsref{lst:lock_add_hashmap} on line \ref{line:lock_lock_bucket}, a calculation is made to check which needs to be used, additionally on line \ref{line:lock_lock_size} another lock is needed for another critical region. This is entirely avoided in \bsref{lst:lang_add_hashmap} where the entire method is wrapped in an \bscode{atomic} block, and the \ac{STM} system detects and resolves potential conflicts.
 
 Library based \ac{STM} uses existing language constructs, such as static method calls, however it does have not support for checking implicit dependency between static calls at compile time, e.g. \bscode{retry} outside an \bscode{atomic} call will not produce a compile time warning. Additionally, the \ac{STM} types provided must be used to track variables in transactions. These types causes a type mismatch when used together with standard types, thus making the library more complex to use. This issue is eased by providing implicit type conversion on the \ac{STM} types, but the implicit conversion is not possible in all cases. In the cases where it is not, the programmer must access the non-\ac{STM} type by the \bscode{Value} property available on all \ac{STM} types. 
 
-\stmnamesp introduces additional language constructs which lowers the simplicity of the language. It does however increase the simplicity of using the \ac{STM} part, e.g. using \bscode{retry} outside of an \bscode{atomic} block will result in a compile time warning. Additionally, \bscode{atomic} can also be used to modify fields, local variable and parameters, making them traceable in transactions without having to use specific types. This simplifies interaction between code that uses \bscode{atomic} variables and code that does not.
+\stmnamesp introduces additional language constructs which lowers the simplicity of the language. It does however increase the simplicity of using the \ac{STM} part, e.g. using \bscode{retry} outside of an \bscode{atomic} block will result in a compile time warning. Additionally, \bscode{atomic} can also be used to modify fields, local variable and parameters, making them traceable in transactions without having to use specific types. This simplifies interaction between code that uses \bscode{atomic} variables and code that does not. 
 
-\begin{lstlisting}[label=lst:lock_elf,
-  caption={Santa \bscode{Start} Method - C\# locking},
+\begin{lstlisting}[float,label=lst:lock_add_hashmap,
+  caption={ConcurrentHashMap \bscode{Add} Method - Locking},
   language=Java,  
   showspaces=false,
   showtabs=false,
@@ -114,24 +114,35 @@ Library based \ac{STM} uses existing language constructs, such as static method 
   stringstyle=\color{redstrings},
   morekeywords={atomic, retry, orelse, var, get, set, ref, out}]  % Start your code-block
 
-  ...
-  //Only a fixed amount of elfs can go to santa at a time
-  _maxElfs.WaitOne();
-  lock (_buffer)
+  public override void Add(K key, V value)
   {
-      _buffer.Enqueue(this);
-      if (_buffer.Count == SCStats.MAX_ELFS) _santaHandle.Release();
-  }
+      var hashCode = GetHashCode(key);
+      lock (_locks[GetLockIndex(hashCode)])~\label{line:lock_lock_bucket}~
+      {
+          var bucket = _buckets[GetBucketIndex(hashCode)];
+          var node = FindNode(bucket, key);
 
-  Console.WriteLine("Elf {0} at the door", ID);
-  _waitingToAsk.WaitOne();  //Wait for santa to be ready
-  _doneAsking.WaitOne();  //Asking questions
-  _maxElfs.Release();  //Allow a new elf to visit santa
-  ...
+          if (node != null)
+          {
+              //If node is not null, key exist in map. Update the value
+              node.Value = value;
+          }
+          else
+          {
+              //Else insert the node
+              bucket.AddFirst(CreateNode(key, value));
+              lock (_sizeLock)~\label{line:lock_lock_size}~
+              {
+                  _size++;
+              }
+              ResizeIfNeeded();
+          }
+      }
+  }
 \end{lstlisting}
 
-\begin{lstlisting}[label=lst:lang_elf,
-  caption={Santa \bscode{Start} Method - \stmname},
+\begin{lstlisting}[float,label=lst:lang_add_hashmap,
+  caption={ConcurrentHashMap \bscode{Add} Method - \stmname},
   language=Java,  
   showspaces=false,
   showtabs=false,
@@ -143,28 +154,30 @@ Library based \ac{STM} uses existing language constructs, such as static method 
   keywordstyle=\color{bluekeywords},
   stringstyle=\color{redstrings},
   morekeywords={atomic, retry, orelse, var, get, set, ref, out}]  % Start your code-block
-
-  ...
-  atomic
+  
+  public override void Add(K key, V value)
   {
-      if (_buffer.Count == SantaClausProblem.MAX_ELFS) retry;
-      _buffer.Enqueue(this);
-      _waitingToAsk = true;
+      atomic
+      {
+          var bucketIndex = GetBucketIndex(key);
+          //TMVar wrapping the immutable chain list
+          var bucketVar = _buckets[bucketIndex];
+          var node = FindNode(key, bucketVar.Value);
+         
+          if (node != null)
+          {
+              //If node is not null key exist in map. Update the value
+              node.Value = value;
+          }
+          else
+          {
+              //Else insert the node
+              bucketVar.Value = bucketVar.Value.Add(CreateNode(key, value));
+              _size++;
+              ResizeIfNeeded();
+          }
+      }
   }
-  Console.WriteLine("Elf {0} at the door", ID);
-  //Waiting on santa
-  atomic
-  {
-      if (_waitingToAsk) retry; 
-  }
-  //Asking question
-  //Done asking
-  atomic
-  {
-      if (!_questionAsked) retry; 
-      _questionAsked = false;
-  }
-  ...
 \end{lstlisting}
 
 The placement of the three concurrency approaches on the low simplicity - high simplicity spectrum is depicted in \bsref{fig:char_simplicity}.
