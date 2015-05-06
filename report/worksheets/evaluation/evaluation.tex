@@ -43,7 +43,6 @@ The implementations in their full length can be found in the appendix.\toby{inds
 
 \section{Evaluation of Characteristics}
 All of the selected concurrency approaches relies on starting threads in order to introduce concurrency as well as manually specifying critical regions using ether locks or the \bscode{atomic} block. 
-\toby[i]{Noget intro tekst her, ellers kan sektionen vel ligeså godt slettes og undersektioner gøres til sektioner?}
 \subsection{Implicit or Explicit Concurrency}
 The two \ac{STM} based approaches have implicit elements\toby{Ved ikke om man kan sige det med elements? Måske brug features istedet, eller formuler det til at det det er mere implicit eller mere mod den implicitte ende? (elements udtrykket er brugt i næste subsektion også)} as \ac{STM} allows them to hide the details synchronization. Locking in C\# on the other hand requires explicit stating how synchronization is to be achieved. As such we say that locking in C\# resides close to the explicit concurrency extreme\toby{har vi en grund til at den ikke ligger på explicit? - vil Lone nok spørge} while \stmnamesp and the \ac{STM} library resides slightly more towards the implicit concurrency end of the spectrum. The placement of the three concurrency approaches on the implicit - explicit concurrency spectrum is depicted in \bsref{fig:char_implicit_explicit}.
 
@@ -76,17 +75,33 @@ Therefore we say that \stmnamesp and the \ac{STM} library resides at the optimis
 \end{figure}
 
 \subsection{Readability \& Writability}\label{subsec:tl_charac_read_and_write}
-The evaluation of readability and writability are based on a number of shared criteria: Simplicity, Orthogonality, Data Types, and Syntax Design. The last two comes in addition to the criteria used in the evaluation model defined in our prior work\cite[p. 16-21]{dpt907e14trending}. The reason being, that it is now a concurrency approach in a language, and not the isolated concurrency model. In addition to the shared criteria, writability is based on the level of abstraction and expressivity.
+The evaluation of readability and writability are based on a number of shared criteria: Simplicity, Orthogonality, Data Types, and Syntax Design. The last two comes in addition to the criteria used in the evaluation model defined in our prior work\cite[p. 16-21]{dpt907e14trending}. The reason being, that it is now a concurrency approach in a language, and not the isolated concurrency model. The analysis of Data Types and Syntax Design will not be evaluated on a spectrum of two extremes, as the choices made are trade offs affecting other characteristics, e.g. simplicity and readability. The analysis will therefore be taken into account when the other characteristics is evaluated.
+
+In addition to the shared criteria, writability is based on the level of abstraction and expressivity.
 %that of simplicity and orthogonality as well as a number of other considerations. Simplicity and orthogonality is described in the following sections followed by a final evaluation of readability.
+\subsubsection{Data Types}\label{subsec:datatypes}
+% Using STM types could imply a different meaning and confusing the programmer. Is TMInt the same value as int?
+% 
+\subsubsection{Syntax Design}\label{subsec:syntaxdesign}
+The use of keywords reduces simplicity but increases readability, as the intent stands out clearly\cite[p. 12-13]{sebestaProLang}. Locking in C\# uses only a single keyword, \bscode{lock}. The rest of the functionality is provided by library calls as described in \andreas{REF til hvor det ender med at stå}. The use of libraries for locking constructs makes it blend in with other library code, even though it got a special purpose. This decreases the readability, but keeps the simplicity of the language high as it does not introduce keywords for all constructs. 
+
+The \ac{STM} library also uses library calls just as described above, thus it got the same disadvantages and the readability is decreased compared to \stmname which got keywords for the special constructs. The four keywords introduces in \stmname does however decreases the simplicity of the language. As the \bscode{atomic} keyword got different meanings depending on the context in \stmname, its readability is lowered and the simplicity is raised by keeping a minimum of keywords. 
+
+In \stmname, an \bscode{atomic} variable can be passed directly into as a non-\bscode{atomic} argument, and the language will figure out to provide the encapsulated value. In the \ac{STM} library, this is not the case, and the programmer has to call the getter method on the \bscode{atomic} variable to get the value. In this case, both the readability and simplicity is increased in \stmname compared to the \ac{STM} library, as the code gets less cluttered, thus easier to read.
+
+In C\# it is possible to name variables by reserved keywords, by prefixing the name with \bscode{@}. Due to this, the additional keywords in \stmname does not restrict the use of variable naming, and it clearly distinguish when it is used as a name or a keyword.
+
 \subsubsection{Low or High Simplicity}\label{subsec:simplicity}
-Locking in itself is only a single construct in C\#\toby{Ikke helt sandt, evt. fortæl om allesammen nu (dem som står i expressivity)}. The construct is simple due to its low level of functionality, and requires the programmer to explicitly use the construct to ensure correct synchronization. Both library based \ac{STM} and \stmname takes a more declarative approach than locking when specifying what needs to be synchronized, thus it is simpler as the programmer does not have to worry about the lower level details.\andreas{Skal vi have usability study ind igen?}\toby{Jaaaaaaaaaa!} In the case where conditional synchronization is needed, both forms of \ac{STM} can leverage the \bscode{retry} functionality and make the program\toby{Er det ikke tråden eller transaktionen der gør det?} wait until changes happens to the variables of the transaction. In C\# a \bscode{Monitor} enables waiting until a lock has been freed, but contrary to \bscode{retry} this is not on a declarative level. This is shown in the Santa Claus example in \bsref{lst:lock_elf} and \bsref{lst:lang_elf}.\toby{Evt. kort forklaring af hvordan det fungerer og hvad der foregår?}
+Locking is based on the idea of mutual exclusion. C\# supplies a number of different constructs, with slight variations, for defining synchronization using locking. Applying locking correctly in complex scenarios is considered to be hard\cite[p. 56]{sutter2005software}. Mainly due to the number of errors that can arise, such as deadlocks. 
+
+Locking requires the programmer to explicitly state how synchronization is to be applied. Both library based \ac{STM} and \stmname takes a more declarative approach than locking when specifying what needs to be synchronized, thus it is simpler as the programmer does not have to worry about the lower level details.\andreas{Skal vi have usability study ind igen?}\toby{Jaaaaaaaaaa!} In the case where conditional synchronization is needed, both forms of \ac{STM} can leverage the \bscode{retry} functionality and make a transaction block until the variables previously read by the transaction are changed by another transaction. In C\# a \bscode{Monitor} enables waiting until a lock has been freed, but contrary to \bscode{retry} this is not on a declarative level. This is shown in the ConcurrentHashMap example in \bsref{llst:lock_add_hashmap} and \bsref{lst:lang_add_hashmap}, where the need for different locks for different critical regions is clearly displayed. In \bsref{lst:lock_add_hashmap} on line \ref{line:lock_lock_bucket}, a calculation is made to check which needs to be used, additionally on line \ref{line:lock_lock_size} another lock is needed for another critical region. This is entirely avoided in \bsref{lst:lang_add_hashmap} where the entire method is wrapped in an \bscode{atomic} block, and the \ac{STM} system detects and resolves potential conflicts.
 
 Library based \ac{STM} uses existing language constructs, such as static method calls, however it does have not support for checking implicit dependency between static calls at compile time, e.g. \bscode{retry} outside an \bscode{atomic} call will not produce a compile time warning. Additionally, the \ac{STM} types provided must be used to track variables in transactions. These types causes a type mismatch when used together with standard types, thus making the library more complex to use. This issue is eased by providing implicit type conversion on the \ac{STM} types, but the implicit conversion is not possible in all cases. In the cases where it is not, the programmer must access the non-\ac{STM} type by the \bscode{Value} property available on all \ac{STM} types. 
 
-\stmnamesp introduces additional language constructs which lowers the simplicity of the language. It does however increase the simplicity of using the \ac{STM} part, e.g. using \bscode{retry} outside of an \bscode{atomic} block will result in a compile time warning. Additionally, \bscode{atomic} can also be used to modify fields, local variable and parameters, making them traceable in transactions without having to use specific types. This simplifies interaction between code that uses \bscode{atomic} variables and code that does not.
+\stmnamesp introduces additional language constructs which lowers the simplicity of the language. It does however increase the simplicity of using the \ac{STM} part, e.g. using \bscode{retry} outside of an \bscode{atomic} block will result in a compile time warning. Additionally, \bscode{atomic} can also be used to modify fields, local variable and parameters, making them traceable in transactions without having to use specific types. This simplifies interaction between code that uses \bscode{atomic} variables and code that does not. 
 
-\begin{lstlisting}[label=lst:lock_elf,
-  caption={Santa \bscode{Start} Method - C\# locking},
+\begin{lstlisting}[float,label=lst:lock_add_hashmap,
+  caption={ConcurrentHashMap \bscode{Add} Method - Locking},
   language=Java,  
   showspaces=false,
   showtabs=false,
@@ -99,24 +114,35 @@ Library based \ac{STM} uses existing language constructs, such as static method 
   stringstyle=\color{redstrings},
   morekeywords={atomic, retry, orelse, var, get, set, ref, out}]  % Start your code-block
 
-  ...
-  //Only a fixed amount of elfs can go to santa at a time
-  _maxElfs.WaitOne();
-  lock (_buffer)
+  public override void Add(K key, V value)
   {
-      _buffer.Enqueue(this);
-      if (_buffer.Count == SCStats.MAX_ELFS) _santaHandle.Release();
-  }
+      var hashCode = GetHashCode(key);
+      lock (_locks[GetLockIndex(hashCode)])~\label{line:lock_lock_bucket}~
+      {
+          var bucket = _buckets[GetBucketIndex(hashCode)];
+          var node = FindNode(bucket, key);
 
-  Console.WriteLine("Elf {0} at the door", ID);
-  _waitingToAsk.WaitOne();  //Wait for santa to be ready
-  _doneAsking.WaitOne();  //Asking questions
-  _maxElfs.Release();  //Allow a new elf to visit santa
-  ...
+          if (node != null)
+          {
+              //If node is not null, key exist in map. Update the value
+              node.Value = value;
+          }
+          else
+          {
+              //Else insert the node
+              bucket.AddFirst(CreateNode(key, value));
+              lock (_sizeLock)~\label{line:lock_lock_size}~
+              {
+                  _size++;
+              }
+              ResizeIfNeeded();
+          }
+      }
+  }
 \end{lstlisting}
 
-\begin{lstlisting}[label=lst:lang_elf,
-  caption={Santa \bscode{Start} Method - \stmname},
+\begin{lstlisting}[float,label=lst:lang_add_hashmap,
+  caption={ConcurrentHashMap \bscode{Add} Method - \stmname},
   language=Java,  
   showspaces=false,
   showtabs=false,
@@ -128,28 +154,30 @@ Library based \ac{STM} uses existing language constructs, such as static method 
   keywordstyle=\color{bluekeywords},
   stringstyle=\color{redstrings},
   morekeywords={atomic, retry, orelse, var, get, set, ref, out}]  % Start your code-block
-
-  ...
-  atomic
+  
+  public override void Add(K key, V value)
   {
-      if (_buffer.Count == SantaClausProblem.MAX_ELFS) retry;
-      _buffer.Enqueue(this);
-      _waitingToAsk = true;
+      atomic
+      {
+          var bucketIndex = GetBucketIndex(key);
+          //TMVar wrapping the immutable chain list
+          var bucketVar = _buckets[bucketIndex];
+          var node = FindNode(key, bucketVar.Value);
+         
+          if (node != null)
+          {
+              //If node is not null key exist in map. Update the value
+              node.Value = value;
+          }
+          else
+          {
+              //Else insert the node
+              bucketVar.Value = bucketVar.Value.Add(CreateNode(key, value));
+              _size++;
+              ResizeIfNeeded();
+          }
+      }
   }
-  Console.WriteLine("Elf {0} at the door", ID);
-  //Waiting on santa
-  atomic
-  {
-      if (_waitingToAsk) retry; 
-  }
-  //Asking question
-  //Done asking
-  atomic
-  {
-      if (!_questionAsked) retry; 
-      _questionAsked = false;
-  }
-  ...
 \end{lstlisting}
 
 The placement of the three concurrency approaches on the low simplicity - high simplicity spectrum is depicted in \bsref{fig:char_simplicity}.
@@ -212,10 +240,6 @@ The placement of the three concurrency approaches on the low - high orthogonalit
 \label{fig:char_orthogonality}
 \end{figure}
 
-\subsubsection{Data Types}\label{subsec:datatypes}
-
-\subsubsection{Syntax Design}\label{subsec:syntaxdesign}
-
 \subsubsection{Low or High Readability}\label{subsec:char_readability}
 As described in \bsref{subsec:syntaxdesign} the syntax design of locking BLA\toby{Something about the syntax design on each model}. In \bsref{subsec:simplicity} the simplicity of locking is placed close to the low simplicity extreme, where the \ac{STM} library is placed a bit higher than the middle of the spectrum and \stmname even higher. In \bsref{subsec:orthogonality} the orthogonality of locking resides just above the middle of the spectrum, where the \ac{STM} library resides a little higher and \stmname again a little higher. These characteristics directly influence the readability of the concurrency approaches.
 
@@ -244,7 +268,7 @@ The placement of the three concurrency approaches on the low readability - high 
 \subsubsection{Low or High Level of Abstraction}\label{subsec:level_of_abstraction}
 Locking is tightly coupled with the hardware architecture through hardware instructions such as Test-and-set and Compare-and-swap\cite[p. 1990]{scott2011sync}. Furthermore low-level abstraction threads is used in order to introduce concurrency. Additionally the programmer have to state exactly how synchronization should be applied using locks. C\# offers the lock \bscode{lock} statement which provides a small abstraction over the release of a lock. The \bscode{lock} statement is however not applicable in all cases. If for example a timeout on the acquisition of a lock is require or a more advanced form of lock, such as a semaphore is required, the \bscode{lock} keyword is not directly applicable. This can also been seen in the implementations for the evaluation. Both the locking dining philosophers implementation and the lock based concurrency hashmap implementation requires the use of the monitor class instead of the lock keyword for acquiring a lock with a timeout. The dining philosophers implementation requires the second lock to be taken with a timeout and the concurrency hashmap implementation uses a timeout with acquiring the lock on resizing the backing array. Furthermore the flow of the locking santa clause problem implementation uses semaphores to signal between santa, the elfs and the reindeer. The \bscode{lock} keyword does not provide such capabilities. Ultimately locking in C\# is placed close to the low level of abstraction extreme of the spectrum with the small abstractions provided keeping it from being at the extreme. 
 
-The \ac{STM} approaches also rely on threads, but provides a higher level of abstraction for synchronization. \ac{STM} uses transactions, where code segments is marked and the details of how synchronization is achieved is abstracted away to the \ac{STM} system. However the isolation level can pose a threat to the level of abstraction of transactions, as under weak isolation \ac{STM} will not take non-transactional code into account and the programmer must therefore manage it themselves. In the case of \stmnamesp this is not problematic, as it facilities strong atomicity, as described in \bsref{sec:design_strong_weak_atomicity} and the \ac{STM} system will therefore manage both transactional and non-transactional code. Based on the above, the general \ac{STM} approach lies between the middle and high end of the spectrum, where the main negative factors is that the programmer still have to manage threads and mark regions of code that should be synchronized.
+The \ac{STM} approaches also rely on threads, but provides a higher level of abstraction for synchronization. \ac{STM} uses transactions, where code segments are marked and the details of how synchronization is achieved is abstracted away to the \ac{STM} system. However the isolation level can pose a threat to the level of abstraction of transactions, as under weak isolation \ac{STM} will not take non-transactional code into account and the programmer must therefore manage it themselves. In the case of \stmnamesp this is not problematic, as it facilities strong atomicity, as described in \bsref{sec:design_strong_weak_atomicity} and the \ac{STM} system will therefore manage both transactional and non-transactional code. Based on the above, the general \ac{STM} approach lies between the middle and high end of the spectrum, where the main negative factors is that the programmer still have to manage threads and mark regions of code that should be synchronized.
 
 As to the language \ac{STM} and library \ac{STM} individually, some differences in the level of abstraction exist. Library \ac{STM} requires the programmer to use static method calls, wrap transactional code in lambdas, wrap transactional variables in a \bscode{TMVar}, use the \bscode{Value} property when getting or setting a value, supply \bscode{orelse} transactions as arguments to the atomic method call, and write return in front of the static method call if a method must return the value computed by a transaction. Many of these concerns is abstracted away or handled more gracefully in the language based \ac{STM}. \bsref{lst:lib_SleepUntilAwoken} and \bsref{lst:lang_SleepUntilAwoken} presents an implementation of the \bscode{SleepUntilAwoken} method from the library and language based santa clause problem implementations, respectively. The method ensures that santa sleeps until he is awoken by either three elfs at his door, or all reindeers back from vacation ready to fly his sleigh. The \bscode{return} statement on line \ref{line:lib_sleep_return} of \bsref{lst:lib_SleepUntilAwoken} is not present in the language based implementation as it is abstracted away by \stmnamesp. Furthermore the static method call and creation of lambas to represent transaction bodies on line \ref{line:lib_sleep_return} is abstracted away by the \bscode{atomic} block and orelse block on lines \ref{line:lang_sleep_atomic} and \ref{line:lang_sleep_orelse} of \bsref{lst:lang_SleepUntilAwoken}.
 
@@ -433,6 +457,14 @@ The placement of the three concurrency approaches on the low expressivity - high
 \end{figure}
 
 \subsubsection{Low or High Writability}
+As discussed in \bsref{subsec:level_of_abstraction} locking in C\# has a low level of abstraction due to its usage of low level constructs. While the \bscode{lock} statement provides a abstraction over the acquisition and release of a lock providing increased writability in cases where it is applicable, the writability of locking in C\# is reduced as a result of the low level of abstraction. The \ac{STM} libraries level of abstraction is said to be be just above the middle towards the high level of abstraction end of the spectrum, while \stmname is said to have a higher level of abstraction than the \ac{STM} library. This positively impacts the writability of the \ac{STM} library and \stmname.
+
+Locking in C\# presents a number of different tools, such as \bscode{Semaphore}'s and \bscode{SpinLock}'s for defining synchronization. These tools are however still prone to common locking problems, such as deadlocks, resulting in a low expressivity score which negatively impacts its writability. The expressivity of the \ac{STM} library resides above the middle of the spectrum. The expressivity of the \ac{STM} library is limited due to the requirements of wrapping transactional code in lambdas, wrapping transactional variables in \bscode{TMVar} types and using the \bscode{Value} property when getting or setting a value on a transactional variable, hindering the programmer in concisely expressing  the intended behavior and resulting in reduced writability. \stmname removes these burdens from the programmer, by delegating them to the compiler, resulting in a higher expressivity score and improved writability.
+
+With respect to simplicity locking in C\# is, as described in \bsref{subsec:simplicity}, placed close to the low simplicity end of the spectrum mainly due the the number of errors that can arise. This negatively impacts the approach's readability. The \ac{STM} library is placed The two \ac{STM} based approaches are placed just above the middle of while \stmname resides further towards the high simplicity end of the spectrum.
+
+
+
 \begin{figure}[htbp]
 \centering
  \includegraphics[width=0.9\textwidth]{\rootpath/worksheets/evaluation/figures/char_writability} 
