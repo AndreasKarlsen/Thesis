@@ -183,9 +183,10 @@ namespace Evaluation.Locking
                     {
                         _size++;
                     }
-                    ResizeIfNeeded();
                 }
             }
+
+            ResizeIfNeeded();
         }
 
         public override bool AddIfAbsent(K key, V value)
@@ -206,6 +207,8 @@ namespace Evaluation.Locking
                 ResizeIfNeeded();
                 return true;
             }
+
+            
         }
 
         public override bool Remove(K key)
@@ -232,6 +235,39 @@ namespace Evaluation.Locking
 
         private void ResizeIfNeeded()
         {
+            if (ResizeCondtion())
+            {
+                LockAll();
+                try
+                {
+                    if (!ResizeCondtion())
+                    {
+                        return;
+                    }
+                    //Construct new backing array
+                    var newBucketSize = _buckets.Length * 2;
+                    var newBuckets = MakeBuckets(newBucketSize);
+
+                    //For each key in the map rehash
+                    foreach (var bucket in _buckets)
+                    {
+                        foreach (var node in bucket)
+                        {
+                            var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
+                            newBuckets[bucketIndex].AddFirst(node);
+                        }
+                    }
+
+                    //Calculate new resize threshold and assign the rehashed backing array
+                    _threshold = CalculateThreshold(newBucketSize);
+                    _buckets = newBuckets;
+                }
+                finally
+                {
+                    UnlockAll();
+                }
+            }
+            /*
             // If the lock can not be acquired imedietly then some other thread is checking the resize condition or resizing the array
             // In that case there is not need to proceed as that other thread will resize the array if it is needed
             if (Monitor.TryEnter(_resizeLock, 0))
@@ -277,6 +313,14 @@ namespace Evaluation.Locking
                 {
                     Monitor.Exit(_resizeLock);
                 }
+            }*/
+        }
+
+        private bool ResizeCondtion()
+        {
+            lock (_sizeLock)
+            {
+                return _size >= _threshold;
             }
         }
 
