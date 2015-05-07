@@ -43,8 +43,8 @@ namespace STM.Implementation.Lockbased
                     {
                         var preStamp = TimeStamp;
                         value = base.GetValue();
-                        
-                        if (IsLocked() || preStamp != TimeStamp ||  me.ReadStamp < preStamp)
+                        //IsLocked() || 
+                        if (preStamp != TimeStamp ||  me.ReadStamp < preStamp)
                         {
                             throw new STMAbortException("Aborted due to inconsistent read");
                         }
