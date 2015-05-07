@@ -196,7 +196,7 @@ namespace STM.Implementation.Lockbased
             var i = 0;
             foreach (var item in readSet)
             {
-                waiton[i] = item.RegisterWaitHandle();
+                waiton[i] = item.Key.RegisterWaitHandle();
                 i++;
             }
 

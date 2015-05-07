@@ -120,7 +120,6 @@ namespace Evaluation.Library
                     //Else inser the node
                     bucketVar.Value = bucketVar.Value.Add(CreateNode(key, value));
                     _size++;
-                    ResizeIfNeeded();
                 }
             });
 
@@ -151,7 +150,6 @@ namespace Evaluation.Library
                     //If node is not found key does not exist so insert
                     bucketVar.Value = bucketVar.Value.Add(CreateNode(key, value));
                     _size++;
-                    ResizeIfNeeded();
                     return true;
                 }
 
@@ -183,25 +181,28 @@ namespace Evaluation.Library
 
         private void Resize()
         {
-            //Construct new backing array
-            var newBucketSize = _buckets.Value.Length * 2;
-            var newBuckets = MakeBuckets(newBucketSize);
-
-            //For each key in the map rehash
-            for (var i = 0; i < _buckets.Value.Length; i++)
+            if (_size.Value >= _threshold.Value)
             {
-                var bucket = _buckets.Value[i];
-                foreach (var node in bucket.Value)
-                {
-                    var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
-                    newBuckets[bucketIndex].Value = newBuckets[bucketIndex].Value.Add(node);
-                }
-            }
+                //Construct new backing array
+                var newBucketSize = _buckets.Value.Length * 2;
+                var newBuckets = MakeBuckets(newBucketSize);
 
-            //Calculate new resize threashold and assign the rehashed backing array
-            _threshold.Value = CalculateThreshold(newBucketSize);
-            _buckets.Value = newBuckets;
-            _resizing.Value = false;
+                //For each key in the map rehash
+                for (var i = 0; i < _buckets.Value.Length; i++)
+                {
+                    var bucket = _buckets.Value[i];
+                    foreach (var node in bucket.Value)
+                    {
+                        var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
+                        newBuckets[bucketIndex].Value = newBuckets[bucketIndex].Value.Add(node);
+                    }
+                }
+
+                //Calculate new resize threashold and assign the rehashed backing array
+                _threshold.Value = CalculateThreshold(newBucketSize);
+                _buckets.Value = newBuckets;
+                _resizing.Value = false;
+            }
         }
 
         public override bool Remove(K key)
@@ -256,7 +257,26 @@ namespace Evaluation.Library
 
         public override IEnumerator<KeyValuePair<K, V>> GetEnumerator()
         {
-            return STMSystem.Atomic(() => BuildEnumerator());
+            return STMSystem.Atomic(() =>
+            {
+
+                if (_resizing)
+                {
+                    STMSystem.Retry();
+                }
+
+
+                var list = new List<KeyValuePair<K, V>>(_size.Value);
+                for (var i = 0; i < _buckets.Value.Length; i++)
+                {
+                    var bucket = _buckets.Value[i];
+                    foreach (var node in bucket.Value)
+                    {
+                        list.Add(new KeyValuePair<K, V>(node.Key, node.Value));
+                    }
+                }
+                return list.GetEnumerator();
+            }); 
         }
 
         private class Node

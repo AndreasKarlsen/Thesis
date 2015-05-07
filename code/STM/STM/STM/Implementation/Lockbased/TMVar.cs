@@ -58,7 +58,7 @@ namespace STM.Implementation.Lockbased
                         Console.WriteLine("Transaction: " + me.ID + " read:" + value);
                     #endif
 
-                    me.ReadSet.Add(this);
+                    me.ReadSet.Add(this,me.ReadStamp);
                     return value;
                 case Transaction.TransactionStatus.Aborted:
                     throw new STMException("Aborted transaction attempted to read.");

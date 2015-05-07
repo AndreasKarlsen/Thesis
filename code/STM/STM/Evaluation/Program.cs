@@ -45,6 +45,13 @@ namespace Evaluation
 
                     for (int i = 0; i < 10; i++)
                     {
+                        STMHashMapRetryConcurrent(nrThreads, sw);
+                    }
+
+                    Console.WriteLine("STMRetry done");
+
+                    for (int i = 0; i < 10; i++)
+                    {
                         STMHashMapConcurrent(nrThreads, sw);
                     }
 
@@ -86,8 +93,6 @@ namespace Evaluation
 
         private static void TestMapConcurrent(IMap<int, int> map, int nrThreads, StreamWriter writer)
         {
-
-
             var threads = new List<Thread>();
             var results = new List<ResultHolder>();
 
@@ -106,8 +111,6 @@ namespace Evaluation
                 });
 
                 threads.Add(thread);
-
-
             }
 
             foreach (var thread in threads)
