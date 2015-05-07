@@ -85,7 +85,7 @@ All the concurrency approaches is either integrated or build around C\#, which m
 
 The need to define an array of transactional types was experienced in the hashmap implementations, which uses such an array to represent the buckets of the hashmap. \bsref{lst:lib_Buckets} and \bsref{lst:lang_Buckets} shows how the hashmap buckets are defined in the \ac{STM} library and \stmname, respectively. In the library \ac{STM} example on line \ref{lst:lib_Buckets} the buckets are defined directly. The type of the \bscode{\_buckets} field will be explained gradually. The inner \bscode{Node} type, is a simple class which represents a key value pair, where the value is a transactional variable, defined in the \ac{STM} library code on line \ref{line:lib_node_c} and in \stmname code on line \ref{line:lang_node_c}. The \bscode{Node} is wrapped in an \bscode{ImmutableList} which represents the collision list of a given bucket. The list is immutable for the \ac{STM} system to be able to track changes to the list, as the tracking granularity is only on variables, as described in \bsref{sec:tracking}, and if it was a regular list which changed, the \ac{STM} system would not notice it. The \bscode{ImmutableList} is wrapped in a \bscode{TMVar} for the \ac{STM} system to track changes to the list, each of these then represent a single bucket which is why there is an array of these types. Finally this array is also wrapped in a \bscode{TMVar} allowing the \ac{STM} system to track assignments to the entire backing array in order to resize it when it reaches the load factor threshold. In the \stmname example on line \ref{line:lang_bucket} it is not possible to define the array of transactional variables directly, so a wrapper type called \bscode{Bucket} defined on line \ref{line:lang_bucket_class} is used.
 
-\begin{lstlisting}[label=lst:lib_Buckets,
+\begin{lstlisting}[float,label=lst:lib_Buckets,
   caption={HashMap Buckets Array - \ac{STM} Library},
   language=Java,  
   showspaces=false,
@@ -120,7 +120,7 @@ The need to define an array of transactional types was experienced in the hashma
   }
 \end{lstlisting}
 
-\begin{lstlisting}[label=lst:lang_Buckets,
+\begin{lstlisting}[float,label=lst:lang_Buckets,
   caption={HashMap Buckets Array - \stmname},
   language=Java,  
   showspaces=false,
@@ -357,7 +357,7 @@ The \ac{STM} approaches also rely on threads, but provide a higher level of abst
 
 As to the language \ac{STM} and library \ac{STM} individually, some differences in the level of abstraction exist. Library \ac{STM} requires the programmer to use static method calls, wrap transactional code in lambdas, wrap transactional variables in a \bscode{TMVar}, use the \bscode{Value} property when getting or setting a value, supply \bscode{orelse} transactions as arguments to the atomic method call, and write return in front of the static method call if a method must return the value computed by a transaction. Many of these concerns are abstracted away or handled more gracefully in the language based \ac{STM}. \bsref{lst:lib_SleepUntilAwoken} and \bsref{lst:lang_SleepUntilAwoken} present an implementation of the \bscode{SleepUntilAwoken} method from the library and language based Santa Claus problem implementations, respectively. The method ensures that santa sleeps until he is awoken by either three elfs at his door, or all reindeers back from vacation ready to fly his sleigh. The \bscode{return} statement on line \ref{line:lib_sleep_return} of \bsref{lst:lib_SleepUntilAwoken} is not present in the language based implementation as it is abstracted away by \stmnamesp. Furthermore the static method call and creation of lambas to represent transaction bodies on line \ref{line:lib_sleep_return} is abstracted away by the \bscode{atomic} block and orelse block on lines \ref{line:lang_sleep_atomic} and \ref{line:lang_sleep_orelse} of \bsref{lst:lang_SleepUntilAwoken}.
 
-\begin{lstlisting}[label=lst:lib_SleepUntilAwoken,
+\begin{lstlisting}[float,label=lst:lib_SleepUntilAwoken,
   caption={\bscode{SleepUntilAwoken} Method - \ac{STM} Library},
   language=Java,  
   showspaces=false,
@@ -392,7 +392,7 @@ As to the language \ac{STM} and library \ac{STM} individually, some differences 
   }
 \end{lstlisting}
 
-\begin{lstlisting}[label=lst:lang_SleepUntilAwoken,
+\begin{lstlisting}[float,label=lst:lang_SleepUntilAwoken,
   caption={\bscode{SleepUntilAwoken} Method - \ac{STM} Language},
   language=Java,  
   showspaces=false,
@@ -440,7 +440,7 @@ The placement of the three concurrency approaches on the low level of abstractio
 
 \subsubsection{Low or High Expressivity}\label{subsec:expressivity}
 %The expressivity of the approaches are closely related to their level of abstraction. 
-Locking in C\# is mainly accomplished by the use of the \bscode{lock} keyword, which provide a convenient way to acquire and release a lock on a resource. However it is not always sufficient, instead the \bscode{Monitor} class can be used which provides additional functionality, such as the \bscode{TryEnter} method. Furthermore, there are a number of other special case locking primitives in C\#\cite{microsoftSyncPrim} i.e. \bscode{Mutex}, \bscode{Semaphore}, \bscode{SpinLock} and \bscode{ReaderWriterLock}, that can help the programmer specify synchronization. These primitives enable convenient ways to express exactly how synchronization should be applied by the use of locks and it therefore affects the expressivity positively. The fact that locking uses constructs close to the hardware primitives and that  locking is prone to a number of concurrency related issues, such as deadlocks, causes its expressivity to be lowered. Locking in C\# gives the programmer control over many low level details concerning how synchronization is applied but at the same time requires the programmer to specify these details. This along with the threat of deadlocks and other issues limits how the programmer can concisely and conveniently express the intended functionality. Locking in C\# is therefore placed towards low expressivity, being drawn a bit towards the middle of the spectrum because of the many convenient locking primitives in C\#.
+Locking in C\# is mainly accomplished by the use of the \bscode{lock} keyword, which provide a convenient way to acquire and release a lock on a resource, by creating a scope in which the lock is automatically taken in the beginning and released at the end of the scope. However it is not always sufficient, instead the \bscode{Monitor} class can be used which provides additional functionality, such as the \bscode{TryEnter} method. Furthermore, there are a number of other special case locking constructs in C\#\cite{microsoftSyncPrim} i.e. \bscode{Mutex,} \bscode{Semaphore,} \bscode{SpinLock} and \bscode{ReaderWriterLock,} that can help the programmer specify synchronization. These locking constructs enable ways to express exactly how synchronization should be applied by the use of locks and it therefore affects the expressivity positively. The fact that locking uses constructs close to the hardware primitives and that  locking is prone to a number of concurrency related issues, such as deadlocks, causes its expressivity to be reduced. Locking in C\# gives the programmer control over many low level details concerning how synchronization is applied but at the same time requires the programmer to specify these details. This along with the threat of deadlocks and other issues limits how the programmer can concisely and conveniently express the functionality. Locking in C\# is therefore placed towards low expressivity, being drawn a bit towards the middle of the spectrum because of the many convenient locking constructs in C\#.
 
 \ac{STM} also builds upon threads which limits its expressivity. Transactions however represent a more declarative and expressive approach than locking, as the programmer only have to specify critical regions and the \ac{STM} system will then manage exactly how synchronization is applied. This affects the expressivity both positively and negatively, as it accomplishes a great deal of computation with little code, but it also denies the programmer the possibility to express low level synchronization details. Furthermore \ac{STM} eliminates the issues of deadlocks which makes it more convenient to express synchronization, as the programmer does not have to reason about it. However, neither in the \ac{STM} library or \stmname there exists not a convenient way to express irreversible actions, such as exceptions and \ac{IO}, the programmer is left alone in ensuring these actions works correctly with transactions, which negativity affects the expressivity. Based on the above, the general \ac{STM} approach is placed between the middle and high end of the spectrum.
 
