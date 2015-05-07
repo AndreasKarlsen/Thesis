@@ -168,6 +168,7 @@ Ultimately prohibiting the programmer to define an array or list of transactiona
 	%Måske noget om at ac# fungerer også med ref og out (som library ikke kan), så det har en bedre integartion med datatyperne i sporget?? (men det er jo keywords det integreres med, så måske en anden formulering)
 	%Andreas skrevet: Using STM types could imply a different meaning and confusing the programmer. Is TMInt the same value as int?
 \subsubsection{Syntax Design}\label{subsec:syntaxdesign}
+\andreas[inline]{We must explain why we do not use a spectrum}
 The use of keywords reduces simplicity but increases readability, as the intent stands out clearly\cite[p. 12-13]{sebestaProLang}. Locking in C\# uses only a single keyword, \bscode{lock}. The rest of the functionality is provided by library calls as described in \andreas{REF til hvor det ender med at stå}. The use of libraries for locking constructs makes it blend in with other library code, even though it got a special purpose. This decreases the readability, but keeps the simplicity of the language high as it does not introduce keywords for all constructs. 
 
 The \ac{STM} library also uses library calls just as described above, thus it got the same disadvantages and the readability is decreased compared to \stmname which got keywords for the special constructs. The four keywords introduces in \stmname does however decreases the simplicity of the language. As the \bscode{atomic} keyword got different meanings depending on the context in \stmname, its readability is lowered and the simplicity is raised by keeping a minimum of keywords. 
@@ -424,7 +425,7 @@ As to the language \ac{STM} and library \ac{STM} individually, some differences 
   }
 \end{lstlisting}
 
- Furthermore, where the \ac{STM} library exposes transactional variables as special \ac{STM} types, \stmnamesp instead allows variables to be marked as \bscode{atomic}, letting the programmer use the variable as if it was of the original type, even though the type is changed as part of the compilation process. Language \ac{STM} is therefore considered to have a higher level of abstraction than library \ac{STM}. As described previously \ac{STM} however combines poorly with irreversible actions leaving it up to the programmer to correctly handle actions such as \ac{IO} in combination with transactions. As neither the \ac{STM} library nor \stmnamesp presents a solution to this problem their level of abstraction is reduced.
+Furthermore, where the \ac{STM} library exposes transactional variables as special \ac{STM} types, \stmnamesp instead allows variables to be marked as \bscode{atomic}, letting the programmer use the variable as if it was of the original type, even though the type is changed as part of the compilation process. Language \ac{STM} is therefore considered to have a higher level of abstraction than library \ac{STM}. As described previously \ac{STM} however combines poorly with irreversible actions leaving it up to the programmer to correctly handle actions such as \ac{IO} in combination with transactions. As neither the \ac{STM} library nor \stmnamesp presents a solution to this problem their level of abstraction is reduced.
 
 The placement of the three concurrency approaches on the low level of abstraction - high level of abstraction spectrum is depicted in \bsref{fig:char_level_of_abstraction}. 
 
