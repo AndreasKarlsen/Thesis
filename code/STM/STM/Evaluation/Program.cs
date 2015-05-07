@@ -24,7 +24,7 @@ namespace Evaluation
             //STMHashMapSequentialTest();
             //LockingHashMapSequentialTest();
 
-            int nrThreads = 8;
+            int nrThreads = 4;
             using(var s = new FileStream("output.txt",FileMode.Create))
             {
                 using(var sw = new StreamWriter(s))
