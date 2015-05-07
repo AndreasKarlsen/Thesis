@@ -82,9 +82,8 @@ In addition to the shared criteria, writability is based on the level of abstrac
 \subsubsection{Data Types}\label{subsec:datatypes}\toby{Flyt den ned under syntax design (giver vel mere mening)}
 All the concurrency approaches is either integrated or build around C\#, which means that they largely have the same data types. However a transactional variables are treated differently in each \ac{STM} approach. In library \ac{STM}, transactional variables are defined using transactional types, such as \bscode{TMInt}, which means that it is possible to create an array or list containing these types, e.g. \bscode{TMInt[]} defines an array of \bscode{TMInt} types. In \stmname it does not treat transactional variables as transactional types, but instead as regular types with associated \bscode{atomic} keyword modifiers\toby{Hvad type modifer er det præcist?} e.g. \bscode{atomic int}. The result is that it is not possible to define a list or array of transactional variables directly, instead a wrapper class with an \bscode{atomic} field must be employed.
 
-The need to define an array of transactional types was experienced in the hashmap implementations, which uses such an array to represent the buckets of the hashmap. \bsref{lst:lib_Buckets} and \bsref{lst:lang_Buckets} shows how the hashmap buckets are defined in the \ac{STM} library and \stmname, respectively. In the library \ac{STM} example on line \ref{lst:lib_Buckets} the buckets are defined directly. The type of the \bscode{\_buckets} field will be explained gradually. The inner \bscode{Node} type, is a simple class which represents a key value pair, where the value is a transactional variable. The \bscode{Node} is wrapped in an \bscode{ImmutableList} which represents the collision list of a given bucket. The list is immutable for the \ac{STM} system to be able to track changes to the list, as the tracking granularity is only on variables, as described in \bsref{sec:tracking}, and if it was a regular list which changed, the \ac{STM} system would not notice it. The \bscode{ImmutableList} is wrapped in a \bscode{TMVar} for the \ac{STM} system to track changes to the list, each of these then represent a single bucket which is why there is an array of these types. Finally this array is also wrapped in a \bscode{TMVar} allowing the \ac{STM} system to track assignments to the entire backing array in order to resize it when it reaches the load factor threshold. In the \stmname example on line \ref{line:lang_bucket} it is not possible to define the array of transactional variables directly, so a wrapper type called \bscode{Bucket} defined on line \ref{line:lang_bucket_class} is used.
+The need to define an array of transactional types was experienced in the hashmap implementations, which uses such an array to represent the buckets of the hashmap. \bsref{lst:lib_Buckets} and \bsref{lst:lang_Buckets} shows how the hashmap buckets are defined in the \ac{STM} library and \stmname, respectively. In the library \ac{STM} example on line \ref{lst:lib_Buckets} the buckets are defined directly. The type of the \bscode{\_buckets} field will be explained gradually. The inner \bscode{Node} type, is a simple class which represents a key value pair, where the value is a transactional variable, defined in the \ac{STM} library code on line \ref{line:lib_node_c} and in \stmname code on line \ref{line:lang_node_c}. The \bscode{Node} is wrapped in an \bscode{ImmutableList} which represents the collision list of a given bucket. The list is immutable for the \ac{STM} system to be able to track changes to the list, as the tracking granularity is only on variables, as described in \bsref{sec:tracking}, and if it was a regular list which changed, the \ac{STM} system would not notice it. The \bscode{ImmutableList} is wrapped in a \bscode{TMVar} for the \ac{STM} system to track changes to the list, each of these then represent a single bucket which is why there is an array of these types. Finally this array is also wrapped in a \bscode{TMVar} allowing the \ac{STM} system to track assignments to the entire backing array in order to resize it when it reaches the load factor threshold. In the \stmname example on line \ref{line:lang_bucket} it is not possible to define the array of transactional variables directly, so a wrapper type called \bscode{Bucket} defined on line \ref{line:lang_bucket_class} is used.
 
-\toby[i]{Evt. slet definitionerne af node klasserne}
 \begin{lstlisting}[label=lst:lib_Buckets,
   caption={HashMap Buckets Array - \ac{STM} Library},
   language=Java,  
@@ -107,7 +106,7 @@ The need to define an array of transactional types was experienced in the hashma
   
     ...  //Other code
   
-    private class Node
+    private class Node~\label{line:lib_node_c}~
     {
       public K Key { get; private set; }
       public TMVar<V> Value { get; private set; }
@@ -149,7 +148,7 @@ The need to define an array of transactional types was experienced in the hashma
       }
     }
   
-    private class Node
+    private class Node ~\label{line:lang_node_c}~
     {
       public K Key { get; private set; }
       public atomic V Value { get; set; }
