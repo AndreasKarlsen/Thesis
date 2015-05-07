@@ -94,7 +94,7 @@ namespace Evaluation.Locking
             return FindNode(_buckets[bucketIndex], key);
         }
 
-        private Node FindNode(IEnumerable<Node> bucket, K key)
+        private Node FindNode(LinkedList<Node> bucket, K key)
         {
             return bucket.FirstOrDefault(n => n.Key.Equals(key));
         }
@@ -295,7 +295,7 @@ namespace Evaluation.Locking
                     from node in bucket
                     select new KeyValuePair<K, V>(node.Key, node.Value);
 
-                return kvPairs.GetEnumerator();
+                return kvPairs.ToList().GetEnumerator();
             }
             finally
             {

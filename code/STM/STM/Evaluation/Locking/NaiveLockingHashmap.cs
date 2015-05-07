@@ -87,7 +87,7 @@ namespace Evaluation.Locking
             return FindNode(_buckets[bucketIndex], key);
         }
 
-        private Node FindNode(IEnumerable<Node> bucket, K key)
+        private Node FindNode(LinkedList<Node> bucket, K key)
         {
             return bucket.FirstOrDefault(n => n.Key.Equals(key));
         }
@@ -206,25 +206,30 @@ namespace Evaluation.Locking
         {
             if (_size >= _threshold)
             {
-                //Construct new backing array
-                var newBucketSize = _buckets.Length * 2;
-                var newBuckets = MakeBuckets(newBucketSize);
-
-                //For each key in the map rehash
-                foreach (var bucket in _buckets)
-                {
-                    foreach (var node in bucket)
-                    {
-                        var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
-                        newBuckets[bucketIndex].AddFirst(node);
-                    }
-                }
-
-                //Calculate new resize threshold and assign the rehashed backing array
-                _threshold = CalculateThreshold(newBucketSize);
-                _buckets = newBuckets;
-
+                Resize();
             }
+        }
+
+        private void Resize()
+        {
+            //Construct new backing array
+            var newBucketSize = _buckets.Length * 2;
+            var newBuckets = MakeBuckets(newBucketSize);
+
+            //For each key in the map rehash
+            foreach (var bucket in _buckets)
+            {
+                foreach (var node in bucket)
+                {
+                    var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
+                    newBuckets[bucketIndex].AddFirst(node);
+                }
+            }
+
+            //Calculate new resize threshold and assign the rehashed backing array
+            _threshold = CalculateThreshold(newBucketSize);
+            _buckets = newBuckets;
+
         }
 
         public override V this[K key]
@@ -241,7 +246,7 @@ namespace Evaluation.Locking
                               from node in bucket
                               select new KeyValuePair<K, V>(node.Key, node.Value);
 
-                return kvPairs.GetEnumerator();
+                return kvPairs.ToList().GetEnumerator();
             }
         }
 

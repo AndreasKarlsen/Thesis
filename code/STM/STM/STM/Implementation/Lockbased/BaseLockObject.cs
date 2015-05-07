@@ -79,10 +79,11 @@ namespace STM.Implementation.Lockbased
                 case Transaction.TransactionStatus.Committed:
                     return true;
                 case Transaction.TransactionStatus.Active:
+                    /*
                     if (IsLocked() && !IsLockedByCurrentThread())
                     {
                         return false;
-                    }
+                    }*/
 #if DEBUG
                     Console.WriteLine("Validating! transaction: " + transaction.ID + " timeStamp: " + TimeStamp + " readstamp: " + readstamp);
 #endif

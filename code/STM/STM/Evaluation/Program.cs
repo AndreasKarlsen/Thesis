@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Evaluation.Common;
 using Evaluation.Library;
 using Evaluation.Locking;
+using System.IO;
 
 namespace Evaluation
 {
@@ -23,128 +24,170 @@ namespace Evaluation
             //STMHashMapSequentialTest();
             //LockingHashMapSequentialTest();
 
-            for (int i = 0; i < 10; i++)
+            int nrThreads = 8;
+            using(var s = new FileStream("output.txt",FileMode.Create))
             {
-                LockingHashMapConcurrent();
-            }
+                using(var sw = new StreamWriter(s))
+                {
+                    for (int i = 0; i < 10; i++)
+                    {
+                        LockingHashMapConcurrent(nrThreads, sw);
+                    }
 
-            for (int i = 0; i < 10; i++)
-            {
-                NaiveLockingHashMapConcurrent();
-            }
+                    Console.WriteLine("Locking done");
 
-            for (int i = 0; i < 10; i++)
-            {
-                STMHashMapConcurrent();
-            }
+                    for (int i = 0; i < 10; i++)
+                    {
+                        NaiveLockingHashMapConcurrent(nrThreads, sw);
+                    }
 
-            /*
-            for (int i = 0; i < 10; i++)
-            {
-                STMHashMapRetryConcurrent();
-            }*/
+                    Console.WriteLine("Naive locking done");
+
+                    for (int i = 0; i < 10; i++)
+                    {
+                        STMHashMapConcurrent(nrThreads, sw);
+                    }
+
+                    Console.WriteLine("STM done");
+                }
+            }
 
             Console.ReadKey();
         }
 
-        public static void STMHashMapConcurrent()
+        public static void STMHashMapConcurrent(int nrThreads, StreamWriter writer)
         {
-            Console.WriteLine("STM hashmap");
-            var sw = Stopwatch.StartNew();
+            writer.WriteLine("STM hashmap");
             var map = new StmHashMap<int, int>();
-            TestMapConcurrent(map);
-            sw.Stop();
-            Console.WriteLine(sw.ElapsedMilliseconds);
+            TestMapConcurrent(map, nrThreads, writer);
         }
 
-        public static void STMHashMapRetryConcurrent()
+        public static void STMHashMapRetryConcurrent(int nrThreads, StreamWriter writer)
         {
-            Console.WriteLine("STM hashmap retry");
-            var sw = Stopwatch.StartNew();
+            writer.WriteLine("STM hashmap retry");
             var map = new StmHashMapRetry<int, int>();
-            TestMapConcurrent(map);
-            sw.Stop();
-            Console.WriteLine(sw.ElapsedMilliseconds);
+            TestMapConcurrent(map, nrThreads, writer);
         }
 
-        public static void NaiveLockingHashMapConcurrent()
+        public static void NaiveLockingHashMapConcurrent(int nrThreads, StreamWriter writer)
         {
-            Console.WriteLine("NaiveLocking hashmap");
-            var sw = Stopwatch.StartNew();
+            writer.WriteLine("NaiveLocking hashmap");
             var map = new NaiveLockingHashMap<int, int>();
-            TestMapConcurrent(map);
-            sw.Stop();
-            Console.WriteLine(sw.ElapsedMilliseconds);
+            TestMapConcurrent(map, nrThreads, writer);
         }
 
-        public static void LockingHashMapConcurrent()
+        public static void LockingHashMapConcurrent(int nrThreads, StreamWriter writer)
         {
-            Console.WriteLine("Locking hashmap");
-            var sw = Stopwatch.StartNew();
+            writer.WriteLine("Locking hashmap");
             var map = new LockingHashMap<int, int>();
-            TestMapConcurrent(map);
-            sw.Stop();
-            Console.WriteLine(sw.ElapsedMilliseconds);
+            TestMapConcurrent(map, nrThreads, writer);
         }
 
 
-        private static void TestMapConcurrent(IMap<int, int> map)
+        private static void TestMapConcurrent(IMap<int, int> map, int nrThreads, StreamWriter writer)
         {
-            const int t1From = 0;
-            const int t1To = 1000;
-            const int t2From = -1000;
-            const int t2To = 0;
-            const int expectedSize = 2000;
+
+
+            var threads = new List<Thread>();
+            var results = new List<ResultHolder>();
+
+            for (int i = 0; i < nrThreads; i++)
+            {
+                var from = 0 + (i * 1000);
+                var to = 1000 + (i * 1000);
+                var thread = new Thread(() =>
+                {
+                    var res = ExecuteTest(map, from, to);
+
+                    lock (results)
+                    {
+                        results.Add(res);
+                    }
+                });
+
+                threads.Add(thread);
+
+
+            }
+
+            foreach (var thread in threads)
+            {
+                thread.Start();
+            }
+
+            foreach (var thread in threads)
+            {
+                thread.Join();
+            }
+
+            var result = new ResultHolder();
+            foreach (var res in results)
+            {
+                result = result.Merge(res);
+            }
+
+            writer.WriteLine("Count: " + map.Count);
+            writer.WriteLine("Add milisecs: " + result.AddTime);
+            writer.WriteLine("Get milisecs: " + result.GetTime);
+            writer.WriteLine("Foreach: " + result.ForeachTime);
+            writer.WriteLine("Remove milisecs: " + result.RemoveTime);
+            writer.WriteLine("Time: "+result.TotalTime);
+            writer.WriteLine();
+
+        }
+
+        private static ResultHolder ExecuteTest(IMap<int,int> map, int from, int to)
+        {
+            var totalSW = Stopwatch.StartNew();
             var sw = Stopwatch.StartNew();
-            var t1 = new Thread(() => MapAdd(map, t1From, t1To));
-            var t2 = new Thread(() => MapAdd(map, t2From, t2To));
-
-            t1.Start();
-            t2.Start();
-            t1.Join();
-            t2.Join();
-            Console.WriteLine("Count: " + map.Count);
-            Console.WriteLine("Add milisecs: " + sw.ElapsedMilliseconds);
-            
-            t1 = new Thread(() => MapAddIfAbsent(map, t1From, t1To));
-            t2 = new Thread(() => MapAddIfAbsent(map, t2From, t2To));
-
-            t1.Start();
-            t2.Start();
-            t1.Join();
-            t2.Join();
-            
-            
-            sw = Stopwatch.StartNew();
-            t1 = new Thread(() => MapGet(map, t1From, t1To));
-            t2 = new Thread(() => MapGet(map, t2From, t2To));
-            t1.Start();
-            t2.Start();
-            t1.Join();
-            t2.Join();
+            MapAdd(map, from, to);
             sw.Stop();
-            Console.WriteLine("Get milisecs: "+sw.ElapsedMilliseconds);
+            var addTime = sw.ElapsedMilliseconds;
+            
+            //MapAddIfAbsent(map, from, to);
 
-            sw = Stopwatch.StartNew();
-            t1 = new Thread(() => MapForeach(map));
-            t2 = new Thread(() => MapForeach(map));
-            t1.Start();
-            t2.Start();
-            t1.Join();
-            t2.Join();
-            Console.WriteLine("Foreach: " + sw.ElapsedMilliseconds);
+            sw.Restart();
+            MapGet(map, from, to);
+            sw.Stop();
+            var getTime = sw.ElapsedMilliseconds;
 
-            sw = Stopwatch.StartNew();
-            t1 = new Thread(() => MapRemove(map, t1From, t1To));
-            t2 = new Thread(() => MapRemove(map, t2From, t2To));
+            sw.Restart();
+            MapForeach(map);
+            sw.Stop();
+            var foreachTime = sw.ElapsedMilliseconds;
 
-            t1.Start();
-            t2.Start();
-            t1.Join();
-            t2.Join();
+            sw.Restart();
+            MapRemove(map, from, to);
+            sw.Stop();
+            var removeTime = sw.ElapsedMilliseconds;
 
-            Console.WriteLine("Count: " + map.Count);
-            Console.WriteLine("Remove milisecs: " + sw.ElapsedMilliseconds);
+            totalSW.Stop();
+
+            var totalTime = totalSW.ElapsedMilliseconds;
+
+            return new ResultHolder() { AddTime = addTime, GetTime = getTime, ForeachTime = foreachTime, RemoveTime = removeTime, TotalTime = totalTime };
+        }
+
+        private class ResultHolder
+        {
+            public long AddTime { get; set; }
+            public long GetTime { get; set; }
+            public long ForeachTime { get; set; }
+            public long RemoveTime { get; set; }
+            public long TotalTime { get; set; }
+
+
+            public ResultHolder Merge(ResultHolder other)
+            {
+                return new ResultHolder() 
+                { 
+                    AddTime = this.AddTime+other.AddTime,
+                    GetTime = this.GetTime+other.GetTime, 
+                    ForeachTime = this.ForeachTime+other.ForeachTime, 
+                    RemoveTime = this.RemoveTime+other.RemoveTime, 
+                    TotalTime = this.TotalTime+other.TotalTime 
+                };
+            }
         }
 
         public static void MapAdd(IMap<int, int> map, int from, int to)
