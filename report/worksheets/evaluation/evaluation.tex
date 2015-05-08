@@ -5,9 +5,9 @@ This chapter evaluates \stmname, its associated \ac{STM} library and locking in 
 \section{Selected Problems}
 As described in \bsref{sec:problem_statement} the evaluation is conduced by comparing the characteristics of each approach based on a number of concurrent implementations. For this purpose three concurrency problems have been selected:
 \begin{enumerate}
-\item The Dining Philosophers problem\cite[p. 673]{hoare1978communicating}
-\item The santa claus problem\cite{trono1994new}
-\item A Concurrent Hashmap implementation\cite[p. 253]{cormen2009introduction}
+\item The Dining Philosophers problem (\bsref{app:dining_phil})
+\item The Santa Claus problem (\bsref{app:santa})
+\item A Concurrent Hashmap implementation (\bsref{app:hashmap})
 \end{enumerate}
 The Dining Philosophers problem represents a well known concurrency problem which highlights some of the pitfalls associated with conditional synchronization of threads. The Santa Claus problem encompasses a high degree of modeling and requires complex synchronization, such allowing only a predefined number of threads to enter a critical region at a time and waiting on one of multiple conditions. Employing this problem helps investigate whether \ac{STM} provides any advantages over locking in such scenarios. Finally a concurrent hashmap implementation represents a real world problem, which benefits from fine grained synchronization and is available in a number of languages, including C\#. Together these problems provide a varied perspective by exerting different aspects of each approach e.g. waiting on one of multiple conditions and fine grained synchronization.
 
@@ -30,7 +30,7 @@ The Dining Philosophers implementations must:
 	\item Encompass two 100 milliseconds thread sleeps. One to simulate the act of eating, forcing the locks to be held while a philosophers finishes her meal, and one upon completing an attempt to eat simulating sleeping a period of time before attempting to eat again.
 \end{itemize}
 
-The santa claus problem implementations must:
+The Santa Claus problem implementations must:
 \begin{itemize}
 	\item Follow the requirements defined in \cite{trono1994new}
 	\item Utilize advantageous features of the concurrency approach.
