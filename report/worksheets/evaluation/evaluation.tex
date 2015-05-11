@@ -43,6 +43,7 @@ The concurrent hashmap implementations must:
 The implementations in their full length can be found in the appendix.\toby{indsæt et reference når de indsætts}
 
 \section{Evaluation of Characteristics}
+This section describes how each of the three concurrency approaches are evaluated by the characteristics.
 All of the selected concurrency approaches relies on starting threads in order to introduce concurrency as well as manually specifying critical regions using either locks or the \bscode{atomic} block. 
 \subsection{Implicit or Explicit Concurrency}
 As described above, all three approaches rely on explicitly using threads to introduce concurrency. This makes all the approaches lend toward the explicit end of the spectrum. The two \ac{STM} based approaches are more implicit as \ac{STM} allows them to hide the details synchronization. Locking in C\# on the other hand requires explicit stating how synchronization is to be achieved and is therefore placed close to the explicit concurrency extreme. \stmnamesp and the \ac{STM} library resides slightly more towards the implicit concurrency end of the spectrum. The placement of the three concurrency approaches on the implicit - explicit concurrency spectrum is depicted in \bsref{fig:char_implicit_explicit}.
@@ -188,6 +189,10 @@ The special types used by the \ac{STM} library to represent transactional variab
   }
 \end{lstlisting}
 
+The two \ac{STM} based approaches have been problems combining with existing data structures. For example, if a programmer utilizes a \bscode{List<T>} inside a transaction any operations on the list are not tracked by the \ac{STM} system as \bscode{List<T>} is implemented using transactional variables. Therefore operations on the list take effect immediately. A transaction may be executed multiple times due to being aborted and be retried, resulting in the operations, such as adding an element to the list, being executed and taking effect multiple times. Consequently data structures utilized in transactions must be: \begin{inparaenum}[\itshape a\upshape)]
+  \item Build using transactional variables, allowing the \ac{STM} system to track any changes or,
+  \item Immutable and tracked trough assignment to a transactional variable.
+\end{inparaenum}  
 
 %Extra der påvirker data types:
 	%Måske nævn det har samme behaviour som virtual modifieren (var det ikke det du sagde kasper?)
@@ -312,7 +317,7 @@ The placement of the three concurrency approaches on the low simplicity - high s
 \subsubsection{Low or High Orthogonality}\label{subsec:orthogonality}
 Locking encompasses a number of basic constructs aimed at aiding in different concurrency scenarios. These constructs can be combined to handle complex concurrency issues. Some of these combinations are however erroneous producing hard to debug problems such as deadlocks. Locking does not put any restraints on the language features with which it can be combined and may therefore seam to be highly orthogonal. The threat of deadlocks when combining lock based implementations or employing multiple locks limits the orthogonality keeping locking from reaching the high orthogonality extreme. Locking in C\# provides no solutions to these issues. As a result we say that locking in C\# resides just above the middle of the spectrum towards the high orthogonality end of the spectrum.
 
-\ac{STM} removes the issue of deadlocks and allows \ac{STM} based code segments to be combined using transactional nesting. \ac{STM} however combines poorly with irreversible actions, that is actions which can not be rolled back in case a transaction aborts such as \ac{IO}. Neither the \ac{STM} library nor \stmnamesp offers a solution to this problem reducing their orthogonality. 
+\ac{STM} removes the issue of deadlocks and allows \ac{STM} based code segments to be combined using transactional nesting. \ac{STM} however combines poorly with irreversible actions, that is actions which can not be rolled back in case a transaction aborts such as \ac{IO}. Neither the \ac{STM} library nor \stmnamesp offers a solution to this problem reducing their orthogonality. Furthermore both the \ac{STM} library and \stmnamesp have problems combining with existing data structures reducing their orthogonality further.
 
 As described in \bsref{subsec:datatypes} the programmer can not rely on implicit conversion from a \ac{STM} object to the value it wraps in all cases reducing the orthogonality of the \ac{STM} library. The \ac{STM} library however still benefits from the advantages provided by \ac{STM} and is placed just to the right of locking on the low - high orthogonality spectrum. \stmnamesp treats transactional variables as an object of their original type, removing the type missmatch between the regular types and the corresponding \ac{STM} types. As a result \stmname allows transactional variable to be compared directly and methods can be invoked directly on the transactional variable, without having to reason about implicit conversion or manually accessing the \bscode{Value} property, as described in \bsref{subsec:datatypes}. Therefore \stmname is placed further towards the high orthogonality end of the spectrum than the other two approaches. 
 
