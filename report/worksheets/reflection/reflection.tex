@@ -14,4 +14,14 @@ In order to mitigate the risk bound with uncertainty of implementing an \ac{STM}
 A number of papers describing \ac{STM} system implementations were investigated. This gave us a better understanding of the known approaches for implementing \ac{STM} systems. To get some hands on experience, a prototype \ac{STM} system based on the two implementations described in \cite{herlihy2012art}[p. 424] was developed\andreas{Should we include those on the CD?}. Developing such a prototype system furthered our understanding of the different implementation strategies.
 
 As the Roslyn compiler was only released 10 months prior to the time of writing, the amount of available literature on the subject is limited, consisting of mostly: a white paper\cite{ng2012roslyn}, documentation associated with the Roslyn Github repository\cite{roslynwiki}, sample implementations and walkthroughs\cite{roslynsamples}, as well as blog posts. Most of these sources describe the compiler \ac{API} as opposed to the structure of the compiler. To further our understanding of the Roslyn compiler we have investigated these sources. In addition, an exploratory modification of the compiler was done to investigating its structure. The lexer and parser of the compiler was modified to handle the syntax of an \bscode{atomic} block. The exploratory implementation furthered our knowledge of the compilers structure and \ac{API} design.
+
+Getting preliminary hands on experience with the required technologies at an early stage of the project, helped ensure the feasibility for the implementations and provided the project group with additional confidence in the success of the project. Bringing more information to the table at an early stage assisted in deciding on the implementation strategies for the \ac{STM} system and for the extension of the Roslyn compiler. With regards to the Roslyn compiler, the preliminary investigation functioned as a starting point for a larger investigation, required due to the limited availability of literature described above. If knowledge of the limited amount of literature had not been obtained at an early stage, the investigation of the Roslyn compiler may have been pushed to a later stage, causing the amount of time needed for investigating the structure of the compiler to become problematic.
+
+\section{Hypothesis}
+\section{Requirements}
+\section{Design}
+\section{STM Algorithm}
+\section{Roslyn Integration}
+\kasper[inline]{Bound Tree vs Syntax tree integration}
+\section{atomic ref/out}
 \worksheetend
