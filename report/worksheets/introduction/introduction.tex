@@ -47,6 +47,8 @@ As of February 2015 Microsoft released the source code for an independent versio
 The goal of this master thesis is to investigate the possibility of supplying language integrated support for \ac{STM} in C\#. To formalize our goal, we have constructed the hypothesis:
 
 \paragraph{Hypothesis} Language integrated \ac{STM} provides a valid alternative to locking when solving known concurrent problems by using C\#.\andreas{Does not solve IO and placing CR}
+\andreas[inline]{Clarifying whether language integration of \ac{STM} provides any advantages over library based \ac{STM} in terms of usability.}
+\andreas[inline]{Why did we choose the evaluation method}
 
 In order to validate the hypothesis, a language integrated \ac{STM} system for C\#, called \stmname, will be designed, implemented and integrated\andreas{Is this sufficient, or should we expand and reference to chapters?}. In order to achieve this goal a \ac{STM} library for the .NET platform will be created. Using both of these implementations a number of representative concurrent problems will be implemented. These implementations will be compared to equivalent lock based implementations by quantifying their characteristics in regards to concurrency, using an extended version of the characteristics defined in \cite[p. 16-21]{dpt907e14trending}.
 
