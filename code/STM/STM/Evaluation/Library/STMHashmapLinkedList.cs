@@ -8,19 +8,20 @@ using System.Collections.Immutable;
 
 namespace Evaluation.Library
 {
-    public class StmHashMap<K,V> : BaseHashMap<K,V>
+    public class StmHashMapLinkedList<K, V> : BaseHashMap<K, V>
     {
         //TMVar to (array of TMVars to (ImmutableList of nodes) )
-        private readonly TMVar<TMVar<ImmutableList<Node>>[]> _buckets = new TMVar<TMVar<ImmutableList<Node>>[]>(); 
+        private readonly TMVar<STM.Collections.LinkedList<Node>[]> _buckets = new TMVar<STM.Collections.LinkedList<Node>[]>();
         private readonly TMInt _threshold = new TMInt();
         private TMInt _size = new TMInt();
 
-        public StmHashMap() : this(DefaultNrBuckets)
+        public StmHashMapLinkedList()
+            : this(DefaultNrBuckets)
         {
-            
+
         }
 
-        public StmHashMap(int nrBuckets)
+        public StmHashMapLinkedList(int nrBuckets)
         {
             _buckets.Value = MakeBuckets(nrBuckets);
             _threshold.Value = CalculateThreshold(nrBuckets);
@@ -31,12 +32,12 @@ namespace Evaluation.Library
         /// </summary>
         /// <param name="nrBuckets"></param>
         /// <returns></returns>
-        private TMVar<ImmutableList<Node>>[] MakeBuckets(int nrBuckets)
+        private STM.Collections.LinkedList<Node>[] MakeBuckets(int nrBuckets)
         {
-            var temp = new TMVar<ImmutableList<Node>>[nrBuckets];
+            var temp = new STM.Collections.LinkedList<Node>[nrBuckets];
             for (var i = 0; i < nrBuckets; i++)
             {
-                temp[i] = new TMVar<ImmutableList<Node>>(ImmutableList.Create<Node>()); 
+                temp[i] = new STM.Collections.LinkedList<Node>();
             }
 
             return temp;
@@ -47,7 +48,7 @@ namespace Evaluation.Library
 
         private Node CreateNode(K key, V value)
         {
-            return new Node(key,value);
+            return new Node(key, value);
         }
 
         private int GetBucketIndex(K key)
@@ -62,12 +63,12 @@ namespace Evaluation.Library
 
         private Node FindNode(K key, int bucketIndex)
         {
-            return FindNode(key, _buckets.Value[bucketIndex].Value);
+            return FindNode(key, _buckets.Value[bucketIndex]);
         }
 
-        private Node FindNode(K key, ImmutableList<Node> chain)
+        private Node FindNode(K key, STM.Collections.LinkedList<Node> chain)
         {
-            return chain.Find(n => n.Key.Equals(key));
+            return chain.FirstWhere(n => n.Key.Equals(key));
         }
 
         #endregion Utility
@@ -98,9 +99,9 @@ namespace Evaluation.Library
             {
                 var bucketIndex = GetBucketIndex(key);
                 //TMVar wrapping the immutable chain list
-                var bucketVar = _buckets.Value[bucketIndex];
-                var node = FindNode(key, bucketVar.Value);
-                
+                var bucket = _buckets.Value[bucketIndex];
+                var node = FindNode(key, bucket);
+
                 if (node != null)
                 {
                     //If node is not null key exist in map. Update the value
@@ -109,7 +110,7 @@ namespace Evaluation.Library
                 else
                 {
                     //Else insert the node
-                    bucketVar.Value = bucketVar.Value.Add(CreateNode(key, value));
+                    bucket.Add(CreateNode(key, value));
                     _size++;
                     ResizeIfNeeded();
                 }
@@ -122,13 +123,13 @@ namespace Evaluation.Library
             {
                 var bucketIndex = GetBucketIndex(key);
                 //TMVar wrapping the immutable chain list
-                var bucketVar = _buckets.Value[bucketIndex];
-                var node = FindNode(key, bucketVar.Value);
+                var bucket = _buckets.Value[bucketIndex];
+                var node = FindNode(key, bucket);
 
                 if (node == null)
                 {
                     //If node is not found key does not exist so insert
-                    bucketVar.Value = bucketVar.Value.Add(CreateNode(key, value));
+                    bucket.Add(CreateNode(key, value));
                     _size++;
                     ResizeIfNeeded();
                     return true;
@@ -156,10 +157,10 @@ namespace Evaluation.Library
             for (var i = 0; i < _buckets.Value.Length; i++)
             {
                 var bucket = _buckets.Value[i];
-                foreach (var node in bucket.Value)
+                foreach (var node in bucket)
                 {
                     var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
-                    newBuckets[bucketIndex].Value = newBuckets[bucketIndex].Value.Add(node);
+                    newBuckets[bucketIndex].Add(node);
                 }
             }
 
@@ -174,13 +175,13 @@ namespace Evaluation.Library
             {
                 var bucketIndex = GetBucketIndex(key);
                 //TMVar wrapping the immutable chain list
-                var bucketVar = _buckets.Value[bucketIndex];
-                var node = FindNode(key, bucketVar.Value);
+                var bucket = _buckets.Value[bucketIndex];
+                var node = FindNode(key, bucket);
 
                 if (node != null)
                 {
                     //If node is not found key does not exist so insert
-                    bucketVar.Value = bucketVar.Value.Remove(node);
+                    bucket.Remove(node);
                     _size--;
                     return true;
                 }
@@ -202,7 +203,7 @@ namespace Evaluation.Library
             for (var i = 0; i < backingArray.Length; i++)
             {
                 var bucket = backingArray[i];
-                foreach (var node in bucket.Value)
+                foreach (var node in bucket)
                 {
                     yield return new KeyValuePair<K, V>(node.Key, node.Value);
                 }
@@ -217,13 +218,13 @@ namespace Evaluation.Library
                 for (var i = 0; i < _buckets.Value.Length; i++)
                 {
                     var bucket = _buckets.Value[i];
-                    foreach (var node in bucket.Value)
+                    foreach (var node in bucket)
                     {
                         list.Add(new KeyValuePair<K, V>(node.Key, node.Value));
                     }
                 }
                 return list.GetEnumerator();
-            }); 
+            });
         }
 
 
@@ -249,6 +250,6 @@ namespace Evaluation.Library
             }
         }
 
-       
+
     }
 }

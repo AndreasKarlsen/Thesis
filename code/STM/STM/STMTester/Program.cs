@@ -11,6 +11,7 @@ using STM.Implementation.Obstructionfree;
 using STM.Implementation.Lockbased;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using STM.Implementation.JVSTM;
 
 namespace STMTester
 {
@@ -35,13 +36,88 @@ namespace STMTester
             //OrElseTest();
             //OrElseNestingTest2();
             //OrElseNestingTest3();
-            var dining = new DiningPhilosopher();
-            dining.Start();
+            //var dining = new DiningPhilosopher();
+            //dining.Start();
+            JVTest();
+            JVConcurrentTest();
             Console.ReadKey();
         }
 
 
+        private static void JVTest()
+        {
+            var box1 = new VBox<string>("a");
+            var box2 = new VBox<bool>(false);
+            var notCommited = true;
+            while (notCommited)
+            {
+                var transaction = JVTransaction.StartNew();
+                box1.Put(transaction, "Hello world");
+                var b2Value = box2.Read(transaction);
+                notCommited = !transaction.Commit();
+            }
+           
+            
+        }
 
+        private static void JVConcurrentTest()
+        {
+            for (int i = 0; i < 10000; i++)
+            {
+                var res = JVConcurrentTestInternal();
+                Console.WriteLine(res);
+                if (res == 120)
+                {
+                    throw new Exception("Res == 120");
+                }
+            }
+        }
+
+        private static int JVConcurrentTestInternal()
+        {
+            var box = new VBox<int>(10);
+
+            var t1 = new Thread(() =>
+            {
+                var notCommited = true;
+                while (notCommited)
+                {
+                    var transaction = JVTransaction.StartNew();
+                    if (box.Read(transaction) == 10)
+                    {
+                        box.Put(transaction, box.Read(transaction) * 10);
+                    }
+                    else
+                    {
+                        box.Put(transaction,5);
+                    }
+                    notCommited = !transaction.Commit();
+                }
+            });
+
+            var t2 = new Thread(() =>
+            {
+                var notCommited = true;
+                while (notCommited)
+                {
+                    var transaction = JVTransaction.StartNew();
+                    box.Put(transaction, 12);
+                    notCommited = !transaction.Commit();
+                }
+                
+            });
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t2.Join();
+            var t = JVTransaction.StartNew();
+            var result = box.Read(t);
+            t.Commit();
+
+            return result;
+        }
 
         private static void DinningPhilosophersTest()
         {

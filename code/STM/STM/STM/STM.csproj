@@ -56,6 +56,15 @@
     <Compile Include="Implementation\Exceptions\STMInvalidRetryException.cs" />
     <Compile Include="Implementation\Exceptions\STMMaxAttemptException.cs" />
     <Compile Include="Implementation\Exceptions\STMRetryException.cs" />
+    <Compile Include="Implementation\JVSTM\AtomicInteger.cs" />
+    <Compile Include="Implementation\JVSTM\BaseMap.cs" />
+    <Compile Include="Implementation\JVSTM\BaseVBoxBody.cs" />
+    <Compile Include="Implementation\JVSTM\JVTransaction.cs" />
+    <Compile Include="Implementation\JVSTM\ReadMap.cs" />
+    <Compile Include="Implementation\JVSTM\VBox.cs" />
+    <Compile Include="Implementation\JVSTM\BaseVBox.cs" />
+    <Compile Include="Implementation\JVSTM\VBoxBody.cs" />
+    <Compile Include="Implementation\JVSTM\WriteMap.cs" />
     <Compile Include="Implementation\Lockbased\AtomicLock.cs" />
     <Compile Include="Implementation\Lockbased\TMDouble.cs" />
     <Compile Include="Implementation\Lockbased\TMFloat.cs" />

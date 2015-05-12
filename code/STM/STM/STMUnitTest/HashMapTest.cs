@@ -153,5 +153,18 @@ namespace STMUnitTest
             var map = new NaiveLockingHashMap<int, int>();
             TestMapConcurrent(map);
         }
+
+        [TestMethod]
+        public void JVSTMHashMapConcurrent()
+        {
+            var map = new JVSTMHashMap<int, int>();
+            TestMapConcurrent(map);
+        }
+
+        [TestMethod]
+        public void JVSTMHashMapTestAll()
+        {
+            TestMap(new JVSTMHashMap<int, int>());
+        }
     }
 }

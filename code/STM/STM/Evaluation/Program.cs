@@ -24,7 +24,7 @@ namespace Evaluation
             //STMHashMapSequentialTest();
             //LockingHashMapSequentialTest();
 
-            int nrThreads = 4;
+            var nrThreads = 4;
             using(var s = new FileStream("output.txt",FileMode.Create))
             {
                 using(var sw = new StreamWriter(s))
@@ -56,6 +56,13 @@ namespace Evaluation
                     }
 
                     Console.WriteLine("STM done");
+
+                    for (int i = 0; i < 10; i++)
+                    {
+                        JVSTMHashMapConcurrent(nrThreads, sw);
+                    }
+
+                    Console.WriteLine("JVSTM done");
                 }
             }
 
@@ -66,6 +73,13 @@ namespace Evaluation
         {
             writer.WriteLine("STM hashmap");
             var map = new StmHashMap<int, int>();
+            TestMapConcurrent(map, nrThreads, writer);
+        }
+
+        public static void JVSTMHashMapConcurrent(int nrThreads, StreamWriter writer)
+        {
+            writer.WriteLine("JVSTM hashmap");
+            var map = new JVSTMHashMap<int, int>();
             TestMapConcurrent(map, nrThreads, writer);
         }
 

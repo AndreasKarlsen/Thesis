@@ -73,7 +73,15 @@ namespace Evaluation.Library
 
         public override bool ContainsKey(K key)
         {
-            return FindNode(key) != null;
+            return STMSystem.Atomic(() =>
+            {
+                if (_resizing)
+                {
+                    STMSystem.Retry();
+                }
+
+                return FindNode(key) != null;
+            });
         }
 
         public override V Get(K key)
