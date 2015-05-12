@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Collections\ISkipList.cs" />
+    <Compile Include="Collections\LinkedList.cs" />
     <Compile Include="Collections\LockFreeSkipList.cs" />
     <Compile Include="Collections\Queue.cs" />
     <Compile Include="Collections\SingleItemBuffer.cs" />
