@@ -40,6 +40,8 @@ namespace STMTester
             //dining.Start();
             JVSpeedTest();
             JVSpeedTest();
+            var dinning = new JVDining();
+            dinning.Start();
             //JVTest();
             //JVConcurrentTest();
             Console.ReadKey();

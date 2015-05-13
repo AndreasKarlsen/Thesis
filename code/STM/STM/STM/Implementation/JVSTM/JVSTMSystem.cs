@@ -21,13 +21,13 @@ namespace STM.Implementation.JVSTM
         {
             return AtomicInternal(new List<Func<JVTransaction,T>> { stmAction });
         }
-        /*
-        public static T Atomic<T>(Func<T> stmAction, params Func<T>[] orElses)
+        
+        public static T Atomic<T>(Func<JVTransaction,T> stmAction, params Func<JVTransaction,T>[] orElses)
         {
-            var atomics = new List<Func<T>>(orElses.Length + 1) { stmAction };
+            var atomics = new List<Func<JVTransaction,T>>(orElses.Length + 1) { stmAction };
             atomics.AddRange(orElses);
             return AtomicInternal(atomics);
-        }*/
+        }
 
         public static void Atomic(Action<JVTransaction> stmAction)
         {
@@ -41,29 +41,29 @@ namespace STM.Implementation.JVSTM
             });
         }
 
-        /*
-        public static void Atomic(Action stmAction, params Action[] orElses)
+        
+        public static void Atomic(Action<JVTransaction> stmAction, params Action<JVTransaction>[] orElses)
         {
-            var atomics = new List<Func<bool>>(orElses.Length + 1)
+            var atomics = new List<Func<JVTransaction,bool>>(orElses.Length + 1)
             {
-                () =>
+                (t) =>
                 {
-                    stmAction();
+                    stmAction(t);
                     return true;
                 }
             };
 
             //Convert orElseblocks from Action to Func<bool>
-            atomics.AddRange(orElses.Select<Action, Func<bool>>(orElseBlcok =>
-                () =>
+            atomics.AddRange(orElses.Select<Action<JVTransaction>, Func<JVTransaction,bool>>(orElseBlcok =>
+                (transaction) =>
                 {
-                    orElseBlcok();
+                    orElseBlcok(transaction);
                     return true;
                 }
             ));
 
             AtomicInternal(atomics);
-        }*/
+        }
 
         private static T AtomicInternal<T>(IList<Func<JVTransaction,T>> stmActions)
         {
@@ -71,6 +71,7 @@ namespace STM.Implementation.JVSTM
             var result = default(T);
             var index = 0;
             var nrAttempts = 0;
+            var overAllReadSet = new ReadMap();
 
             while (true)
             {
@@ -88,6 +89,10 @@ namespace STM.Implementation.JVSTM
                         return result;
                     }
 
+                }
+                catch (STMRetryException)
+                {
+                    index = HandleRetry(stmActions, transaction, index, overAllReadSet);
                 }
                 catch (Exception) //Catch non stm related exceptions which occurs in transactions
                 {
@@ -111,8 +116,78 @@ namespace STM.Implementation.JVSTM
             }
         }
 
+        
 
-        #endregion Atomic   
+        #endregion Atomic
+
+        #region Retry
+
+        public static void Retry()
+        {
+            throw new STMRetryException();
+        }
+
+        private static int HandleRetry<T>(IList<Func<JVTransaction, T>> stmActions, JVTransaction transaction, int index, ReadMap overAllReadSet)
+        {
+            if (stmActions.Count == 1) //Optimized for when there are no orelse blocks
+            {
+                WaitOnReadset(transaction, transaction.ReadMap);
+            }
+            else if (stmActions.Count == index + 1) //Final orelse block
+            {
+                overAllReadSet.Merge(transaction.ReadMap);
+                WaitOnReadset(transaction, overAllReadSet);
+                index = 0;
+            }
+            else //Non final atomic or orelse blocks
+            {
+#if DEBUG
+                Console.WriteLine("Transaction: " + transaction.Number + " ORELSE jump");
+#endif
+                overAllReadSet.Merge(transaction.ReadMap);
+                index++;
+            }
+
+            return index;
+        }
+
+
+        private static void WaitOnReadset(JVTransaction transaction, ReadMap readMap)
+        {
+
+#if DEBUG
+            Console.WriteLine("ENTERED WAIT ON RETRY: " + transaction.Number);
+#endif
+
+            if (readMap.Count == 0)
+            {
+                throw new STMInvalidRetryException();
+            }
+
+            var expectedEra = transaction.RetryLatch.Era;
+
+            foreach (var kvpair in readMap)
+            {
+                kvpair.Key.RegisterRetryLatch(transaction.RetryLatch, kvpair.Value, expectedEra);
+            }
+
+            /*
+            if (readMap.Validate())
+            {
+                return;
+            }*/
+
+#if DEBUG
+            Console.WriteLine("WAIT ON RETRY: " + transaction.Number);
+#endif
+            transaction.Await(expectedEra);
+#if DEBUG
+            Console.WriteLine("AWOKEN: " + transaction.Number);
+#endif
+        }
+
+
+        #endregion Retry
 
     }
 }

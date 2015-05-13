@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using STM.Implementation.Common;
 
 namespace STM.Implementation.JVSTM
 {
@@ -14,6 +15,7 @@ namespace STM.Implementation.JVSTM
         internal JVTransaction Parent { get; private set; }
         internal ReadMap ReadMap { get; private set; }
         internal WriteMap WriteMap { get; private set; }
+        internal readonly IRetryLatch RetryLatch = new RetryLatch();
 
 
         private JVTransaction(int id) : this(id,null,new ReadMap(), new WriteMap())
@@ -62,6 +64,11 @@ namespace STM.Implementation.JVSTM
                 lastCommitted = newNumber;
                 return true;
             }
+        }
+
+        public void Await(int expectedEra)
+        {
+            RetryLatch.Await(expectedEra);
         }
 
     }

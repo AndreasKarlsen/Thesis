@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using STM.Implementation.Common;
 
 namespace STM.Implementation.JVSTM
 {
     public class VBox<T> : BaseVBox
     {
         private volatile VBoxBody<T> _body;
+        private ImmutableList<IRetryLatch> _listeners = ImmutableList<IRetryLatch>.Empty; 
 
         public VBox() : this(default(T))
         {
@@ -52,6 +56,60 @@ namespace STM.Implementation.JVSTM
         internal override void Install(object value, int version)
         {
             _body = new VBoxBody<T>((T)value,version,_body);
+            var temp = _listeners;
+            foreach (var retryLatch in temp)
+            {
+                retryLatch.Open(retryLatch.Era);
+            }
+
+            ImmutableList<IRetryLatch> initial;
+            do
+            {
+                initial = _listeners;
+            } while (initial != Interlocked.CompareExchange(ref _listeners,ImmutableList<IRetryLatch>.Empty, initial));
+        }
+
+        internal override void RegisterRetryLatch(IRetryLatch latch, BaseVBoxBody expectedBody, int expectedEra)
+        {
+            if (_body != expectedBody)
+            {
+                //if it currently already contains a different version, we are done.
+                latch.Open(expectedEra);
+                return;
+            }
+
+            while (true)
+            {
+                if (_body != expectedBody)
+                {
+                    //if it currently already contains a different version, we are done.
+                    latch.Open(expectedEra);
+                    return;
+                }
+
+                var initialValue = _listeners;
+                var result = Interlocked.CompareExchange(ref _listeners, _listeners.Add(latch), initialValue);
+                if (result != initialValue)
+                {
+                    continue;
+                }
+
+                if (_body == expectedBody)
+                {
+                    return;
+                }
+                //version has changed unregister
+                while (true)
+                {
+                    initialValue = _listeners;
+                    result = Interlocked.CompareExchange(ref _listeners, _listeners.Add(latch), initialValue);
+                    if (result != initialValue)
+                    {
+                        continue;
+                    }
+                    return;
+                }
+            }
         }
     }
 }

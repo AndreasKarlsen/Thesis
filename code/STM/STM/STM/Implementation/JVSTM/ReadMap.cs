@@ -12,5 +12,13 @@ namespace STM.Implementation.JVSTM
         {
             return this.All(kvPair => kvPair.Key.Validate(kvPair.Value));
         }
+
+        public void Merge(ReadMap other)
+        {
+            foreach (var kvpair in other)
+            {
+                PutIfAbsent(kvpair.Key,kvpair.Value);
+            }
+        }
     }
 }

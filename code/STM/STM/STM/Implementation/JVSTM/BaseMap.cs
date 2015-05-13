@@ -19,6 +19,14 @@ namespace STM.Implementation.JVSTM
             this[stmObject] = value;
         }
 
+        public void PutIfAbsent(K stmObject, V value)
+        {
+            if (!ContainsKey(stmObject))
+            {
+                this[stmObject] = value;
+            }
+        }
+
 
     }
 }
