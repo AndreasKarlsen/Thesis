@@ -38,9 +38,83 @@ namespace STMTester
             //OrElseNestingTest3();
             //var dining = new DiningPhilosopher();
             //dining.Start();
-            JVTest();
-            JVConcurrentTest();
+            JVSpeedTest();
+            JVSpeedTest();
+            //JVTest();
+            //JVConcurrentTest();
             Console.ReadKey();
+        }
+
+        private static void JVSpeedTest()
+        {
+            var b = new VBox<bool>();
+            var tmb = new TMVar<bool>();
+
+            var sw = Stopwatch.StartNew();
+            for (int i = 0; i < 10000; i++)
+            {
+                bool notCommitted = true;
+                while (notCommitted)
+                {
+                    var t = JVTransaction.StartNew();
+                    if (b.Read(t))
+                    {
+                        b.Put(t, false);
+                    }
+                    else
+                    {
+                        b.Put(t, true);
+                    }
+                    notCommitted = !t.Commit();
+                }
+            }
+
+            sw.Stop();
+
+            Console.WriteLine("Non system time: " + sw.ElapsedMilliseconds);
+
+
+            sw = Stopwatch.StartNew();
+            for (int i = 0; i < 10000; i++)
+            {
+                JVSTMSystem.Atomic((t) =>
+                {
+                    if (b.Read(t))
+                    {
+                        b.Put(t, false);
+                    }
+                    else
+                    {
+                        b.Put(t, true);
+                    }
+                });
+            }
+
+            sw.Stop();
+
+            Console.WriteLine("System time: " + sw.ElapsedMilliseconds);
+
+
+            sw = Stopwatch.StartNew();
+            for (int i = 0; i < 10000; i++)
+            {
+                STMSystem.Atomic(() =>
+                {
+                    if (tmb.Value)
+                    {
+                        tmb.Value = false;
+                    }
+                    else
+                    {
+                        tmb.Value = true;
+                    }
+                });
+            }
+            sw.Stop();
+
+            Console.WriteLine("TL2 time: " + sw.ElapsedMilliseconds);
+            
+            
         }
 
 
@@ -56,8 +130,6 @@ namespace STMTester
                 var b2Value = box2.Read(transaction);
                 notCommited = !transaction.Commit();
             }
-           
-            
         }
 
         private static void JVConcurrentTest()

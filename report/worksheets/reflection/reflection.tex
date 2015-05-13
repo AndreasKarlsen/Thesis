@@ -20,10 +20,18 @@ Getting preliminary hands on experience with the required technologies at an ear
 \section{Hypothesis}
 \section{Requirements}
 \section{Design}
-\section{STM Algorithm}
+\section{STM Implementation}
+This section describes the project groups reflections related to the implementation of the \ac{STM} system described in \bsref{chap:implementation}.
+
+\subsection{STM Algorithm}
 As described in \bsref{chap:implementation} the implemented \ac{STM} system is based on the TL\rom{2} algorithm\cite{dice2006transactional}. The algorithm uses commit time locking to ensure that any values written by a transaction becomes visible to the reaming system as a single atomic step. The TL\rom{2} algorithm is well documented from a number of sources\cite{dice2006transactional}\cite[p. 438]{herlihy2012art}\cite[p. 106]{harris2010transactional}, which allowed us to gain great insight into the workings of the algorithm, easing the implementation of more advanced features such as orelse, retry and nesting which are not described in the references materials.
 
 Due to the utilization of locking the TL\rom{2} algorithm is unable to supply any of the progress guarantees described in \bsref{subsec:stm_impl_progress_guarantee}. Selecting a algorithm which could supply one of these progress guarantees would have possessively effected the simplicity of the \ac{STM} library and \stmname as the programmer would know exactly what guarantee was provided. In case of Wait-freedom the programmer would know that all transactions would eventually commit allowing her to utilize this knowledge in her implementation. Alternatively the inclusion of a contention manager, dictating conflict resolution, into the existing implementation could be investigated. A contention manager may allow the existing implementation to provide similar guarantees in the absence of failures.
+\subsection{STM Library Interface}
+As the described in \bsref{sec:problem_statement} the goal of this project has been decide what benefits, if any, language based \ac{STM} provides over library based \ac{STM} and locking in C\#, by evaluating the three approaches based on a set of characteristics. As the \ac{STM} library is to be evaluated according to its usability, it interface is required to be designed in such a way as to maximize the usability, while still satisfying the defined requirements. \stmname however does not have such a requirement for its backing \ac{STM} library. The programmer does not see the transformed code, removing the need for a \ac{STM} library with high usability. In fact it may be advantageous, for performance, to utilize a backing \ac{STM} library with a high degree of flexibility, allowing the compiler to optimize the generated code. 
+
+Instead of a interface based on special \ac{STM} objects as described in \bsref{sec:stm_library_interface}, a scheme based on central metadata and applying functions to variable in order to read/modify could be adopted. Such as interface will remove the need for transforming the types during compilation.
+
 \section{Roslyn Extension}
 As described in \bsref{sec:roslyn_extension_strategy} the Roslyn compiler has been extended at the level of the syntax tree/symbol information level. The lexer, parser, syntax tree and symbol table where modified to support the constructed described in \bsref{chap:stm_design} and transformations where applied to the modified syntax tree producing a standard C\# syntax tree representing the execution of the described transaction by calling the \ac{STM} library. The transformed syntax tree is parsed to the remaining compiler phases, utilizing the existing semantic analysis and code generation implementations. 
 
