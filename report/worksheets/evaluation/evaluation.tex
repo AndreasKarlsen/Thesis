@@ -1,21 +1,20 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Evaluation}{1}{Marts 2, 2015}{Andreas}{../../}
-This chapter evaluates \stmname, its associated \ac{STM} library and locking in C\# according to an extended version of the characteristics defined in \cite[p. 15-21]{dpt907e14trending}. The evaluation facilitates a conclusion on our hypothesis as defined on \bsref{sec:problem_statement}.
+This chapter evaluates \stmname, its associated \ac{STM} library and locking in C\# according to an extended version of the characteristics defined in \cite[p. 15-21]{dpt907e14trending}. The evaluation facilitates a conclusion on our hypothesis \textit{``Language integrated \ac{STM} provides a valid alternative to locking when solving known concurrent problems by using C\#.''} defined in \bsref{sec:problem_statement}.
 \label{chap:evaluation}
 \section{Selected Problems}
 As described in \bsref{sec:problem_statement} the evaluation is conducted by comparing the characteristics of each approach based on a number of concurrent implementations. For this purpose three concurrency problems have been selected:
 \begin{enumerate}
 \item The Dining Philosophers (\bsref{app:dining_phil})
-\item The Santa Claus (\bsref{app:santa})
+\item The Santa Claus Problem (\bsref{app:santa})
 \item A Concurrent Hashmap (\bsref{app:hashmap})
 \end{enumerate}
-The Dining Philosophers problem represents a well known concurrency problem which highlights some of the pitfalls associated with conditional synchronization of threads. The Santa Claus problem encompasses a high degree of modeling and requires complex synchronization, e.g. allowing only a predefined number of threads to enter a critical region at a time and waiting on one of multiple conditions. Employing this problem helps investigate whether \ac{STM} provides any advantages over locking in such scenarios. Finally a concurrent hashmap implementation represents a real world problem, which benefits from fine grained synchronization and is available in a number of languages, including C\#. Together these problems provide a varied perspective by exerting different aspects of each approach e.g. waiting on one of multiple conditions and fine grained synchronization.
+The Dining Philosophers problem represents a well known concurrency problem which highlights some of the pitfalls associated with conditional synchronization of threads. The Santa Claus problem encompasses a high degree of modeling and requires complex synchronization, e.g. allowing only a predefined number of threads to enter a critical region at a time and waiting on one of multiple conditions. Employing this problem helps investigate which advantages \ac{STM} provides over locking in such scenarios. Finally a concurrent hashmap implementation represents a real world problem, e.g. it can be used in a compiler to maintain a symbol table\bsref{cormen2009introduction}, which benefits from fine grained synchronization and is available in a number of languages, including C\#. Together these problems provide a varied perspective by exerting different aspects of each approach e.g. waiting on one of multiple conditions and fine grained synchronization.
 
 \section{Evaluation Approach}
-For each of the selected problems an implementation will be created using locking, library based \ac{STM} and \stmname. Based on these implementations each concurrency approach will be evaluated according to an extended version of the characteristic defined in our previous work 
-\cite[p. 15-21]{dpt907e14trending}. These characteristics are a combination of general characteristics for concurrency models such as pessimistic or optimistic concurrency, as well as, characteristic such as simplicity and readability which have been used to evaluate programming languages\cite[p. 7]{sebestaProLang}. The extension is with the characteristics Data Types and Syntax Design. The reason being, that it is now a concurrency approach in a language, and not a concurrency model being evaluated. 
+For each of the selected problems an implementation will be created using locking, library based \ac{STM} and \stmname. Based on these implementations each concurrency approach will be evaluated according to an extended version of the characteristics defined in our previous work\cite[p. 15-21]{dpt907e14trending}. These characteristics are a combination of general characteristics for concurrency models such as pessimistic or optimistic concurrency, as well as characteristics such as simplicity and readability which have been used to evaluate programming languages\cite[p. 7]{sebestaProLang}. The extension is with the characteristics Data Types and Syntax Design. The reason being, that it is now a concurrency approach in a language being evaluated, and not a concurrency model. 
 
-While each of these characteristics range from one extreme to another, e.g. high or low readability, a concurrency approach may not reside at one of these extremes, but more likely somewhere in between. Therefore, as part of the evaluation, each concurrency approach will be given a placement on the spectrum of each characteristic, based on findings in the evaluation. In order to visualize this placement a scale similar to the one presented in \bsref{fig:evel_example} is employed. Here \bscode{X} and \bscode{Y} represent the two extremes of the spectrum while the indicators represent the placement of each of the concurrency approaches on the spectrum. As an example \bscode{X} and \bscode{Y} could be low and high writability, \bsref{fig:evel_example} then shows that each of the concurrency approaches resides more towards the high writability end of the spectrum.
+While each of these characteristics range from one extreme to another, e.g. high or low readability, a concurrency approach may not reside at one of these extremes. Therefore each concurrency approach will be given a placement on the spectrum of each characteristic, based on findings in the evaluation. In order to visualize this placement a scale similar to the one presented in \bsref{fig:evel_example} is employed. Here \bscode{X} and \bscode{Y} represent the two extremes of the spectrum while the indicators represent the placement of each of the concurrency approaches on the spectrum. As an example \bscode{X} and \bscode{Y} could be low and high writability, \bsref{fig:evel_example} then shows that each of the concurrency approaches resides more towards the high writability end of the spectrum.
 \begin{figure}[ht!]
 \centering
 \includegraphics[scale=0.5]{\rootpath/worksheets/evaluation/figures/eval_example}
@@ -23,20 +22,20 @@ While each of these characteristics range from one extreme to another, e.g. high
 \end{figure}
 As the evaluation of the characteristics is subjective placing each of the concurrency approaches on the spectrum of the characteristic under evaluation allows for comparison of the findings.
 \section{Implementations}
-To ensure common ground between all implementations of a particular problem, a set of requirements detailing common factors, which must be true for all implementations of a particular problem, has been created. The source is located in \bsref{}\andreas{Source!} together of a description of the chosen approach. Common for all the solutions are, that they must solve the problem by using a concurrent approach and utilizing their individual strengths where possible.
+To ensure common ground between all implementations of a particular problem, a set of requirements detailing common factors, which must be true for all implementations of a particular problem, has been created. The source is located in \bsref{}\andreas{Source!} together with a description of the chosen approach. Common for all the solutions is, that they must solve the problem by using a concurrent approach and utilizing their individual strengths.
 
 The Dining Philosophers implementations must:
 \begin{itemize}
-	\item Encompass two 100 milliseconds thread sleeps. One to simulate the act of eating, forcing the locks to be held while a philosophers finishes her meal, and one upon completing an attempt to eat simulating sleeping a period of time before attempting to eat again.
+	\item Encompass two 100 milliseconds thread sleeps. One to simulate the act of eating, forcing the locks to be held while a philosophers finishes her meal, and one upon completing an attempt to eat simulating sleeping a period of time before attempting to eat again. The amount of sleep is only of importance in regards to performance testing, which is why an arbitrary number of 100 has been picked, it is only done to provide consistency between the implementations.
 \end{itemize}
 
 The Santa Claus problem implementations must:
 \begin{itemize}
-	\item Follow the requirements defined in \bsref{app:santa}.
+	\item Adhere to the requirements defined in \bsref{app:santa}.
 	\item Utilize advantageous features of the concurrency approach.
 \end{itemize}
 
-The concurrent hashmap implementations must:
+The Concurrent Hashmap implementations must:
 \begin{itemize}
 	\item Encompass fined grained synchronization, allowing multiple threads to operate on the hashmap simultaneously.
 \end{itemize}
@@ -44,9 +43,9 @@ The implementations in their full length can be found in the appendix.\toby{inds
 
 \section{Evaluation of Characteristics}
 This section describes how each of the three concurrency approaches are evaluated by the characteristics.
-All of the selected concurrency approaches relies on starting threads in order to introduce concurrency as well as manually specifying critical regions using either locks or the \bscode{atomic} block. 
+All the selected concurrency approaches rely on starting threads in order to introduce concurrency as well as manually specifying critical regions using either locks or the \bscode{atomic} block. 
 \subsection{Implicit or Explicit Concurrency}
-As described above, all three approaches rely on explicitly using threads to introduce concurrency. This makes all the approaches lend toward the explicit end of the spectrum. The two \ac{STM} based approaches are more implicit as \ac{STM} allows them to hide the details synchronization. Locking in C\# on the other hand requires explicit stating how synchronization is to be achieved and is therefore placed close to the explicit concurrency extreme. \stmnamesp and the \ac{STM} library resides slightly more towards the implicit concurrency end of the spectrum. The placement of the three concurrency approaches on the implicit - explicit concurrency spectrum is depicted in \bsref{fig:char_implicit_explicit}.
+As described above, all three approaches rely on explicitly using threads to introduce concurrency. This makes all the approaches lean toward the explicit end of the spectrum. The two \ac{STM} based approaches are more implicit as \ac{STM} allows abstracts away synchronization details. Locking in C\# on the other hand requires explicit stating how synchronization is to be achieved and is therefore placed close to the explicit concurrency extreme. \stmnamesp and the \ac{STM} library reside slightly more towards the implicit concurrency end of the spectrum. The placement of the three concurrency approaches on the implicit - explicit concurrency spectrum is depicted in \bsref{fig:char_implicit_explicit}.
 
 \begin{figure}[htbp]
 \centering
@@ -56,9 +55,9 @@ As described above, all three approaches rely on explicitly using threads to int
 \end{figure}
 
 \subsection{Fault Restrictive or Expressive}
-Locking presents the programmer with a set of tools aimed at solving concurrency problems but does little to guarantee their correct usage. Locking in C\# provides the \bscode{lock} statement\cite[p. 102]{csharp2013specificaiton}, which defines a scope within which a given lock is held. The \bscode{lock} statement handles lock acquisition and release which removes the threat of programmers unintentionally missing to release an acquired lock. The lock statement is however only applicable in some scenarios and does, for example, not support timeouts on lock acquisition. Locking enable control of synchronization at a very low level of detail, which is very expressive. Therefore, locking in C\# is placed at the expressive end of the spectrum.
+Locking presents the programmer with a set of tools aimed at solving concurrency problems but does little to guarantee the correct usage of these tools. Locking in C\# provides the \bscode{lock} statement\cite[p. 102]{csharp2013specificaiton}, which defines a scope within which a given lock is held. The \bscode{lock} statement handles lock acquisition and release which removes the threat of programmers unintentionally missing to release an acquired lock. The lock statement is however only applicable in some scenarios and does, for example, not support timeouts on lock acquisition.\toby{Hvad med monitor? Evt. ref til locking key concepts kapitel} Locking enable control of synchronization at a very low level of detail, which is very expressive. Therefore, locking in C\# is placed at the expressive end of the spectrum.
 
-The \ac{STM} based approaches delegate the details of how synchronization is achieved to the underlying \ac{STM} system, allowing \ac{STM} based concurrency to avoid some of the errors associated with locking, such as deadlocks. The \ac{STM} based approaches however still rely on shared memory for communication and require programmers to define transaction scopes and introduce concurrency by starting threads. The high abstraction of \ac{STM} limits the possibility of expressing synchronization at low level details. The \ac{STM} based approaches reside towards the expressive end of the spectrum but contain fault restrictive elements pulling it more towards the fault restrictive extreme than locking. The placement of the three concurrency approaches on the fault restrictive - expressive spectrum is depicted in \bsref{fig:char_fault_expressive}.
+The \ac{STM} based approaches delegate the details of how synchronization is achieved to the underlying \ac{STM} system, allowing \ac{STM} based concurrency to avoid some of the errors associated with locking, such as deadlocks. The \ac{STM} based approaches however still rely on shared memory for communication and require programmers to define transaction scopes and introduce concurrency by starting threads. The high abstraction of \ac{STM} limits the possibility of expressing synchronization at low level details. The \ac{STM} based approaches reside towards the expressive end of the spectrum but contain fault restrictive elements pulling them more towards the fault restrictive extreme than locking. The placement of the three concurrency approaches on the fault restrictive - expressive spectrum is depicted in \bsref{fig:char_fault_expressive}.
 \begin{figure}[htbp]
 \centering
  \includegraphics[width=0.9\textwidth]{\rootpath/worksheets/evaluation/figures/char_fault_expressive} 
@@ -68,7 +67,7 @@ The \ac{STM} based approaches delegate the details of how synchronization is ach
 
 \subsection{Pessimistic or Optimistic}
 Locking applies synchronization by enforcing mutual exclusion. This approach is well suited in scenarios where errors are common resulting in a high number of aborts if a \ac{STM} based approach had been used. Locking is therefore an inherently pessimistic concurrency approach as it prevents errors from occurring instead of correcting them when they occur. \ac{STM} on the other hand allows multiple threads to proceed simultaneously, correcting any errors that may occur by aborting and re-executing transactions. Hence \ac{STM} takes an optimistic approach to concurrency.
-Therefore we say that \stmnamesp and the \ac{STM} library resides at the optimistic extreme of the pessimistic - optimistic spectrum while locking resides at the pessimistic extreme. The placement of the three concurrency approaches on the pessimistic - optimistic spectrum is depicted in \bsref{fig:char_pes_opti}. 
+Therefore \stmnamesp and the \ac{STM} library resides at the optimistic extreme of the pessimistic - optimistic spectrum while locking resides at the pessimistic extreme. The placement of the three concurrency approaches on the pessimistic - optimistic spectrum is depicted in \bsref{fig:char_pes_opti}. 
 \begin{figure}[htbp]
 \centering
  \includegraphics[width=0.9\textwidth]{\rootpath/worksheets/evaluation/figures/char_pessimistic_optemistic} 
@@ -77,7 +76,7 @@ Therefore we say that \stmnamesp and the \ac{STM} library resides at the optimis
 \end{figure}
 
 \subsection{Readability \& Writability}\label{subsec:tl_charac_read_and_write}
-The evaluation of readability and writability is based on a number of shared criteria: Simplicity, Orthogonality, Data Types, and Syntax Design. The analysis of Data Types and Syntax Design will not be evaluated on a spectrum of two extremes, as the choices made are trade offs affecting other characteristics, e.g. simplicity and readability. The analysis will therefore be taken into account when the other characteristics is evaluated.
+The evaluation of readability and writability is based on a number of shared criteria: Simplicity, Orthogonality, Data Types, and Syntax Design. The analysis of Data Types and Syntax Design will not be evaluated on a spectrum of two extremes, as the choices made are trade offs affecting other characteristics, e.g. simplicity and readability. The analysis will therefore be taken into account when the other characteristics are evaluated.
 
 In addition to the shared criteria, writability is based on the level of abstraction and expressivity.
 %that of simplicity and orthogonality as well as a number of other considerations. Simplicity and orthogonality is described in the following sections followed by a final evaluation of readability.
