@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using STM.Implementation.Common;
 using STM.Interfaces;
 
 namespace STM.Implementation.Lockbased
@@ -76,9 +77,9 @@ namespace STM.Implementation.Lockbased
         {
             switch (transaction.Status)
             {
-                case Transaction.TransactionStatus.Committed:
+                case TransactionStatus.Committed:
                     return true;
-                case Transaction.TransactionStatus.Active:
+                case TransactionStatus.Active:
                     /*
                     if (IsLocked() && !IsLockedByCurrentThread())
                     {
@@ -88,7 +89,7 @@ namespace STM.Implementation.Lockbased
                     Console.WriteLine("Validating! transaction: " + transaction.ID + " timeStamp: " + TimeStamp + " readstamp: " + readstamp);
 #endif
                     return TimeStamp <= readstamp;
-                case Transaction.TransactionStatus.Aborted:
+                case TransactionStatus.Aborted:
                     return false;
                 default:
                     throw new Exception("Shits on fire yo!");

@@ -54,6 +54,7 @@
     <Compile Include="Collections\Queue.cs" />
     <Compile Include="Collections\SingleItemBuffer.cs" />
     <Compile Include="Collections\SkipList.cs" />
+    <Compile Include="Implementation\Common\Enums.cs" />
     <Compile Include="Implementation\Common\IRetryLatch.cs" />
     <Compile Include="Implementation\Common\RetryLatch.cs" />
     <Compile Include="Implementation\Exceptions\STMAbortException.cs" />

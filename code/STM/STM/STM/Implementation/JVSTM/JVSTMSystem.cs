@@ -4,12 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Threading;
+using STM.Implementation.Common;
 using STM.Implementation.Exceptions;
+using STM.Implementation.Lockbased;
 
 namespace STM.Implementation.JVSTM
 {
     public static class JVSTMSystem
     {
+
         /// <summary>
         /// Max attempts. Set to same as Clojure
         /// </summary>
@@ -77,7 +81,12 @@ namespace STM.Implementation.JVSTM
             {
                 var stmAction = stmActions[index];
 
-                var transaction = JVTransaction.StartNew();
+                var localTransaction = JVTransaction.LocalTransaction;
+                var transaction = localTransaction.Status == TransactionStatus.Committed
+                    ? JVTransaction.Start()
+                    : JVTransaction.StartNested(localTransaction);
+                JVTransaction.LocalTransaction = transaction;
+                
 
                 try
                 {
@@ -106,6 +115,11 @@ namespace STM.Implementation.JVSTM
 
                 nrAttempts++;
                 //transaction.Abort();
+
+                if (transaction.IsNested)
+                {
+                    JVTransaction.LocalTransaction = transaction.Parent;
+                }
 
 
                 if (nrAttempts == MAX_ATTEMPTS)

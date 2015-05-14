@@ -81,7 +81,7 @@ namespace Evaluation.Library
             Node node = null;
             while (notCommitted)
             {
-                var transaction = JVTransaction.StartNew();
+                var transaction = JVTransaction.Start();
                 node = FindNode(transaction, key);
                 notCommitted = !transaction.Commit();
             }
@@ -95,7 +95,7 @@ namespace Evaluation.Library
             var value = default(V);
             while (notCommitted)
             {
-                var transaction = JVTransaction.StartNew();
+                var transaction = JVTransaction.Start();
                 var node = FindNode(transaction, key);
                 if (node == null)
                 {
@@ -113,7 +113,7 @@ namespace Evaluation.Library
             var notCommitted = true;
             while (notCommitted)
             {
-                var transaction = JVTransaction.StartNew();
+                var transaction = JVTransaction.Start();
                 var bucketIndex = GetBucketIndex(transaction, key);
                 var bucketVar = _buckets.Read(transaction)[bucketIndex];
                 var node = FindNode(key, bucketVar.Read(transaction));
@@ -142,7 +142,7 @@ namespace Evaluation.Library
             var result = false;
             while (notCommitted)
             {
-                var transaction = JVTransaction.StartNew();
+                var transaction = JVTransaction.Start();
                 var bucketIndex = GetBucketIndex(transaction, key);
                 var bucketVar = _buckets.Read(transaction)[bucketIndex];
                 var node = FindNode(key, bucketVar.Read(transaction));
@@ -202,7 +202,7 @@ namespace Evaluation.Library
             var result = false;
             while (notCommitted)
             {
-                var transaction = JVTransaction.StartNew();
+                var transaction = JVTransaction.Start();
                 var bucketIndex = GetBucketIndex(transaction, key);
                 var bucketVar = _buckets.Read(transaction)[bucketIndex];
                 var node = FindNode(key, bucketVar.Read(transaction));
@@ -232,7 +232,7 @@ namespace Evaluation.Library
             IEnumerator<KeyValuePair<K, V>> result = null;
             while (notCommitted)
             {
-                var transaction = JVTransaction.StartNew();
+                var transaction = JVTransaction.Start();
                 var list = new List<KeyValuePair<K, V>>(_size.Read(transaction));
                 for (var i = 0; i < _buckets.Read(transaction).Length; i++)
                 {
@@ -261,7 +261,7 @@ namespace Evaluation.Library
         {
             get
             {
-                var transaction = JVTransaction.StartNew();
+                var transaction = JVTransaction.Start();
                 var result =  _size.Read(transaction);
                 transaction.Commit();
                 return result;

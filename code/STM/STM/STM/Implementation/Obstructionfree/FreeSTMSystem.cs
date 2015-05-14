@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using STM.Implementation.Common;
 using STM.Implementation.Exceptions;
 using STM.Interfaces;
 
@@ -18,7 +19,7 @@ namespace STM.Implementation.Obstructionfree
         protected override bool OnValidate()
         {
             Transaction me = Transaction.LocalTransaction;
-            return me.Status != Transaction.TransactionStatus.Aborted;
+            return me.Status != TransactionStatus.Aborted;
         }
 
         public static BaseSTMSystem GetInstance()

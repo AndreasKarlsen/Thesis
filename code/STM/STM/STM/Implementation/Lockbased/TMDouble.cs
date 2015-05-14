@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using STM.Implementation.Common;
 using STM.Interfaces;
 
 namespace STM.Implementation.Lockbased
@@ -23,7 +24,7 @@ namespace STM.Implementation.Lockbased
          #region Inc Dec
          public void Inc()
          {
-             if (Transaction.LocalTransaction.Status == Transaction.TransactionStatus.Committed)
+             if (Transaction.LocalTransaction.Status == TransactionStatus.Committed)
              {
                  STMSystem.Atomic(() =>
                  {
@@ -38,7 +39,7 @@ namespace STM.Implementation.Lockbased
 
          public void Dec()
          {
-             if (Transaction.LocalTransaction.Status == Transaction.TransactionStatus.Committed)
+             if (Transaction.LocalTransaction.Status == TransactionStatus.Committed)
              {
                  STMSystem.Atomic(() =>
                  {

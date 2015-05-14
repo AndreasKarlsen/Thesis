@@ -58,7 +58,7 @@ namespace STMTester
                 bool notCommitted = true;
                 while (notCommitted)
                 {
-                    var t = JVTransaction.StartNew();
+                    var t = JVTransaction.Start();
                     if (b.Read(t))
                     {
                         b.Put(t, false);
@@ -127,7 +127,7 @@ namespace STMTester
             var notCommited = true;
             while (notCommited)
             {
-                var transaction = JVTransaction.StartNew();
+                var transaction = JVTransaction.Start();
                 box1.Put(transaction, "Hello world");
                 var b2Value = box2.Read(transaction);
                 notCommited = !transaction.Commit();
@@ -156,7 +156,7 @@ namespace STMTester
                 var notCommited = true;
                 while (notCommited)
                 {
-                    var transaction = JVTransaction.StartNew();
+                    var transaction = JVTransaction.Start();
                     if (box.Read(transaction) == 10)
                     {
                         box.Put(transaction, box.Read(transaction) * 10);
@@ -174,7 +174,7 @@ namespace STMTester
                 var notCommited = true;
                 while (notCommited)
                 {
-                    var transaction = JVTransaction.StartNew();
+                    var transaction = JVTransaction.Start();
                     box.Put(transaction, 12);
                     notCommited = !transaction.Commit();
                 }
@@ -186,7 +186,7 @@ namespace STMTester
 
             t1.Join();
             t2.Join();
-            var t = JVTransaction.StartNew();
+            var t = JVTransaction.Start();
             var result = box.Read(t);
             t.Commit();
 
