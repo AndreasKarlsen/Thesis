@@ -171,16 +171,11 @@ namespace STM.Implementation.JVSTM
                 kvpair.Key.RegisterRetryLatch(transaction.RetryLatch, kvpair.Value, expectedEra);
             }
 
-            /*
-            if (readMap.Validate())
-            {
-                return;
-            }*/
-
 #if DEBUG
             Console.WriteLine("WAIT ON RETRY: " + transaction.Number);
 #endif
             transaction.Await(expectedEra);
+            transaction.RetryLatch.Reset();
 #if DEBUG
             Console.WriteLine("AWOKEN: " + transaction.Number);
 #endif
