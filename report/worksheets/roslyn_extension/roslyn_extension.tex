@@ -261,7 +261,7 @@ In \bsref{subsec:design_trans_field} we described the design of transactional fi
 \end{lstlisting}
  
 
-\subsection{Properties}
+\subsection{Properties}\label{sec:roslyn_extension_properties}
 In \bsref{subsec:design_properties} we described the design for transactional properties. In order to provide the wanted semantics, we transform it into two parts: an atomic backing field, and a manual property. The transformation takes the following approach for each transactional property identified in the syntax tree:
 
 \begin{enumerate}

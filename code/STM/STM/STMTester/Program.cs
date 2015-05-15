@@ -38,12 +38,15 @@ namespace STMTester
             //OrElseNestingTest3();
             //var dining = new DiningPhilosopher();
             //dining.Start();
+
             JVSpeedTest();
             JVSpeedTest();
             var dinning = new JVDining();
             dinning.Start();
+
             //JVTest();
             //JVConcurrentTest();
+            
             Console.ReadKey();
         }
 
