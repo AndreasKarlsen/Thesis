@@ -98,7 +98,7 @@ Data flow and control flow analysis is employed, which uses the bound tree to e.
 \subsection{Final Phase}
 Finally, in the fourth and final phase all information built up so far is emitted as an assembly. Method bodies are compiled and emitted as IL concurrently, however methods within the same type are compiled sequentially in a fixed order, typically lexical ordering. The final emitting to the assembly is done sequentially.\cite{sadovRoslynPerf} The code for this phase is mainly located in the \bscode{CodeGen} and \bscode{Emitter} folders.
 
-\section{Syntax trees}\label{sec:syntax_trees}\toby{Evt. skriv hvorfor vi beskriver det her mere detaljeret (fordi det er her vi vil lave compiler ændringer)}
+\section{Syntax Trees}\label{sec:syntax_trees}\toby{Evt. skriv hvorfor vi beskriver det her mere detaljeret (fordi det er her vi vil lave compiler ændringer)}
 Syntax trees are the primary structure used throughout compilation. Syntax trees of the Roslyn compiler have three key attributes\cite[p. 6]{ng2012roslyn}: 
 \begin{enumerate}
 	\item A syntax tree is a full fidelity representation of source code, which means that everything in the source code is represented as a node in the syntax tree. If programs are invalid, the syntax tree represents these errors in source code by tokens named \bscode{skipped} or \bscode{missing} in the tree.  This is referred to as being roundtripable.
