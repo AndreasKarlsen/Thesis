@@ -1,4 +1,14 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Future Work}{1}{Februar 10, 2015}{Andreas}{../../}
 \section{Performance Test}
+%restricter performance i scope ogsåå - future work kunne være at kigge på performance, for at se hvor hurtigt det kører, både i forhold til lock og i forhold til andre stm implementeringer - evt. i forhold til at optimere på det også.
+
+\section{Irreversible Actions}\toby{Ved ikke det skal være i reflection}
+Integration between transactions and irreversible actions, such as \ac{IO} and exceptions, has been selected as out of scope of this master thesis, as described in \bsref{sec:scope}, because they combine poorly and it is an unsolved problem how to handle it gracefully\cite{harris2005exceptions}. The result is that there is no support or warning against irreversible actions in \stmname, which hurts its usability if used in combination with irreversible actions, as it leaves it up to the programmer to manually handle it correctly, which is hard or impossible.
+
+The integration between transaction and irreversible actions is therefore an ideal candidate for future work, both in terms of how to manage it in \stmname, but also in terms of research purposes, if it is possible to come up with new and better solutions than already exists. 
+
+There exists a number of possible existing integration approaches, where we briefly scratched the surface in our prior study\cite[p. 51-52]{dpt907e14trending}. One approach, presented in \cite[p. 4]{harris2003language}, disallows the use of native calls inside transactions, by raising a runtime exception. A similar approach is, to enable the developer to mark a function, so the \ac{STM} system is aware of its side effect. In Clojure it is possible to do this with the \#io macro. If a function is marked, and used in a transaction, a runtime exception will be raised. In \cite{harris2005exceptions} Harris et al. proposes another approach where \ac{IO} libraries should implement an interface, allowing the \ac{STM} system to do callbacks when the transaction is committed, allowing the effect to be buffered until then. In \cite{duffy2010stmnet} Duffy proposes using a well known strategy from the transaction theory\cite{reuter1993transaction}, having the programmer supply on-commit and on-rollback actions to perform or compensate for the irreversible action.\toby{Har taget meget af det om de forskellige appraoches fra requirements, evt. slet det et af stederne}
+%These solutions either burden the programmer using \ac{STM}, or the library designer that must implement a special interface.
+
 \worksheetend

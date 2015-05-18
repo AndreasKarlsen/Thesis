@@ -65,6 +65,7 @@
     <Compile Include="HashMapTest.cs" />
     <Compile Include="ExceptionTest.cs" />
     <Compile Include="LinkedListTest.cs" />
+    <Compile Include="RetryLatchTest.cs" />
     <Compile Include="VariousTest.cs" />
   </ItemGroup>
   <ItemGroup>

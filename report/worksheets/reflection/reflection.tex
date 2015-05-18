@@ -20,16 +20,37 @@ Getting preliminary hands on experience with the required technologies at an ear
 
 \section{Hypothesis}
 \section{Requirements}
+%Tracking level
+%Strong vs Weak atomicity 
 \section{Design}
-\section{STM Algorithm}
+\section{STM Implementation}
+This section describes the project groups reflections related to the implementation of the \ac{STM} system described in \bsref{chap:implementation}.
+
+\subsection{STM Algorithm}
 As described in \bsref{chap:implementation} the implemented \ac{STM} system is based on the TL\rom{2} algorithm\cite{dice2006transactional}. The algorithm uses commit time locking to ensure that any values written by a transaction becomes visible to the reaming system as a single atomic step. The TL\rom{2} algorithm is well documented from a number of sources\cite{dice2006transactional}\cite[p. 438]{herlihy2012art}\cite[p. 106]{harris2010transactional}, which allowed us to gain great insight into the workings of the algorithm, easing the implementation of more advanced features such as orelse, retry and nesting which are not described in the references materials.
 
 Due to the utilization of locking the TL\rom{2} algorithm is unable to supply any of the progress guarantees described in \bsref{subsec:stm_impl_progress_guarantee}. Selecting an algorithm which could supply one of these progress guarantees would have possessively effected the simplicity of the \ac{STM} library and \stmname as the programmer would know exactly what guarantee was provided. In case of Wait-freedom the programmer would know that all transactions would eventually commit allowing her to utilize this knowledge in her implementation. Alternatively the inclusion of a contention manager, dictating conflict resolution, into the existing implementation could be investigated. A contention manager may allow the existing implementation to provide similar guarantees in the absence of failures.
+\subsection{STM Library Interface}
+As the described in \bsref{sec:problem_statement} the goal of this project has been decide what benefits, if any, language based \ac{STM} provides over library based \ac{STM} and locking in C\#, by evaluating the three approaches based on a set of characteristics. As the \ac{STM} library is to be evaluated according to its usability, it interface is required to be designed in such a way as to maximize the usability, while still satisfying the defined requirements. \stmname however does not have such a requirement for its backing \ac{STM} library. The programmer does not see the transformed code, removing the need for a \ac{STM} library with high usability. In fact it may be advantageous, for performance, to utilize a backing \ac{STM} library with a high degree of flexibility, allowing the compiler to optimize the generated code. 
+
+Instead of a interface based on special \ac{STM} objects as described in \bsref{sec:stm_library_interface}, a scheme based on central metadata and applying functions to variable in order to read/modify could be adopted. Such as interface will remove the need for transforming the types during compilation.
+
 \section{Roslyn Extension}
 As described in \bsref{sec:roslyn_extension_strategy} the Roslyn compiler has been extended at the level of the syntax tree/symbol information level. The lexer, parser, syntax tree and symbol table where modified to support the constructed described in \bsref{chap:stm_design} and transformations where applied to the modified syntax tree producing a standard C\# syntax tree representing the execution of the described transaction by calling the \ac{STM} library. The transformed syntax tree is parsed to the remaining compiler phases, utilizing the existing semantic analysis and code generation implementations. 
 
 As an alternative the transformation could be applied at the level of what in Roslyn is referred to as the bound tree. The bound tree is a semantic representation of the source code in the form of a tree structure. The bound tree is constructed based on the syntax tree during which semantic analysis and source code transformation is applied and is the basis of the code generation phase. Where the standard C\# syntax tree, as described in \bsref{sec:syntax_trees} supports the roundtripable property, the bound tree does not. So where applying transformations to the syntax tree as described in \bsref{sec:roslyn_extension_strategy} cause us to lose its roundtripable property, due to the syntax tree not representing the source code directly as a result of the transformation, the bound tree does not have the same issue.
 
 To utilize this fact, the transformations required for executing transaction could be applied along with the standard C\# transformations as part of constructing the bound tree. This would however require the implementation of the transformation to be mingled with the existing C\# transformation implementations and semantic analysis, making the implementations more complex. Alternatively the transformations could be applied after the bound tree has been constructed. However this approach requires that the logic with construct the bound tree, as well as the semantic analysis, be modified to support the \ac{STM} constructs described in \bsref{chap:stm_design}. The bound tree and the associated transformation and analysis implementations are not part of the public \ac{API} provided by the Roslyn compiler and any documentation is limited to blog/forum post as well as the comments embedded in the source code. Due to these factors, transforming at the level of the bound tree is significantly more complex than the approach utilized in \bsref{sec:roslyn_extension_strategy}.
+
+\section{C\# 6.0}
+As described in \bsref{sec:scope}, the development of \stmname is based on C\# 5, which at the time of writing is the most recent version of C\#. C\# 6.0 is however under active development a number of new features has been described.This section presents our reflections upon how the new features impact the findings of this project. The new features supplied by C\# 6.0 are described in \cite{csharp6one} and \cite{csharp6two}. Only new features relevant to locking in C\#, \stmname or the \ac{STM} library are described. 
+
+\subsection{Static Using Statements}
+Static usings statements allows the programmer to import the static methods of a particular class, given her the ability to call these methods as if they where methods of the class in which the call takes place\cite{csharp6one}. This feature is of interest to the \ac{STM} library as it will allow the programmer to utilize the \bscode{atomic} and \bscode{retry} methods of the \bscode{STMSystem} class with out having to specify the class for each call, thereby improving the writability of the library.
+
+\subsection{Auto-Property Initializers}
+Auto-Property intializers allows the programmer to supply a initializer expression to the definition of a Auto-Property\cite{csharp6one}\cite{csharp6two}. The property is then initialized using the initializer expression at runtime. If the Auto-Property defines only a getter the backing field is automatically declared readonly. The Roslyn extension will have to me modified to handle \bscode{atomic} properties, described in \bsref{subsec:design_properties}, with a initializer expression. The initializer expression will have to be modified to create a new \ac{STM} object of the type corresponding to that of the \bscode{atomic} property and initialize it using the defined initializer expression. Instead of initializing the property directly, the initializer should be applied to the backing field generated as part of transformation described in \bsref{sec:roslyn_extension_properties}.
+ 
+
 \section{atomic ref/out}
 \worksheetend

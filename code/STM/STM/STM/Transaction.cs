@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Spring.Threading.AtomicTypes;
+using STM.Implementation.Common;
 using STM.Implementation.Lockbased;
 using STM.Util;
 
@@ -13,8 +14,7 @@ namespace STM
 {
     public class Transaction
     {
-        public enum TransactionStatus { Aborted, Active, Committed };
-
+        
         //Possibly use int or class ref instead of enum for compare and swap
         private TransactionStatus _transactionStatus;
         public long ID { get; private set; }

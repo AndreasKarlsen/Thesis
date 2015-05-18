@@ -42,6 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DiningPhilisophers.cs" />
+    <Compile Include="JVDining.cs" />
     <Compile Include="LibraryExamples\TransactionExamples.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using STM.Implementation.JVSTM;
 using STM.Implementation.Lockbased;
 
 namespace STMUnitTest
@@ -39,6 +40,8 @@ namespace STMUnitTest
             Assert.IsTrue(buffer2.Count == 0);
         }
 
+
+
         [TestMethod]
         public void NestingOrElseTest2()
         {
@@ -60,6 +63,62 @@ namespace STMUnitTest
             });
 
             Assert.IsTrue(tm2.Value == 400);
+        }
+
+        [TestMethod]
+        public void JVNestingOrElseTest2()
+        {
+            var tm1 = new VBox<int>(1);
+            var tm2 = new VBox<int>(2);
+
+            JVSTMSystem.Atomic(t =>
+            {
+                tm1.Put(t,10);
+
+                JVSTMSystem.Atomic((t2) =>
+                {
+                    tm1.Put(t2,20);;
+                });
+
+                var temp = tm1.Read(t);
+
+                tm2.Put(t,temp * temp);
+            });
+
+            var result = JVSTMSystem.Atomic(t => tm2.Read(t));
+            Assert.AreEqual(400, result); 
+        }
+
+        [TestMethod]
+        public void JVNestingOrElseTest3()
+        {
+            var tm1 = new VBox<int>(1);
+            var tm2 = new VBox<int>(2);
+
+            JVSTMSystem.Atomic((t) =>
+            {
+                tm1.Put(t,10);;
+
+                JVSTMSystem.Atomic((t2) =>
+                {
+                    if (tm1.Read(t2) == 10)
+                    {
+                        JVSTMSystem.Retry();
+                    }
+                    tm1.Put(t2,20);
+                },
+                    (t3) =>
+                    {
+                        tm1.Put(t3,50);
+                    });
+
+                var temp = tm1.Read(t);
+
+                tm2.Put(t, temp * temp);
+            });
+
+            var result = JVSTMSystem.Atomic(t => tm2.Read(t));
+            Assert.AreEqual(2500,result);
         }
 
         [TestMethod]
@@ -109,6 +168,24 @@ namespace STMUnitTest
             });
 
             Assert.AreEqual<string>(result, "abcdef");
+        }
+
+        [TestMethod]
+        public void JVNestingEnclosingWriteTest()
+        {
+            var s = new VBox<string>(string.Empty);
+            var result = JVSTMSystem.Atomic((t) =>
+            {
+                s.Put(t,"abc");
+                JVSTMSystem.Atomic((t2) =>
+                {
+                    s.Put(t2,s.Read(t)+"def");
+                });
+
+                return s.Read(t);
+            });
+
+            Assert.AreEqual(result, "abcdef");
         }
     }
 }

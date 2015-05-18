@@ -53,7 +53,7 @@ The goal of this master thesis is to investigate the possibility of supplying la
 
 In order to validate the hypothesis, a language integrated \ac{STM} system for C\#, called \stmname, will be designed, implemented and integrated\andreas{Is this sufficient, or should we expand and reference to chapters?}. In order to achieve this goal a \ac{STM} library for the .NET platform will be created. Using both of these implementations a number of representative concurrent problems will be implemented. These implementations will be compared to equivalent lock based implementations by quantifying their characteristics in regards to concurrency, using an extended version of the characteristics defined in \cite[p. 16-21]{dpt907e14trending}.
 
-\subsection{Method}
+\subsection{Problem Statement Questions}
 In order to structure our investigation we have extracted a number of problem statement questions. The questions are based on findings from the theory investigated in our previous study\cite{dpt907e14trending}, investigation of related work, exploratory investigations into \ac{STM} implementations, and the Roslyn compiler. These questions will serve as a guideline for investigating the integration of \ac{STM} into C\#, as well as being used to conclude upon the project in \bsref{chap:conclusion}.
 
 \begin{enumerate}
@@ -66,4 +66,46 @@ In order to structure our investigation we have extracted a number of problem st
 \end{enumerate}
 
 Answering these questions along with supplying a prototype implementation will build the foundation for evaluating the hypothesis.
+
+\section{Evaluation Approach}\label{sec:eval_approach}
+This section describes how the evaluation is conducted.
+\subsection{Selected Problems}
+As described in \bsref{sec:problem_statement} the evaluation is conducted by comparing the characteristics of each approach based on a number of concurrent implementations. For this purpose three concurrency problems have been selected:
+\begin{enumerate}
+\item The Dining Philosophers (\bsref{app:dining_phil})
+\item The Santa Claus Problem (\bsref{app:santa})
+\item A Concurrent Hashmap (\bsref{app:hashmap})
+\end{enumerate}
+The Dining Philosophers problem represents a well known concurrency problem which highlights some of the pitfalls associated with conditional synchronization of threads. The Santa Claus problem encompasses a high degree of modeling and requires complex synchronization, e.g. allowing only a predefined number of threads to enter a critical region at a time and waiting on one of multiple conditions. Employing this problem helps investigate which advantages \ac{STM} provides over locking in such scenarios. Finally a concurrent hashmap implementation represents a real world problem, e.g. it can be used in a compiler to maintain a symbol table\bsref{cormen2009introduction}, which benefits from fine grained synchronization and is available in a number of languages, including C\#. Together these problems provide a varied perspective by exerting different aspects of each approach e.g. waiting on one of multiple conditions and fine grained synchronization.
+
+\subsection{Evaluation Of Characteristics}
+For each of the selected problems an implementation will be created using locking, library based \ac{STM} and \stmname. Based on these implementations each concurrency approach will be evaluated according to an extended version of the characteristics defined in our previous work\cite[p. 15-21]{dpt907e14trending}. These characteristics are a combination of general characteristics for concurrency models such as pessimistic or optimistic concurrency, as well as characteristics such as simplicity and readability which have been used to evaluate programming languages\cite[p. 7]{sebestaProLang}. The extension is with the characteristics Data Types and Syntax Design. The reason being, that it is now a concurrency approach in a language being evaluated, and not a concurrency model. 
+
+While each of these characteristics range from one extreme to another, e.g. high or low readability, a concurrency approach may not reside at one of these extremes. Therefore each concurrency approach will be given a placement on the spectrum of each characteristic, based on findings in the evaluation. In order to visualize this placement a scale similar to the one presented in \bsref{fig:evel_example} is employed. Here \bscode{X} and \bscode{Y} represent the two extremes of the spectrum while the indicators represent the placement of each of the concurrency approaches on the spectrum. As an example \bscode{X} and \bscode{Y} could be low and high writability, \bsref{fig:evel_example} then shows that each of the concurrency approaches resides more towards the high writability end of the spectrum.
+\begin{figure}[ht!]
+\centering
+\includegraphics[scale=0.5]{\rootpath/worksheets/evaluation/figures/eval_example}
+\caption{Example of characteristic evaluation scale}\label{fig:evel_example}
+\end{figure}
+As the evaluation of the characteristics is subjective placing each of the concurrency approaches on the spectrum of the characteristic under evaluation allows for comparison of the findings.
+
+\subsection{Implementations}
+To ensure common ground between all implementations of a particular problem, a set of requirements detailing common factors, which must be true for all implementations of a particular problem, has been created. The source is located in \bsref{}\andreas{Source!} together with a description of the chosen approach. Common for all the solutions is, that they must solve the problem by using a concurrent approach and utilizing their individual strengths.
+
+The Dining Philosophers implementations must:
+\begin{itemize}
+	\item Encompass two 100 milliseconds thread sleeps. One to simulate the act of eating, forcing the locks to be held while a philosophers finishes her meal, and one upon completing an attempt to eat simulating sleeping a period of time before attempting to eat again. The amount of sleep is only of importance in regards to performance testing, which is why an arbitrary number of 100 has been picked, it is only done to provide consistency between the implementations.
+\end{itemize}
+
+The Santa Claus problem implementations must:
+\begin{itemize}
+	\item Adhere to the requirements defined in \bsref{app:santa}.
+	\item Utilize advantageous features of the concurrency approach.
+\end{itemize}
+
+The Concurrent Hashmap implementations must:
+\begin{itemize}
+	\item Encompass fined grained synchronization, allowing multiple threads to operate on the hashmap simultaneously.
+\end{itemize}
+The implementations in their full length can be found in the appendix.\toby{indsæt et reference når de indsætts}
 \worksheetend
