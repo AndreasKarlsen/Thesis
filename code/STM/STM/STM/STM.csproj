@@ -64,8 +64,10 @@
     <Compile Include="Implementation\Exceptions\STMMaxAttemptException.cs" />
     <Compile Include="Implementation\Exceptions\STMRetryException.cs" />
     <Compile Include="Implementation\JVSTM\AtomicInteger.cs" />
+    <Compile Include="Implementation\JVSTM\BaseCommute.cs" />
     <Compile Include="Implementation\JVSTM\BaseMap.cs" />
     <Compile Include="Implementation\JVSTM\BaseVBoxBody.cs" />
+    <Compile Include="Implementation\JVSTM\Commute.cs" />
     <Compile Include="Implementation\JVSTM\JVSTMSystem.cs" />
     <Compile Include="Implementation\JVSTM\JVTransaction.cs" />
     <Compile Include="Implementation\JVSTM\ReadMap.cs" />

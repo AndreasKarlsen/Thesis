@@ -74,7 +74,7 @@ namespace STMUnitTest
             JVSTMSystem.Atomic(t =>
             {
                 tm1.Put(t,10);
-
+                
                 JVSTMSystem.Atomic((t2) =>
                 {
                     tm1.Put(t2,20);;

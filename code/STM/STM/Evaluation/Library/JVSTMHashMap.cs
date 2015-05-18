@@ -127,6 +127,7 @@ namespace Evaluation.Library
                 {
                     //Else insert the node
                     bucketVar.Put(transaction, bucketVar.Read(transaction).Add(CreateNode(key, value)));
+                    //_size.Commute(transaction, i => i + 1);
                     _size.Put(transaction,_size.Read(transaction)+1);
                     ResizeIfNeeded(transaction);
                 }
@@ -151,6 +152,7 @@ namespace Evaluation.Library
                 {
                     //If node is not found key does not exist so insert
                     bucketVar.Put(transaction, bucketVar.Read(transaction).Add(CreateNode(key, value)));
+                    //_size.Commute(transaction,i => i + 1);
                     _size.Put(transaction, _size.Read(transaction) + 1);
                     ResizeIfNeeded(transaction);
                     result = true;
@@ -211,6 +213,7 @@ namespace Evaluation.Library
                 {
                     //If node is not found key does not exist so insert
                     bucketVar.Put(transaction, bucketVar.Read(transaction).Remove(node));
+                    //_size.Commute(transaction, i => i - 1);
                     _size.Put(transaction, _size.Read(transaction) - 1);
                     result = true;
                 }

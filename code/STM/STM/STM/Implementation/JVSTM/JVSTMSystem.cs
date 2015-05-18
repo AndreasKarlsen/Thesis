@@ -86,7 +86,6 @@ namespace STM.Implementation.JVSTM
                     ? JVTransaction.Start()
                     : JVTransaction.StartNested(localTransaction);
                 JVTransaction.LocalTransaction = transaction;
-                
 
                 try
                 {
@@ -98,6 +97,7 @@ namespace STM.Implementation.JVSTM
                         return result;
                     }
 
+                    transaction.Abort();
                 }
                 catch (STMRetryException)
                 {

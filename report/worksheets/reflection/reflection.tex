@@ -43,14 +43,50 @@ As an alternative the transformation could be applied at the level of what in Ro
 To utilize this fact, the transformations required for executing transaction could be applied along with the standard C\# transformations as part of constructing the bound tree. This would however require the implementation of the transformation to be mingled with the existing C\# transformation implementations and semantic analysis, making the implementations more complex. Alternatively the transformations could be applied after the bound tree has been constructed. However this approach requires that the logic with construct the bound tree, as well as the semantic analysis, be modified to support the \ac{STM} constructs described in \bsref{chap:stm_design}. The bound tree and the associated transformation and analysis implementations are not part of the public \ac{API} provided by the Roslyn compiler and any documentation is limited to blog/forum post as well as the comments embedded in the source code. Due to these factors, transforming at the level of the bound tree is significantly more complex than the approach utilized in \bsref{sec:roslyn_extension_strategy}.
 
 \section{C\# 6.0}
-As described in \bsref{sec:scope}, the development of \stmname is based on C\# 5, which at the time of writing is the most recent version of C\#. C\# 6.0 is however under active development a number of new features has been described.This section presents our reflections upon how the new features impact the findings of this project. The new features supplied by C\# 6.0 are described in \cite{csharp6one} and \cite{csharp6two}. Only new features relevant to locking in C\#, \stmname or the \ac{STM} library are described. 
+As described in \bsref{sec:scope}, the development of \stmname is based on C\# 5, which at the time of writing is the most recent version of C\#. C\# 6.0 is however under active development a number of new features has been described.This section presents our reflections upon how the new features impact the findings of this project. The new features supplied by C\# 6.0 are listed in \cite{csharp6Features} and described in \cite{csharp6one}, \cite{csharp6two} and \cite{csharp6featureDescription}. Only new features relevant to locking in C\#, \stmname or the \ac{STM} library are described. 
 
 \subsection{Static Using Statements}
-Static usings statements allows the programmer to import the static methods of a particular class, given her the ability to call these methods as if they where methods of the class in which the call takes place\cite{csharp6one}. This feature is of interest to the \ac{STM} library as it will allow the programmer to utilize the \bscode{atomic} and \bscode{retry} methods of the \bscode{STMSystem} class with out having to specify the class for each call, thereby improving the writability of the library.
+Static usings statements allows the programmer to import the static methods of a particular class, given her the ability to call these methods as if they where methods of the class in which the call takes place\cite{csharp6one}\cite{csharp6featureDescription}. This feature is of interest to the \ac{STM} library as it will allow the programmer to utilize the \bscode{atomic} and \bscode{retry} methods of the \bscode{STMSystem} class with out having to specify the class for each call, thereby improving the writability of the library. \bsref{lst:static_using_example} shows how the \bscode{SleepUntilAwoken} method of the \ac{STM} library based santa clause problem implementation could look if the static methods of the \bscode{STMSystem} class where imported using a static using statement.
+
+\begin{lstlisting}[float,label=lst:static_using_example,
+  caption={\ac{STM} library with static using statement},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out}]  % Start your code-block
+
+  private WakeState SleepUntilAwoken()
+  {
+    return Atomic(() =>
+    {
+      if (_rBuffer.Count != SCStats.NR_REINDEER)
+      {
+        Retry();
+      }
+      return WakeState.ReindeerBack;
+    },
+      () =>
+      {
+        if (_eBuffer.Count != SCStats.MAX_ELFS)
+        {
+          Retry();
+        }
+        return WakeState.ElfsIncompetent;
+      });
+  }
+\end{lstlisting}
 
 \subsection{Auto-Property Initializers}
-Auto-Property intializers allows the programmer to supply a initializer expression to the definition of a Auto-Property\cite{csharp6one}\cite{csharp6two}. The property is then initialized using the initializer expression at runtime. If the Auto-Property defines only a getter the backing field is automatically declared readonly. The Roslyn extension will have to me modified to handle \bscode{atomic} properties, described in \bsref{subsec:design_properties}, with a initializer expression. The initializer expression will have to be modified to create a new \ac{STM} object of the type corresponding to that of the \bscode{atomic} property and initialize it using the defined initializer expression. Instead of initializing the property directly, the initializer should be applied to the backing field generated as part of transformation described in \bsref{sec:roslyn_extension_properties}.
- 
+Auto-Property intializers allows the programmer to supply a initializer expression to the definition of a Auto-Property\cite{csharp6one}\cite{csharp6two}\cite{csharp6featureDescription}. This causes the property  to be initialized using the initializer expression. If the Auto-Property defines only a getter the backing field is automatically declared readonly\cite{csharp6one}\cite{csharp6featureDescription}. 
+
+The Roslyn extension will have to me modified to handle \bscode{atomic} Auto-properties with a initializer expression. The extension must transform the initializer expression to create a new \ac{STM} object of the \ac{STM} type corresponding to the type of the \bscode{atomic} property and initialize it using the defined initializer expression. Instead of initializing the property directly, the initializer should be applied to the backing field generated as part of transformation of \bscode{atomic} auto properties described in \bsref{sec:roslyn_extension_properties}.
 
 \section{atomic ref/out}
 \worksheetend

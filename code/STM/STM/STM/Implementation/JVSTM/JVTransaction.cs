@@ -28,6 +28,7 @@ namespace STM.Implementation.JVSTM
         internal JVTransaction Parent { get; private set; }
         internal ReadMap ReadMap { get; private set; }
         internal WriteMap WriteMap { get; private set; }
+        internal IList<BaseCommute> Commutes { get; private set; }
         internal readonly IRetryLatch RetryLatch = new RetryLatch();
         public TransactionStatus Status { get; internal set; }
 
@@ -67,6 +68,7 @@ namespace STM.Implementation.JVSTM
             ReadMap = readMap;
             WriteMap = writeMap;
             Status = status;
+            Commutes = new List<BaseCommute>();
         }
 
         public static JVTransaction Start()
@@ -81,34 +83,53 @@ namespace STM.Implementation.JVSTM
 
         public bool Commit()
         {
+            if (WriteMap.Count == 0)
+            {
+                Status = TransactionStatus.Committed;
+                return true;
+            }
+
             lock (CommitLock)
             {
                 var newNumber = _lastCommitted + 1;
-                if (WriteMap.Count != 0)
-                {
-                    var valid = ReadMap.Validate();
-                    if (!valid)
-                    {
-                        return false;
-                    }
 
-                    if (IsNested)
+                var valid = ReadMap.Validate();
+                if (!valid)
+                {
+                    return false;
+                }
+
+                if (IsNested)
+                {
+                    Parent.ReadMap.Merge(ReadMap);
+                    Parent.WriteMap.Merge(WriteMap);
+                }
+                else
+                {
+                    foreach (var kvpair in WriteMap)
                     {
-                        Parent.ReadMap.Merge(ReadMap);
-                        Parent.WriteMap.Merge(WriteMap);
+                        kvpair.Key.Install(kvpair.Value, newNumber);
                     }
-                    else
+                }
+
+
+                if (Commutes.Count > 0)
+                {
+                    foreach (var commute in Commutes)
                     {
-                        foreach (var kvpair in WriteMap)
-                        {
-                            kvpair.Key.Install(kvpair.Value, newNumber);
-                        }
+                        commute.Perform(newNumber);
                     }
                 }
 
                 _lastCommitted = newNumber;
+                Status = TransactionStatus.Committed;
                 return true;
             }
+        }
+
+        public void Abort()
+        {
+            Status = TransactionStatus.Aborted;
         }
 
         public void Await(int expectedEra)

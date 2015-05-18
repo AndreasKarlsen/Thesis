@@ -101,7 +101,6 @@ namespace Evaluation.Common
             return SearchBucket(bucket, key) != null;
         }
 
-
         public override V Get(K key)
         {
             var bucket = GetBucket(key);

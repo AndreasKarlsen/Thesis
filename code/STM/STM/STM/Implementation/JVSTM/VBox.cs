@@ -56,17 +56,21 @@ namespace STM.Implementation.JVSTM
         internal override void Install(object value, int version)
         {
             _body = new VBoxBody<T>((T)value,version,_body);
+
+            if (_listeners.Count == 0) return;
+
             var temp = _listeners;
             foreach (var retryLatch in temp)
             {
                 retryLatch.Open(retryLatch.Era);
             }
 
+
             ImmutableList<IRetryLatch> initial;
             do
             {
                 initial = _listeners;
-            } while (initial != Interlocked.CompareExchange(ref _listeners,ImmutableList<IRetryLatch>.Empty, initial));
+            } while (initial != Interlocked.CompareExchange(ref _listeners, ImmutableList<IRetryLatch>.Empty, initial));
         }
 
         internal override void RegisterRetryLatch(IRetryLatch latch, BaseVBoxBody expectedBody, int expectedEra)
@@ -110,6 +114,16 @@ namespace STM.Implementation.JVSTM
                     return;
                 }
             }
+        }
+
+        internal T ReadCommute()
+        {
+            return _body.Value;
+        }
+
+        public void Commute(JVTransaction transaction, Func<T, T> action)
+        {
+            transaction.Commutes.Add(new Commute<T>(action,this));
         }
     }
 }
