@@ -1,6 +1,6 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Design and Integration}{0}{Februar 10, 2015}{}{../../}
-This chapter describes the considerations and design decisions of \stmname, the integration with existing language features, as well as \stmname's syntax \& semantics. The design of \stmnamesp impacts the way it can be integrated with C\#. Thus we make the design adhere to the requirements made in \bsref{sec:stm_requirements}, while integrating seamlessly with existing language features. The decisions made in this chapter, will be the requirements for the implementation of \stmnamesp described in \bsref{chap:implementation}, and for the extension of the Roslyn C\# compiler described in \bsref{chap:roslyn_extension}.
+This chapter describes the considerations and design decisions of \stmname, the integration with existing language features, as well as \stmname's syntax \& semantics. The design of \stmnamesp impacts the way it can be integrated with C\#. Thus we make the design adhere to the requirements made in \bsref{sec:stm_requirements}, while integrating seamlessly with existing language features. The decisions made in this chapter, will influence the implementation of the \ac{STM} library described in \bsref{chap:implementation}, and the extension of the Roslyn C\# compiler described in \bsref{chap:roslyn_extension}.
 
 We introduce the atomic block and transactional variables in \bsref{sec:stm_design}. The different kinds of parameters and their integration with transactions is described in \bsref{sec:parameter_design}. This is followed by an example of the new syntax, demonstrated in \bsref{sec:example_design}. The \bscode{retry} and \bscode{orelse} keywords are introduced in \bsref{sec:sync_design} for supporting conditional synchronization. \bsref{sec:nesting_design} shows how \stmnamesp supports nesting of transactions. Finally a summary of the design requirements described in this chapter is given in \bsref{sec:summary_design}.
 
@@ -46,7 +46,8 @@ The $type$ can be any existing or user-defined type including \bscode{dynamic}. 
 \subsection{Transactional Properties}\label{subsec:design_properties}
 C\# facilitates a language feature which eases the encapsulation of fields typically used in \ac{OOP}. The feature is known as properties, and can be in an automatic or a manual form. The formats in mentioned order are\cite[p. 52]{sestoft2011c}:
 
-$field$-$modifiers$ $type$ \bscode{name} \{ $access$-$modifier$? \bscode{get}\bscode{;} \\ $access$-$modifier$? \bscode{set}\bscode{;} \}\\
+$field$-$modifiers$ $type$ \bscode{name} \{ $access$-$modifier$? \bscode{get}\bscode{;} \\ $access$-$modifier$? \bscode{set}\bscode{;} \}
+\\\\
 $method$-$modifiers$ $type$ \bscode{name} $\{$ $access$-$modifier$? \bscode{get} $get$-$body$ \\ $access$-$modifier$? \bscode{set} $set$-$body$ $\}$
 
 where $field$-$modifiers$ includes the new \bscode{atomic} keyword, and $method$-$modifiers$ does not. This is the only change to properties in C\#, and the normal rules of property usage still applies, as defined in \cite[p. 52]{sestoft2011c}.
@@ -470,7 +471,6 @@ As described in \bsref{sec:stm_req_nesting} \stmnamesp support nesting of transa
       }
   }
 \end{lstlisting}
-
 
 To increase the evaluated characteristics\cite[p. 15-21]{dpt907e14trending} of \stmname, specifically writability and orthogonality, dynamic nesting of transactions is allowed. As an example, consider \bsref{lst:stm_nested_transactions_real} where a transaction is defined on line 1. The transaction transfers funds from \bscode{account1} to \bscode{account2} by using the \bscode{withdraw} and \bscode{deposit} methods, which are themselves defined using transactions. Because of the closed nested semantics the transfer is executed as single atomic step.
 

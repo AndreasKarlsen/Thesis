@@ -17,6 +17,10 @@ Getting preliminary hands on experience with the required technologies at an ear
 %Tracking level
 %Strong vs Weak atomicity 
 \section{Design}
+%properties
+%local and parameters
+%\section{atomic ref/out}
+%conditional synchronization
 \section{STM Implementation}
 This section describes the project groups reflections related to the implementation of the \ac{STM} system described in \bsref{chap:implementation}.
 
@@ -82,5 +86,4 @@ Auto-Property intializers allows the programmer to supply an initializer express
 
 The Roslyn extension will have to be modified to handle \bscode{atomic} Auto-properties with an initializer expression. The extension must transform an initializer expression to a new \ac{STM} object of the \ac{STM} type corresponding to the type of the \bscode{atomic} property and initialize it using the defined initializer expression. Instead of initializing the property directly, the initializer should be applied to the backing field generated as part of transformation of \bscode{atomic} auto properties described in \bsref{sec:roslyn_extension_properties}.
 
-\section{atomic ref/out}
 \worksheetend
