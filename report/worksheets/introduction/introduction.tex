@@ -47,7 +47,7 @@ The goal of this master thesis is to investigate the possibility of supplying la
 \paragraph{Hypothesis} Language integrated and library based \ac{STM} provides a valid alternative to locking when solving known concurrent problems by using C\#.\andreas{Does not solve IO and placing CR}
 \andreas{If we change this, we must change Preliminary Knowledge and Evaluation}
 \andreas[inline]{Clarifying whether language integration of \ac{STM} provides any advantages over library based \ac{STM} in terms of usability.}
-\andreas[inline]{Why did we choose the evaluation method}
+
 
 In order to validate the hypothesis, a language integrated \ac{STM} system for C\#, called \stmname, will be designed, implemented and integrated\andreas{Is this sufficient, or should we expand and reference to chapters?}. In order to achieve this goal a \ac{STM} library for the .NET platform will be created. Using both of these implementations a number of representative concurrent problems will be implemented. These implementations will be compared to equivalent lock based implementations by quantifying their characteristics in regards to concurrency, using an extended version of the characteristics defined in \cite[p. 16-21]{dpt907e14trending}.
 
@@ -65,8 +65,9 @@ In order to structure our investigation we have extracted a number of problem st
 
 Answering these questions along with supplying a prototype implementation will build the foundation for evaluating the hypothesis.
 
-\section{Evaluation Approach}\label{sec:eval_approach}
+\section{Evaluation Method}\label{sec:eval_approach}
 This section describes how the evaluation is conducted.
+\andreas[inline]{Why did we choose the evaluation method}
 \subsection{Selected Problems}
 As described in \bsref{sec:problem_statement} the evaluation is conducted by comparing the characteristics of each approach based on a number of concurrent implementations. For this purpose three concurrency problems have been selected:
 \begin{enumerate}
@@ -74,7 +75,7 @@ As described in \bsref{sec:problem_statement} the evaluation is conducted by com
 \item The Santa Claus Problem (\bsref{app:santa})
 \item A Concurrent Hashmap (\bsref{app:hashmap})
 \end{enumerate}
-The Dining Philosophers problem represents a well known concurrency problem which highlights some of the pitfalls associated with conditional synchronization of threads. The Santa Claus problem encompasses a high degree of modeling and requires complex synchronization, e.g. allowing only a predefined number of threads to enter a critical region at a time and waiting on one of multiple conditions. Employing this problem helps investigate which advantages \ac{STM} provides over locking in such scenarios. Finally a concurrent hashmap implementation represents a real world problem, e.g. it can be used in a compiler to maintain a symbol table\bsref{cormen2009introduction}, which benefits from fine grained synchronization and is available in a number of languages, including C\#. Together these problems provide a varied perspective by exerting different aspects of each approach e.g. waiting on one of multiple conditions and fine grained synchronization.
+The Dining Philosophers problem represents a well known concurrency problem which highlights some of the pitfalls associated with conditional synchronization of threads. The Santa Claus problem encompasses a high degree of modeling and requires complex synchronization, e.g. allowing only a predefined number of threads to enter a critical region at a time and waiting on one of multiple conditions. Employing this problem helps investigate which advantages \ac{STM} provides over locking in such scenarios. Finally a concurrent hashmap implementation represents a real world problem, e.g. it can be used in a compiler to maintain a symbol table\cite{cormen2009introduction}, which benefits from fine grained synchronization and is available in a number of languages, including C\#. Together these problems provide a varied perspective by exerting different aspects of each approach e.g. waiting on one of multiple conditions and fine grained synchronization.
 
 \subsection{Evaluation Of Characteristics}
 For each of the selected problems an implementation will be created using locking, library based \ac{STM} and \stmname. Based on these implementations each concurrency approach will be evaluated according to an extended version of the characteristics defined in our previous work\cite[p. 15-21]{dpt907e14trending}. These characteristics are a combination of general characteristics for concurrency models such as pessimistic or optimistic concurrency, as well as characteristics such as simplicity and readability which have been used to evaluate programming languages\cite[p. 7]{sebestaProLang}. The characteristics are extended with the characteristics Data Types and Syntax Design. The reason being, that characteristics are now used to evaluate concrete implementations as opposed to concurrency models in our previous work\cite{dpt907e14trending}.
