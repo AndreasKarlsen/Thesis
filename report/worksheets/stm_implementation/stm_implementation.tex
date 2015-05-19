@@ -207,7 +207,7 @@ The \bscode{TMVar} class exposes methods and the \bscode{Value} property for get
 \subsection{Retry}\label{subsec:impl_retry}
 The library supports the \bscode{retry} construct via the static \bscode{Retry} method on the \bscode{STMSystem} class. The retry method can be called from both in and outside transactions but will only have an effect when called inside transactions. \bsref{lst:library_retry} presents an example of how the \bscode{Retry} method can be used. Lines 5-11 show a transaction dequeuing an item from a shared buffer. On line 8 the \bscode{Retry} method is used to initiate a retry in case the queue is empty. The call on line 15 has no effect as it is not enclosed in a transaction. However if the \bscode{RetryExample} method is called from within another transaction, the \bscode{Retry} has effect\andreas{Do we want to warn if this happens?}.
 
-\begin{lstlisting}[label=lst:library_retry,
+\begin{lstlisting}[float,label=lst:library_retry,
   caption={Library \bscode{Retry}},
   language=Java,  
   showspaces=false,
@@ -353,7 +353,7 @@ This section highlights the defining aspects of the \ac{STM} libraries internal 
 \label{sec:stm_imple_internal_detials_write}
 As described in \bsref{sec:stm_impl_tl2}\andreas{Ref to "STM Algorithm?} TL\rom{2} uses a write-set to collect any written values to be written to the actual locations when the transaction commits. Therefore any writes to transactional variables must be redirected to the write-set instead of the actual location. \bsref{lst:library_write_value} shows how this is accomplished in the \ac{STM} library. Line 3 gets the currently executing transaction from threadlocal storage. That is, each thread gets its own transaction instance when accessing the \bscode{LocalTransaction} property. Based on the status of the transaction, different actions are taken. Each thread accesses a transaction that has the status \bscode{Committed} whenever no transaction is currently executing on that specific thread. Therefore the case on line 6 covers writing a value to a transactional variable from outside a transaction scope. How this is accomplished is explained in \bsref{sec:stm_impl_providing_strong_atomicity}. The case on line 9 covers writing a value as part of a transaction. Here the value to be written is put into the write-set of the transaction performing the write. When the given transaction commits, the value will be written back to the transactional variable.
 
-\begin{lstlisting}[label=lst:library_write_value,
+\begin{lstlisting}[float,label=lst:library_write_value,
   caption={Writing to a Transactional Variable},
   language=Java,  
   showspaces=false,
@@ -423,7 +423,7 @@ Committing a transaction follows the steps described in \bsref{sec:stm_impl_tl2}
 If the transaction is nested within another transaction the else case on line 11 is executed. Nested transactions do not need to acquire the lock on items in their read-set or increment the version clock as they will not be responsible for committing the values under closed nested semantics. Therefore, a validation of the read-set, as seen on line 13, is sufficient. If the validation succeeds the transaction merges its read and write sets with those of the outer transaction, in order for the outer transaction to commit any written values when it reaches its commit stage. On line 17 the outer transaction is restored as the currently active transaction so that it can be resumed. Finally on line 20 the status of the transaction is changed to committed, before returning on line 21.
 
 
-\begin{lstlisting}[label=lst:library_commit,
+\begin{lstlisting}[float, label=lst:library_commit,
   caption={Committing a Transaction},
   language=Java,  
   showspaces=false,
@@ -493,7 +493,7 @@ any access to the read-set can be optimized away. The \ac{STM} library implement
 
 \subsection{Providing Opacity}
 As described in \bsref{sec:stm_req_opacity} providing opacity requires ensuring that transactions do not read invalid data throughout their execution. Therefore a transaction must validate a read when it occurs, ensuring that the transaction is not allowed to continue when the read is inconsistent. For this purpose the \ac{STM} library uses the approach shown by \cite[p. 117]{harris2010transactional} and extends the reading of values to the implementation depicted in \bsref{lst:library_opacity}. As seen on lines 12-16, reading a value directly from the transactional variable has been extended with validation that ensures the transaction aborts if the variable has been changed since the transaction recorded its timestamp. The timestamp of the transactional variable prior to reading it is stored locally on line 12. After the variable has been read the locally cached timestamp is compared to the current timestamp of the transactional variable and the timestamp of the current transaction. If the timestamp was changed during the read or the cached timestamp is higher than the timestamp of the current transaction, the current transaction is aborted by throwing a \bscode{STMAbortException} on line 16.
-\begin{lstlisting}[label=lst:library_opacity,
+\begin{lstlisting}[float,label=lst:library_opacity,
   caption={Providing Opacity},
   language=Java,  
   showspaces=false,
@@ -544,7 +544,7 @@ As unit testing will allow for automatic testing of new features not breaking ex
 
 In addition a number of tests, which attempt to produce a result which can only occur when a race condition is present, has been created. While such tests can ultimately not prove that no race conditions are present, they do provide a degree of certainty that this is the case. \bsref{lst:stm_race_test} shows the \bscode{RaceTest1} method conducting a test for possible race conditions. \bscode{RaceTest1Internal} is called 10000 times producing a result for each iteration. Line \ref{line:stm_test_assert} assert that each result is not the result a race condition in \bscode{RaceTest1Internal} would produce. \bscode{RaceTest1Internal} executes a read modify write operation on one thread, while another thread writes to the same variable. The call to \bscode{Thread.Yield} on line \ref{line:stm_test_yield} signals the underlying system that \bscode{t1} can be descheduled in favor of other threads, allowing \bscode{t2} to assign \bscode{result} a new value after \bscode{t1} has read the value of result, but before it has computed and assigned the new value. \bscode{Thread.Yield} does not cause \bscode{t1} to be desheduled in all cases, only when the underlying scheduling determines that it is appropriate. 
 
-\begin{lstlisting}[label=lst:stm_race_test,
+\begin{lstlisting}[float,label=lst:stm_race_test,
   caption={RaceTest1},
   language=Java,  
   showspaces=false,
