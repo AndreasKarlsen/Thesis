@@ -12,7 +12,7 @@ To investigate performance, it could be valuable to make an extensive performanc
 %Valuable to know whether \stmname performs better than a regular sequential program C\#
 %Some of the design choices made, may have looked different if the focus was on performance to begin with
 \section{Irreversible Actions}\toby{Ved ikke det skal være i reflection}
-Integration between transactions and irreversible actions, such as \ac{IO} and exceptions, has been selected as out of scope of this master thesis, as described in \bsref{sec:scope}, because they combine poorly and it is an unsolved problem how to handle it gracefully\cite{harris2005exceptions}. The result is that there is no support or warning against irreversible actions in \stmname, which hurts its usability if used in combination with irreversible actions, as it leaves it up to the programmer to manually handle it correctly, which is hard or impossible.
+Integration between transactions and irreversible actions, such as \ac{IO} and exceptions, is out of scope of this master thesis, as described in \bsref{sec:scope}, because they combine poorly and it is an unsolved problem how to handle it gracefully\cite{harris2005exceptions}. The result is that there is no support or warning against irreversible actions in \stmname, which hurts its usability if used in combination with irreversible actions, as it leaves it up to the programmer to manually handle it correctly, which is hard or impossible.
 
 The integration between transaction and irreversible actions is therefore an ideal candidate for future work, both in terms of how to manage it in \stmname, but also in terms of research purposes, if it is possible to come up with new and better solutions than already exists. 
 
