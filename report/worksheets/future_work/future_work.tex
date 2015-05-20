@@ -1,5 +1,6 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Future Work}{1}{Februar 10, 2015}{Andreas}{../../}
+\label{chap:future_work}
 \section{Performance Test}
 The focus of this thesis has not been on achieving good performance for \stmname, but rather on the integration of \ac{STM} in C\#, as described in \bsref{sec:scope}. However having a seamless integration is not sufficient, as concurrency usually is introduced to achieve good performance. It is essential to know how \stmname performs in comparison to locking in C\#, as if it performs far worse, it is not a valid alternative, in its current state.\toby{Should we talk about coarse and fine-grain locking individually in relation to performance?} A performance test is therefore an ideal candidate for future work, and the outcome may result in changes to the \ac{STM} design and underlying algorithm of \stmname in order to improve its performance.
 
