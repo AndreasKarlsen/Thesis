@@ -128,7 +128,7 @@ As with transactional fields $type$ can be any existing or user defined type inc
 \end{lstlisting}
 
 \section{Transactional Parameters}\label{sec:parameter_design}
-In C\# there exist four different kinds of parameters: Value, Reference, Output, and Parameter Array. To increase orthogonality, \bscode{atomic} parameters of all four kinds are available in  \stmnamesp. This gives the programmer flexibility by enabling her to track variables without additional ceremonial code. The semantics and integration of the four parameter types in \stmnamesp will be discussed in the following sections. 
+In C\# there exist four different kinds of parameters: Value, Reference, Output, and Parameter Array. \bscode{atomic} Value, Reference and Output  parameters  are available in  \stmnamesp. This gives the programmer flexibility by enabling her to track variables without additional ceremonial code. The semantics and integration of the three parameter types in \stmnamesp will be discussed in the following sections. Why \bscode{atomic} parameter arrays are not supported is discussed in \bsref{sec:stm_design_paramter_array}.
 
 \subsection{Transactional Value Parameters}
 \label{subsec:stm_desgin_value_parameters}
@@ -228,7 +228,7 @@ In \stmname, an output parameter can be marked as atomic, and it becomes a \ac{T
   }
 \end{lstlisting}
 
-\subsection{Transactional Parameter Array}
+\subsection{Transactional Parameter Array}\label{sec:stm_design_paramter_array}
 According to \cite[p. 17]{csharp2013specificaiton}: \textit{``A parameter array permits a variable number of arguments to be passed to a method''}. Inside the method, the arguments are inside an array of the specified type. This is true, regardless of zero, a single or multiple arguments being passed into to the parameter. As the variable number of arguments are converted to an array, assignments to this array are possible. In \stmname, a parameter array cannot be marked as atomic. This design decision is made as our combined experience of 18 years educational and professional experience shows that assignments to parameter arrays are not used. Additionally, as only assignments are tracked, adding or removing items from the array, would not be tracked in transactions. Thus, the estimated value of adding this feature is close to none.
 
 \subsection{Transactional Arguments}

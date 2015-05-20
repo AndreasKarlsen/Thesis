@@ -24,9 +24,9 @@ In order to improve the orthogonality and flexibility of \stmname the design all
 
 The initial thought behind allowing transactional local variables was that local variables can be captured in a lambda expression which is executed by multiple threads, resulting in the need for synchronization. The option to do so was however not employed in the evaluation implementations. Allowing the programmer to declare \bscode{atomic} local variables instead of relying solely on \bscode{atomic} fields makes \stmnamesp more orthogonal but also more complex.
 
+A parameters is similar to a local variable which is initialized using its corresponding argument\cite[p. 76]{sestoft2011c}. Therefore the thought behind allowing transactional parameters is similar to that of transactional local variables. If transactional parameters where not allowed the programmer would have to declare a \bscode{atomic} local variable and initialize it to the value of the parameter, if she wished to utilize the parameter as a variable in a transaction. As with transactional local variables, transactional variable improve the orthogonality of \stmname but reduces the simplicity.
 
-
-A study into whether such as features is truly required 
+C\# only allows the declaration of \bscode{volatile} fields. Similarly allowing only \bscode{atomic} fields may be sufficient. Determining whether these features are truly required, trough additional scientific studies, could assist in furthering \stmanme as well as aid others seeking to supply language integrated \ac{STM}. 
 
 
 %properties
