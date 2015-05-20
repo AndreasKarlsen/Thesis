@@ -17,10 +17,24 @@ Getting preliminary hands on experience with the required technologies at an ear
 %Tracking level
 %Strong vs Weak atomicity 
 \section{Design}
+This sections describes the project groups reflections over areas related to the design of \stmname described in \bsref{chap:stm_design}. 
+
+\subsection{Transactional Local Variables \& Parameter}
+In order to improve the orthogonality and flexibility of \stmname the design allow for the declaration of transactional local variables and parameters. Neither of these features has however been used in the implementation on which the evaluation is build, indicating that the features may not be required. 
+
+The initial thought behind allowing transactional local variables was that local variables can be captured in a lambda expression which is executed by multiple threads, resulting in the need for synchronization. The option to do so was however not employed in the evaluation implementations. Allowing the programmer to declare \bscode{atomic} local variables instead of relying solely on \bscode{atomic} fields makes \stmnamesp more orthogonal but also more complex.
+
+
+
+A study into whether such as features is truly required 
+
+
 %properties
 %local and parameters
 %\section{atomic ref/out}
 %conditional synchronization
+%optional parameter
+%paramter array
 \section{STM Implementation}
 This section describes the project groups reflections related to the implementation of the \ac{STM} system described in \bsref{chap:implementation}.
 
