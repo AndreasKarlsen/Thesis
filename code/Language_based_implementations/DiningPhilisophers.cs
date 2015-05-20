@@ -51,8 +51,8 @@ namespace LanguagedBasedDining
 
                     atomic
                     {
-                        left.State = true;
-                        right.State = true;
+						left.PutDown();
+						right.PutDown();
                     }
 
                     Thread.Sleep(100);
@@ -66,7 +66,7 @@ namespace LanguagedBasedDining
 
         public class Fork
         {
-            public atomic bool State { get; set; }
+            private atomic bool State { get; set; }
 
             public Fork()
             {
@@ -75,7 +75,8 @@ namespace LanguagedBasedDining
 
             public void AttemptToPickUp()
             {
-                atomic{
+                atomic
+				{
                     if (!State)
                     {
                         retry;
@@ -84,6 +85,13 @@ namespace LanguagedBasedDining
                     State = false;
                 }
             }
-        }
+			
+			public void PutDown()
+			{
+				atomic
+				{
+					State = true;
+				}
+			}
     }
 }
