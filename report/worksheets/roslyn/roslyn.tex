@@ -5,7 +5,7 @@ This chapter describes the Microsoft Roslyn project, hereafter referred to as Ro
 The purpose of this chapter is to obtain knowledge required to modify the C\# compiler with \ac{STM} support, in order to build the language integrated \ac{STM} system \stmname. The extension of the Roslyn compiler will be described in \bsref{chap:roslyn_extension}.
 
 In \bsref{sec:intro} we give an introduction to the Roslyn project. In \bsref{sec:roslyn_archi} we describe the architecture of Roslyn, specifically which projects are of particular importance to our focus\toby{evt. reference til scope eller problemformulering} and give an overview of the call chain during compilation. This is done to give insight into where specific compiler code is located and where the core compiler code is located, which also simplifies explaining where code for the individual compiler phases, illustrated in \bsref{fig:api_vs_compiler_pipeline}, is located in \bsref{sec:compile_phases}. In \bsref{sec:compile_phases} we describe the internal details of the compiler phases, which is valuable in order to select how and where to extend the compiler with \ac{STM} support. Finally in \bsref{sec:syntax_trees}, we give a detailed description of the syntax trees of the Roslyn compiler.%, as we will extend the C\# compiler with \stmnamesp by modifying the syntax tree\toby{som beskrevet i - hvor?}.
-
+\label{chap:roslyn}
 \toby[i]{Det er lidt mærkeligt med den sidste sætning, omkring syntax træer, fordi den skal refere til et fremtidigt kapitel Roslyn Extension. Kan vi have valgt om i hvilken fase og hvor vi vil extened i dette kapitel efter Compile phases, og give det som grund til at vi går i dybden med syntax trees?}
 
 %Extra:
