@@ -9,6 +9,7 @@ using Evaluation.Common;
 using Evaluation.Library;
 using Evaluation.Locking;
 using System.IO;
+using System.Diagnostics;
 
 namespace Evaluation
 {
@@ -23,6 +24,9 @@ namespace Evaluation
             //HashMapTest();
             //STMHashMapSequentialTest();
             //LockingHashMapSequentialTest();
+
+            TestQueue();
+            //TestLockingQueue();
 
             var nrThreads = 4;
             using(var s = new FileStream("output.txt",FileMode.Create))
@@ -67,6 +71,86 @@ namespace Evaluation
             }
 
             Console.ReadKey();
+        }
+
+        public static void TestLockingQueue()
+        {
+            var queue = new Evaluation.Locking.Collections.Queue<int>();
+
+            var t1 = new Thread(() =>
+            {
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Enqueue(i);
+                }
+
+                for (var i = 0; i < 1000; i++)
+                {
+                    int x;
+                    var res = queue.Dequeue(out x);
+                    Debug.Assert(res);
+                }
+            });
+
+
+            var t2 = new Thread(() =>
+            {
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Enqueue(i);
+                }
+
+                for (var i = 0; i < 1000; i++)
+                {
+                    int x;
+                    var res = queue.Dequeue(out x);
+                    Debug.Assert(res);
+                }
+            });
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t2.Join();
+        }
+
+        public static void TestQueue()
+        {
+            var queue = new Evaluation.Library.Collections.Queue<int>();
+            
+            var t1 = new Thread(() =>
+            {
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Enqueue(i);
+                }
+
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Dequeue();
+                }
+            });
+
+
+            var t2 = new Thread(() =>
+            {
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Enqueue(i);
+                }
+
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Dequeue();
+                }
+            });
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t2.Join();
         }
 
         public static void STMHashMapConcurrent(int nrThreads, StreamWriter writer)

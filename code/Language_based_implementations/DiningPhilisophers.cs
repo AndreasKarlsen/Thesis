@@ -66,7 +66,8 @@ namespace LanguagedBasedDining
 
         public class Fork
         {
-            private atomic bool State { get; set; }
+            private atomic 
+            private bool State { get; set; }
 
             public Fork()
             {
@@ -76,7 +77,7 @@ namespace LanguagedBasedDining
             public void AttemptToPickUp()
             {
                 atomic
-				{
+                {
                     if (!State)
                     {
                         retry;
@@ -85,13 +86,14 @@ namespace LanguagedBasedDining
                     State = false;
                 }
             }
-			
-			public void PutDown()
-			{
-				atomic
-				{
-					State = true;
-				}
-			}
+
+            public void PutDown()
+            {
+                atomic
+                {
+                    State = true;
+                }
+            }
+        }
     }
 }

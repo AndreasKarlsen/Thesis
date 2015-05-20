@@ -38,6 +38,7 @@ namespace STMTester
             //OrElseNestingTest3();
             //var dining = new DiningPhilosopher();
             //dining.Start();
+            TestMSQueue();
 
             JVSpeedTest();
             JVSpeedTest();
@@ -48,6 +49,48 @@ namespace STMTester
             //JVConcurrentTest();
             
             Console.ReadKey();
+        }
+
+        public static void TestMSQueue()
+        {
+            var queue = new STM.Collections.MSQueue<int>();;
+
+            var t1 = new Thread(() =>
+            {
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Enqueue(i);
+                }
+
+                for (var i = 0; i < 1000; i++)
+                {
+                    int x;
+                    var res = queue.Dequeue(out x);
+                    Debug.Assert(res);
+                }
+            });
+
+
+            var t2 = new Thread(() =>
+            {
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Enqueue(i);
+                }
+
+                for (var i = 0; i < 1000; i++)
+                {
+                    int x;
+                    var res = queue.Dequeue(out x);
+                    Debug.Assert(res);
+                }
+            });
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t2.Join();
         }
 
         private static void JVSpeedTest()
