@@ -72,11 +72,14 @@ This section describes how the evaluation is conducted.
 \subsection{Selected Problems}
 As described in \bsref{sec:problem_statement} the evaluation is conducted by comparing the characteristics of each approach based on a number of concurrent implementations. For this purpose three concurrency problems have been selected:
 \begin{enumerate}
-\item The Dining Philosophers (\bsref{app:dining_phil})
-\item The Santa Claus Problem (\bsref{app:santa})
-\item A Concurrent Hashmap (\bsref{app:hashmap})
+\item The Dining Philosophers (\bsbilagref{app:dining_phil})
+\item The Santa Claus Problem (\bsbilagref{app:santa})
+\item A Concurrent Queue (\bsbilagref{app:queue})
+\item A Concurrent Hashmap (\bsbilagref{app:hashmap})
 \end{enumerate}
-The Dining Philosophers problem represents a well known concurrency problem which highlights some of the pitfalls associated with conditional synchronization of threads. The Santa Claus problem encompasses a high degree of modeling and requires complex synchronization, e.g. allowing only a predefined number of threads to enter a critical region at a time and waiting on one of multiple conditions. Employing this problem helps investigate which advantages \ac{STM} provides over locking in such scenarios. Finally a concurrent hashmap implementation represents a real world problem, e.g. it can be used in a compiler to maintain a symbol table\cite{cormen2009introduction}, which benefits from fine grained synchronization and is available in a number of languages, including C\#. Together these problems provide a varied perspective by exerting different aspects of each approach e.g. waiting on one of multiple conditions and fine grained synchronization.
+The Dining Philosophers problem represents a well known concurrency problem which highlights some of the pitfalls associated with conditional synchronization of threads. The Santa Claus problem encompasses a high degree of modeling and requires complex synchronization, e.g. allowing only a predefined number of threads to enter a critical region at a time and waiting on one of multiple conditions. Employing this problem helps investigate which advantages \ac{STM} provides over locking in such scenarios. Both the concurrent queue and hashmap represent read world problems. Concurrent queues are widely used in concurrent applications\cite{michael1996simple} and concurrent hashmaps can for example be used in a compiler to maintain a symbol table\cite{cormen2009introduction}. Both data structures also benefit from fine grained synchronization and is available in a number of languages, including C\#. Together these problems provide a varied perspective by exerting different aspects of each approach e.g. waiting on one of multiple conditions and fine grained synchronization.
+
+The source code for each of the implementations is located in \bsref{}\andreas{Source!} together with a description of the chosen approach. Common for all the solutions is, that they must solve the problem by using the specified concurrency approach and utilize the approach's strengths.
 
 \subsection{Evaluation Of Characteristics}\label{sec:eval_chars}
 For each of the selected problems an implementation will be created using locking, library based \ac{STM} and \stmname. Based on these implementations each concurrency approach will be evaluated according to an extended version of the characteristics defined in our previous work\cite[p. 15-21]{dpt907e14trending}. These characteristics are a combination of general characteristics for concurrency models such as pessimistic or optimistic concurrency, as well as characteristics such as simplicity and readability which have been used to evaluate programming languages\cite[p. 7]{sebestaProLang}. The characteristics are extended with the characteristics Data Types and Syntax Design because they are now relevant. The reason being, that the characteristics are now used to evaluate concrete implementations in a language as opposed to concurrency models in our previous work\cite{dpt907e14trending}.
@@ -89,23 +92,4 @@ While each of these characteristics range from one extreme to another, e.g. high
 \end{figure}
 As the evaluation of the characteristics is subjective placing each of the concurrency approaches on the spectrum of the characteristic under evaluation allows for comparison of the findings.
 
-\subsection{Implementations}
-To ensure common ground between all implementations of a particular problem, a set of requirements detailing common factors, which must be true for all implementations of a particular problem, has been created. The source is located in \bsref{}\andreas{Source!} together with a description of the chosen approach. Common for all the solutions is, that they must solve the problem by using a concurrent approach and utilizing their individual strengths.
-
-The Dining Philosophers implementations must:
-\begin{itemize}
-	\item Encompass two 100 milliseconds thread sleeps. One to simulate the act of eating, forcing the locks to be held while a philosophers finishes her meal, and one upon completing an attempt to eat simulating sleeping a period of time before attempting to eat again. The amount of sleep is only of importance in regards to performance testing, which is why an arbitrary number of 100 has been picked, it is only done to provide consistency between the implementations.
-\end{itemize}
-
-The Santa Claus problem implementations must:
-\begin{itemize}
-	\item Adhere to the requirements defined in \bsref{app:santa}.
-	\item Utilize advantageous features of the concurrency approach.
-\end{itemize}
-
-The Concurrent Hashmap implementations must:
-\begin{itemize}
-	\item Encompass fined grained synchronization, allowing multiple threads to operate on the hashmap simultaneously.
-\end{itemize}
-The implementations in their full length can be found in the appendix.\toby{indsæt et reference når de indsætts}
 \worksheetend
