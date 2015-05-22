@@ -15,11 +15,10 @@ namespace Evaluation.Locking
     {
         private const int DefaultNrLocks = DefaultNrBuckets;
 
-        private readonly object _resizeLock = new object();
         private readonly object _sizeLock = new object();
 
         private readonly object[] _locks;
-        private LinkedList<Node>[] _buckets;
+        private Node[] _buckets;
         private int _size;
         private int _threshold;
 
@@ -45,15 +44,9 @@ namespace Evaluation.Locking
         }
 
 
-        private LinkedList<Node>[] MakeBuckets(int nrBuckets)
+        private Node[] MakeBuckets(int nrBuckets)
         {
-            var temp = new LinkedList<Node>[nrBuckets];
-            for (var i = 0; i < nrBuckets; i++)
-            {
-                temp[i] = new LinkedList<Node>();
-            }
-
-            return temp;
+            return new Node[nrBuckets]; ;
         }
 
         private object[] MakeLocks(int nrLocks)
@@ -79,24 +72,17 @@ namespace Evaluation.Locking
             return new Node(key, value);
         }
 
-        private int GetBucketIndex(K key)
-        {
-            return GetBucketIndex(_buckets.Length, key);
-        }
-
         private int GetBucketIndex(int hashCode)
         {
             return GetBucketIndex(_buckets.Length, hashCode);
         }
 
-        private Node FindNode(int bucketIndex, K key)
-        {
-            return FindNode(_buckets[bucketIndex], key);
-        }
 
-        private Node FindNode(LinkedList<Node> bucket, K key)
+        private Node FindNode(Node node, K key)
         {
-            return bucket.FirstOrDefault(n => n.Key.Equals(key));
+            while (node != null && !key.Equals(node.Key))
+                node = node.Next;
+            return node;
         }
 
         private void LockAll()
@@ -115,6 +101,30 @@ namespace Evaluation.Locking
             }
         }
 
+        private void InsertInBucket(Node[] buckets, Node node, int index)
+        {
+            InsertInBucket(buckets, node, buckets[index], index);
+        }
+
+        private void InsertInBucket(Node node, int index)
+        {
+            InsertInBucket(node, _buckets[index], index);
+        }
+
+        private void InsertInBucket(Node node, Node curNode, int index)
+        {
+            InsertInBucket(_buckets, node, curNode, index);
+        }
+
+        private void InsertInBucket(Node[] buckets, Node node, Node curNode, int index)
+        {
+            if (curNode != null)
+            {
+                node.Next = curNode;
+            }
+            buckets[index] = node;
+        }
+
         #endregion Utility
 
         public override int Count {
@@ -125,8 +135,7 @@ namespace Evaluation.Locking
                 }
             }
 
-            protected set
-            {
+            protected set{
                 lock (_sizeLock)
                 {
                     _size = value;
@@ -167,7 +176,8 @@ namespace Evaluation.Locking
             var hashCode = GetHashCode(key);
             lock (_locks[GetLockIndex(hashCode)])
             {
-                var bucket = _buckets[GetBucketIndex(hashCode)];
+                var index = GetBucketIndex(hashCode);
+                var bucket = _buckets[index];
                 var node = FindNode(bucket, key);
 
                 if (node != null)
@@ -178,7 +188,7 @@ namespace Evaluation.Locking
                 else
                 {
                     //Else insert the node
-                    bucket.AddFirst(CreateNode(key, value));
+                    InsertInBucket(CreateNode(key, value),bucket,index);
                     lock (_sizeLock)
                     {
                         _size++;
@@ -189,17 +199,21 @@ namespace Evaluation.Locking
             ResizeIfNeeded();
         }
 
+
+
+
         public override bool AddIfAbsent(K key, V value)
         {
             var hashCode = GetHashCode(key);
             lock (_locks[GetLockIndex(hashCode)])
             {
-                var bucket = _buckets[GetBucketIndex(hashCode)];
+                var index = GetBucketIndex(hashCode);
+                var bucket = _buckets[index];
                 var node = FindNode(bucket, key);
 
                 if (node != null) return false;
                 //If node is not in map insert new node
-                bucket.AddFirst(CreateNode(key, value));
+                InsertInBucket(CreateNode(key, value), bucket, index);
                 lock (_sizeLock)
                 {
                     _size++;
@@ -207,8 +221,6 @@ namespace Evaluation.Locking
                 ResizeIfNeeded();
                 return true;
             }
-
-            
         }
 
         public override bool Remove(K key)
@@ -216,21 +228,43 @@ namespace Evaluation.Locking
             var hashCode = GetHashCode(key);
             lock (_locks[GetLockIndex(hashCode)])
             {
-                var bucket = _buckets[GetBucketIndex(hashCode)];
-                var node = FindNode(bucket, key);
+                var index = GetBucketIndex(hashCode);
+                var bucket = _buckets[index];
 
-                if (node != null)
-                {
-                    bucket.Remove(node);
-                    lock (_sizeLock)
-                    {
-                        _size--;
-                    }
-                    return true;
-                }
+                return RemoveNode(key, bucket, index);
+            }
+        }
 
+        private bool RemoveNode(K key, Node node, int index)
+        {
+            if (node == null)
+            {
                 return false;
             }
+            
+            if (node.Key.Equals(key))
+            {
+                lock (_sizeLock)
+                {
+                    _size--;
+                }
+                _buckets[index] = node.Next;
+                return true;
+            }
+
+
+            while (node.Next != null && !key.Equals(node.Next.Key))
+                node = node.Next;
+
+            //node.Next == null || node.Next.Key == key
+            if (node.Next == null) return false;
+
+            lock (_sizeLock)
+            {
+                _size--;
+            }
+            node.Next = node.Next.Next;
+            return true;
         }
 
         private void ResizeIfNeeded()
@@ -249,12 +283,14 @@ namespace Evaluation.Locking
                     var newBuckets = MakeBuckets(newBucketSize);
 
                     //For each key in the map rehash
-                    foreach (var bucket in _buckets)
+                    for (var i = 0; i < _buckets.Length; i++)
                     {
-                        foreach (var node in bucket)
+                        var node = _buckets[i];
+                        while (node != null)
                         {
                             var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
-                            newBuckets[bucketIndex].AddFirst(node);
+                            InsertInBucket(newBuckets,CreateNode(node.Key,node.Value),bucketIndex);
+                            node = node.Next;
                         }
                     }
 
@@ -267,53 +303,6 @@ namespace Evaluation.Locking
                     UnlockAll();
                 }
             }
-            /*
-            // If the lock can not be acquired imedietly then some other thread is checking the resize condition or resizing the array
-            // In that case there is not need to proceed as that other thread will resize the array if it is needed
-            if (Monitor.TryEnter(_resizeLock, 0))
-            {
-                try
-                {
-                    bool condition;
-                    lock (_sizeLock)
-                    {
-                        condition = _size >= _threshold;
-                    }
-
-                    if (condition)
-                    {
-                        LockAll();
-                        try
-                        {
-                            //Construct new backing array
-                            var newBucketSize = _buckets.Length * 2;
-                            var newBuckets = MakeBuckets(newBucketSize);
-
-                            //For each key in the map rehash
-                            foreach (var bucket in _buckets)
-                            {
-                                foreach (var node in bucket)
-                                {
-                                    var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
-                                    newBuckets[bucketIndex].AddFirst(node);
-                                }
-                            }
-
-                            //Calculate new resize threshold and assign the rehashed backing array
-                            _threshold = CalculateThreshold(newBucketSize);
-                            _buckets = newBuckets;
-                        }
-                        finally
-                        {
-                            UnlockAll();
-                        }
-                    }
-                }
-                finally
-                {
-                    Monitor.Exit(_resizeLock);
-                }
-            }*/
         }
 
         private bool ResizeCondtion()
@@ -335,11 +324,18 @@ namespace Evaluation.Locking
             LockAll();
             try
             {
-                var kvPairs = from bucket in _buckets
-                    from node in bucket
-                    select new KeyValuePair<K, V>(node.Key, node.Value);
+                var list = new List<KeyValuePair<K,V>>(_size);
+                for (var i = 0; i < _buckets.Length; i++)
+                {
+                    var node = _buckets[i];
+                    while (node != null)
+                    {
+                        list.Add(new KeyValuePair<K, V>(node.Key, node.Value));
+                        node = node.Next;
+                    }
+                }
 
-                return kvPairs.ToList().GetEnumerator();
+                return list.GetEnumerator();
             }
             finally
             {
@@ -351,6 +347,7 @@ namespace Evaluation.Locking
         {
             public K Key { get; private set; }
             public V Value { get; internal set; }
+            public Node Next { get; internal set; }
 
             public Node(K key, V value)
             {

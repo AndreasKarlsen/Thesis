@@ -130,8 +130,6 @@ namespace STM.Implementation.JVSTM
             }
         }
 
-        
-
         #endregion Atomic
 
         #region Retry

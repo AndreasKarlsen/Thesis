@@ -8,7 +8,7 @@ This sections presents the lockbased implementations of the selected problems.
 \subsection{Dining Philosophers Problem}
 The lock based implementation of the dining philosophers problem requires the use of the \bscode{Monitor} class to acquire the second lock with a time out on line \ref{line:dining_lock_try}. As a result a \bscode{try/finally} block is used, on lines \ref{line:dining_lock_try_finally_start} to \ref{line:dining_lock_try_finally_end}, to ensured that the acquired lock is released in case an error occurs while the lock is held.
 \begin{lstlisting}[label=lst:impl_dining_lock,
-  caption={Lock based dining philosophers implementation},
+  caption={Lock based dining philosophers Iimplementation},
   language=Java,  
   showspaces=false,
   showtabs=false,
@@ -86,7 +86,7 @@ The lock based implementation of the dining philosophers problem requires the us
 \subsection{Santa Claus Problem}
 
 \begin{lstlisting}[label=lst:impl_santa_lock,
-  caption={Lock based Santa Clause implementation},
+  caption={Lock based Santa Clause Implementation},
   language=Java,  
   showspaces=false,
   showtabs=false,
@@ -214,9 +214,543 @@ The lock based implementation of the dining philosophers problem requires the us
     }
   }
   
+  public class LockingElf : IStartable
+  {
+    private readonly Random _randomGen = new Random(Guid.NewGuid().GetHashCode());
+    public int ID { get; private set; }
+    private readonly Queue<LockingElf> _buffer;
+    private readonly SemaphoreSlim _maxElfs;
+    private readonly SemaphoreSlim _santaHandle;
+    private readonly SemaphoreSlim _waitingToAsk;
+    private readonly SemaphoreSlim _doneAsking;
+
+    public LockingElf(int id, Queue<LockingElf> buffer, SemaphoreSlim santaHandle, SemaphoreSlim maxElfs, SemaphoreSlim waitingToAsk, SemaphoreSlim doneWaiting)
+    {
+      _buffer = buffer;
+      ID = id;
+      _maxElfs = maxElfs;
+      _santaHandle = santaHandle;
+      _waitingToAsk = waitingToAsk;
+      _doneAsking = doneWaiting;
+    }
+
+    public Task Start()
+    {
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          Thread.Sleep(100 * _randomGen.Next(21));
+
+          //Only a fixed amount of elfs can go to santa at a time
+          _maxElfs.Wait();
+
+          lock (_buffer)
+          {
+            _buffer.Enqueue(this);
+            if (_buffer.Count == SCStats.MAX_ELFS)
+            {
+              _santaHandle.Release();
+            }
+          }
+
+          Console.WriteLine("Elf {0} at the door", ID);
+
+          //Wait for santa to be ready
+          _waitingToAsk.Wait();
+
+          //Asking questions
+          _doneAsking.Wait();
+
+          //Allow a new elf to visit santa
+          _maxElfs.Release();
+        }
+      });
+    }
+
+    public void AskQuestion()
+    {
+      _waitingToAsk.Release();
+    }
+  }
+  
+  public class LockingReindeer : IStartable
+  {
+    private readonly Random _randomGen = new Random(Guid.NewGuid().GetHashCode());
+    public int ID { get; private set; }
+
+    private readonly Queue<LockingReindeer> _reindeerBuffer;
+    private readonly SemaphoreSlim _santaHandle;
+    private readonly SemaphoreSlim _sleigh;
+    private readonly SemaphoreSlim _doneDelivering;
+    private readonly SemaphoreSlim _warmingHut;
+
+    public LockingReindeer(int id, Queue<LockingReindeer> buffer, SemaphoreSlim santaHandle, SemaphoreSlim sleigh, SemaphoreSlim warmingHut, SemaphoreSlim doneDelivering)
+    {
+      ID = id;
+      _reindeerBuffer = buffer;
+      _santaHandle = santaHandle;
+      _sleigh = sleigh;
+      _warmingHut = warmingHut;
+      _doneDelivering = doneDelivering;
+    }
+
+    public Task Start()
+    {     
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          //Tan on the beaches in the Pacific until Chistmas is close
+          Thread.Sleep(100 * _randomGen.Next(10));
+
+          lock (_reindeerBuffer)
+          {
+            _reindeerBuffer.Enqueue(this);
+            if (_reindeerBuffer.Count == SCStats.NR_REINDEER)
+            {
+              _santaHandle.Release();
+            }
+          }
+
+          //Console.WriteLine("Reindeer {0} is back",ID);
+
+          //Block early arrivals
+          _warmingHut.Wait();
+
+          //Wait for santa to be ready
+          _sleigh.Wait();
+
+          //Delivering presents
+
+          //Wait for delivery to be done
+          _doneDelivering.Wait();
+          //Head back to Pacific islands
+        }
+      });
+    }
+  }
+  
 \end{lstlisting}
 
+\subsection{Concurrent Queue}
+\begin{lstlisting}[label=lst:impl_queue_lock,
+  caption={Lock based Concurrent Queue Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override}]  % Start your code-block
 
+  public class Queue<T> : IQueue<T>
+  {
+    protected readonly object HeadLock = new object();
+    protected readonly object TailLock = new object();
+    private Node _head;
+    private Node _tail;
+
+    public Queue()
+    {
+      _head = new Node(default(T));
+      _tail = _head;
+    }
+
+    public void Enqueue(T item)
+    {
+      var node = new Node(item);
+      lock (TailLock)
+      {
+        _tail.Next = node;
+        _tail = node;
+      }
+    }
+
+    public bool Dequeue(out T item)
+    {
+      lock (HeadLock)
+      {
+        var newHead = _head.Next;
+        if (newHead == null)
+        {
+          item = default(T);
+          return false;
+        }
+
+        _head = newHead;
+        item = newHead.Value;
+        return true;
+      }
+    }
+
+    private class Node
+    {
+      public Node Next { get; set; }
+      public T Value { get; private set; }
+
+      public Node(T value)
+      {
+        Value = value;
+      }
+    }
+  }
+
+\end{lstlisting}
+
+\subsection{Concurrent Hasmap}
+\begin{lstlisting}[label=lst:impl_hashmap_lock,
+  caption={Lock based Concurrent Hasmap Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, region, endregion, foreach}]  % Start your code-block
+
+  public class LockingHashMap<K,V> : BaseHashMap<K,V>
+  {
+    private const int DefaultNrLocks = DefaultNrBuckets;
+
+    private readonly object _sizeLock = new object();
+    private readonly object[] _locks;
+    private Node[] _buckets;
+    private int _size;
+    private int _threshold;
+
+    public LockingHashMap() : this(DefaultNrBuckets){}
+
+    public LockingHashMap(int size) : this(size, DefaultNrLocks){}
+
+    private LockingHashMap(int size, int nrLocks)
+    {
+      if (size % nrLocks != 0)
+      {
+        throw new Exception("The intital size % nrbuckets must be equal to zero");
+      }
+      _buckets = MakeBuckets(size);
+      _locks = MakeLocks(nrLocks);
+      _threshold = CalculateThreshold(size);
+    }
+
+
+    private Node[] MakeBuckets(int nrBuckets)
+    {
+      return new Node[nrBuckets]; ;
+    }
+
+    private object[] MakeLocks(int nrLocks)
+    {
+      var temp = new object[nrLocks];
+      for (var i = 0; i < nrLocks; i++)
+      {
+        temp[i] = new object();
+      }
+
+      return temp;
+    }
+
+    #region Utility
+
+    private int GetLockIndex(int hashCode)
+    {
+      return hashCode % _locks.Length;
+    }
+
+    private Node CreateNode(K key, V value)
+    {
+      return new Node(key, value);
+    }
+
+    private int GetBucketIndex(int hashCode)
+    {
+      return GetBucketIndex(_buckets.Length, hashCode);
+    }
+
+    private Node FindNode(Node node, K key)
+    {
+      while (node != null && !key.Equals(node.Key))
+        node = node.Next;
+      return node;
+    }
+
+    private void LockAll()
+    {
+      foreach (var lo in _locks)
+      {
+        Monitor.Enter(lo);
+      }
+    }
+
+    private void UnlockAll()
+    {
+      foreach (var lo in _locks)
+      {
+        Monitor.Exit(lo);
+      }
+    }
+
+    private void InsertInBucket(Node[] buckets, Node node, int index)
+    {
+      InsertInBucket(buckets, node, buckets[index], index);
+    }
+
+    private void InsertInBucket(Node node, int index)
+    {
+      InsertInBucket(node, _buckets[index], index);
+    }
+
+    private void InsertInBucket(Node node, Node curNode, int index)
+    {
+      InsertInBucket(_buckets, node, curNode, index);
+    }
+
+    private void InsertInBucket(Node[] buckets, Node node, Node curNode, int index)
+    {
+      if (curNode != null)
+      {
+        node.Next = curNode;
+      }
+      buckets[index] = node;
+    }
+
+    #endregion Utility
+
+    public override int Count {
+      get {
+        lock (_sizeLock)
+        {
+          return _size;
+        }
+      }
+
+    protected set {
+        lock (_sizeLock)
+        {
+          _size = value;
+        }
+      } 
+    }
+
+    public override bool ContainsKey(K key)
+    {
+      var hashCode = GetHashCode(key);
+      lock (_locks[GetLockIndex(hashCode)])
+      {
+        var bucket = _buckets[GetBucketIndex(hashCode)];
+        return FindNode(bucket, key) != null;
+      }
+    }
+
+    public override V Get(K key)
+    {
+      var hashCode = GetHashCode(key);
+      lock (_locks[GetLockIndex(hashCode)])
+      {
+        var bucket = _buckets[GetBucketIndex(hashCode)];
+        var node = FindNode(bucket, key);
+
+        if (node == null)
+        {
+          //If node is null, key is not in map
+          throw new KeyNotFoundException("Key not found. Key: "+key);
+        }
+
+        return node.Value;
+      }
+    }
+
+    public override void Add(K key, V value)
+    {
+      var hashCode = GetHashCode(key);
+      lock (_locks[GetLockIndex(hashCode)])
+      {
+        var index = GetBucketIndex(hashCode);
+        var bucket = _buckets[index];
+        var node = FindNode(bucket, key);
+
+        if (node != null)
+        {
+          //If node is not null, key exist in map. Update the value
+          node.Value = value;
+        }
+        else
+        {
+          //Else insert the node
+          InsertInBucket(CreateNode(key, value),bucket,index);
+          lock (_sizeLock)
+          {
+            _size++;
+          }
+        }
+      }
+
+      ResizeIfNeeded();
+    }
+    
+    public override bool AddIfAbsent(K key, V value)
+    {
+      var hashCode = GetHashCode(key);
+      lock (_locks[GetLockIndex(hashCode)])
+      {
+        var index = GetBucketIndex(hashCode);
+        var bucket = _buckets[index];
+        var node = FindNode(bucket, key);
+
+        if (node != null) return false;
+        //If node is not in map insert new node
+        InsertInBucket(CreateNode(key, value), bucket, index);
+        lock (_sizeLock)
+        {
+          _size++;
+        }
+        ResizeIfNeeded();
+        return true;
+      }
+    }
+
+    public override bool Remove(K key)
+    {
+        var hashCode = GetHashCode(key);
+        lock (_locks[GetLockIndex(hashCode)])
+        {
+          var index = GetBucketIndex(hashCode);
+          var bucket = _buckets[index];
+          return RemoveNode(key, bucket, index);
+        }
+    }
+
+    private bool RemoveNode(K key, Node node, int index)
+    {
+        if (node == null)
+        {
+          return false;
+        }
+            
+        if (node.Key.Equals(key))
+        {
+          lock (_sizeLock)
+          {
+            _size--;
+          }
+          buckets[index] = node.Next;
+          return true;
+        }
+
+
+        while (node.Next != null && !key.Equals(node.Next.Key))
+          node = node.Next;
+
+        //node.Next == null || node.Next.Key == key
+        if (node.Next == null) return false;
+
+        lock (_sizeLock)
+        {
+          _size--;
+        }
+        node.Next = node.Next.Next;
+        return true;
+    }
+
+    private void ResizeIfNeeded()
+    {
+      if (ResizeCondtion())
+      {
+          LockAll();
+          try
+          {
+            if (!ResizeCondtion())
+            {
+              return;
+            }
+            //Construct new backing array
+            var newBucketSize = _buckets.Length * 2;
+            var newBuckets = MakeBuckets(newBucketSize);
+
+            //For each key in the map rehash
+            for (var i = 0; i < _buckets.Length; i++)
+            {
+              var node = _buckets[i];
+              while (node != null)
+              {
+                var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
+                InsertInBucket(newBuckets,CreateNode(node.Key,node.Value),bucketIndex);
+                node = node.Next;
+              }
+            }
+
+            //Calculate new resize threshold and assign the rehashed backing array
+            threshold = CalculateThreshold(newBucketSize);
+            _buckets = newBuckets;
+          }
+          finally
+          {
+            UnlockAll();
+          }
+      }
+    }
+
+    private bool ResizeCondtion()
+    {
+      lock (_sizeLock)
+      {
+        return _size >= _threshold;
+      }
+    }
+
+    public override V this[K key]
+    {
+      get { return Get(key); }
+      set { Add(key,value); }
+    }
+
+    public override IEnumerator<KeyValuePair<K, V>> GetEnumerator()
+    {
+      LockAll();
+      try
+      {
+        var list = new List<KeyValuePair<K,V>>(_size);
+        for (var i = 0; i < _buckets.Length; i++)
+        {
+          var node = _buckets[i];
+          while (node != null)
+          {
+            list.Add(new KeyValuePair<K, V>(node.Key, node.Value));
+            node = node.Next;
+          }
+        }
+
+        return list.GetEnumerator();
+      }
+      finally
+      {
+        UnlockAll();
+      }
+    }
+
+    private class Node
+    {
+      public K Key { get; private set; }
+      public V Value { get; internal set; }
+      public Node Next { get; internal set; }
+
+      public Node(K key, V value)
+      {
+        Key = key;
+        Value = value;
+      }
+    }
+  }
+\end{lstlisting}
 \section{STM Library}\label{app:impl_stm_lib}
 \section{\stmname}\label{app:impl_stm_lab}
 
