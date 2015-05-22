@@ -20,11 +20,11 @@ namespace Evaluation
             //DiningPhilosophers.Start();
             //LockingDiningPhilosophers.Start();
             //SantaClausProblem.Start();
-            //LockingSantaClausProblem.Start();
+            LockingSantaClausProblem.Start();
             //HashMapTest();
             //STMHashMapSequentialTest();
             //LockingHashMapSequentialTest();
-
+            /*
             TestQueue();
             //TestLockingQueue();
 
@@ -69,7 +69,7 @@ namespace Evaluation
                     Console.WriteLine("JVSTM done");
                 }
             }
-
+            */
             Console.ReadKey();
         }
 

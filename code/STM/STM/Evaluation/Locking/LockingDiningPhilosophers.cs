@@ -26,26 +26,35 @@ namespace Evaluation.Locking
             var t4 = StartPhilosopher(eatCounter, fork4, fork5);
             var t5 = StartPhilosopher(eatCounter, fork5, fork1);
 
-            Task.WaitAll(t1, t2, t3, t4, t5);
+            t1.Join();
+            t2.Join();
+            t3.Join();
+            t4.Join();
+            t5.Join();
         }
 
-        private static Task StartPhilosopher(LockCounter eatCounter, object left, object right)
+        private static Thread StartPhilosopher(LockCounter eatCounter, object left, object right)
         {
-            var t1 = new Task(() =>
+            var t1 = new Thread(() =>
             {
                 while (eatCounter.Get() < MAX_EAT_COUNT)
                 {
                     lock (left)
                     {
-                        if (Monitor.TryEnter(right, 100))
+                        var lockTaken = false;
+                        try
                         {
-                            try
+                            Monitor.TryEnter(right, 100, ref lockTaken);
+                            if (lockTaken)
                             {
                                 Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
                                 Thread.Sleep(100);
                                 Console.WriteLine("Eat count: " + eatCounter.IncrementAndGet());
                             }
-                            finally
+                        }
+                        catch (Exception)
+                        {
+                            if (lockTaken)
                             {
                                 Monitor.Exit(right);
                             }

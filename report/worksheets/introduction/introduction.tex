@@ -1,6 +1,8 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Introduction}{0}{Februar 10, 2015}{}{../../}
 %
+\andreas[inline]{In section 1.1 bla bla}
+\label{chap:introduction}
 \section{Motivation}
 Today the increase in \acsu{CPU} speed comes in the form of additional cores, and not faster clock speed\cite{sutter2005free}. In order to utilize this increase in speed, many of the popular sequential programming languages, such as C, C++, Java, and C\#, require changes or new additions in order to adapt\cite[p. 56]{sutter2005software}. Our recent study\cite{dpt907e14trending}, analyzed the runtime performance and characteristics of three different approaches to concurrent programming: \ac{TL}, \ac{STM}, and the Actor model. The study concluded that \ac{STM} eliminates many of the risks related to programming in the context of shared-memory concurrency, notably deadlocks, leading to simpler reasoning and improved usability. Additionally, \ac{STM} fits with the thread model used by sequential languages, and can thereby be applied to existing implementations, without requiring major rewrites. The runtime performance of \ac{STM} is at a competitive level compared to fine-grained locking\cite{dpt907e14trending}. The analysis uncovered one major caveat of \ac{STM}, it is not orthogonal with side-effects, such as \ac{IO} and exceptions\cite{dpt907e14trending}.
 %Utilizing tomorrows increasingly faster \acp{CPU} requires changes to the sequential programming paradigm\cite[p. 56]{sutter2005software} which is popularized in languages such as C, C++, Java, and C\#.
@@ -46,7 +48,8 @@ As of February 2015 Microsoft released the source code for an independent versio
 The goal of this master thesis is to investigate the possibility of supplying language integrated support for \ac{STM} in C\#. To formalize our goal, we have constructed the hypothesis:
 
 \paragraph{Hypothesis} Language integrated \ac{STM} provides a valid alternative to locking in terms of usability, and provides additional benefits over library based \ac{STM}, when solving concurrency problems in C\#.\andreas{If we change this, we must change Preliminary Knowledge and Evaluation} 
-In order to validate the hypothesis, a language integrated \ac{STM} system for C\#, called \stmname, will be designed, implemented and integrated. In order to achieve this goal an \ac{STM} library for the .NET platform will be created. Using both of these implementations a number of representative concurrent problems will be implemented. These implementations will be compared to equivalent lock based implementations using the characteristics defined in \bsref{sec:eval_chars}.
+
+In order to validate the hypothesis, a language integrated \ac{STM} system for C\#, called \stmname, will be designed, implemented and integrated. In order to achieve this goal an \ac{STM} library for the .NET platform will be created. Using both of these implementations a number of representative concurrent problems will be implemented. These implementations will be compared to equivalent lock based implementations using the evaluation method defined in \bsref{sec:eval_approach}.
 
 \subsection{Problem Statement Questions}
 In order to structure our investigation we have extracted a number of problem statement questions. The questions are based on findings from the theory investigated in our previous study\cite{dpt907e14trending}, investigation of related work, exploratory investigations into \ac{STM} implementations, and the Roslyn compiler. These questions will serve as a guideline for investigating the integration of \ac{STM} into C\#, as well as being used to conclude upon the project in \bsref{chap:conclusion}.
@@ -60,17 +63,11 @@ In order to structure our investigation we have extracted a number of problem st
 \item How does the characteristics differ when using locks in C\#, \ac{STM} from a library or \stmname?
 \end{enumerate}
 
-In order to answer these questions and our hypothesis, the following procedure has been utilized:  \bsnameref{chap:prelim} establishes the ``locking'' term, and the key concepts of \ac{STM}. This knowledge is required in order to understand the rest of the work. The following chapter \bsnameref{chap:roslyn} outlines the structure of the Roslyn compiler, which enables an integration of \ac{STM} into C\#. \bsnameref{sec:stm_requirements} analyses the requirements to the \ac{STM} system which powers \stmname. \bsnameref{chap:stm_design} describes the decisions of designing and integrating \stmname based on the requirements. \bsnameref{chap:implementation} describes the implementation of the \ac{STM} system that powers \stmname, and is based on the requirements and design choices. \bsnameref{chap:roslyn_extension} describes how Roslyn is extended to encompass language integrated \ac{STM}, thus being a compiler for \stmname. \bsnameref{chap:evaluation} evaluates \stmname, its associated \ac{STM} library and locking in C\# according to the evaluation method described in \bsref{sec:eval_approach}, which identifies key differences in the concurrency approaches. Based on this evaluation, a conclusion on the hypothesis is made in \bsnameref{chap:conclusion}.
-
-To reflect on the decisions made throughout the report, \bsnameref{chap:reflection} discusses the choices made and their consequences. Continuation of the work in the future and its potential is discussed in \bsnameref{chap:future_work}.
 \section{Evaluation Method}\label{sec:eval_approach}
-This section describes how the evaluation is conducted.
-% Evaluation both with library and locking exposes advantages from the language integration, which could not be gained from a library. 
-% The characteristics chosen will cover all aspects of the approaches, and identify key differences.
-%an extended version of the characteristics defined in \cite[p. 15-21]{dpt907e14trending}
-\andreas[inline]{Why did we choose the evaluation method}
+The evaluation is conducted by analyzing  characteristics in the different approaches in a qualitative manner, based on a number of concurrent implementations. The characteristics are an extended version of the evaluation method from our prior study\cite[p. 15-21]{dpt907e14trending}, and they each highlight key differences of the usability of a language. Combined, they form a comprehensive, although not exhaustive, view on the usability of the language which is used for comparison between the approaches. By evaluating a library based \ac{STM} the differences to a language based \ac{STM} will be highlighted, and can serve to justify language integration. This section describes how the evaluation is conducted in details.
+
 \subsection{Selected Problems}
-As described in \bsref{sec:problem_statement} the evaluation is conducted by comparing the characteristics of each approach based on a number of concurrent implementations. For this purpose three concurrency problems have been selected:
+Four concurrency problems have been selected for evaluation:
 \begin{enumerate}
 \item The Dining Philosophers (\bsbilagref{app:dining_phil})
 \item The Santa Claus Problem (\bsbilagref{app:santa})
