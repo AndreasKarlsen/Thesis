@@ -105,14 +105,7 @@ namespace STMTester
                 while (notCommitted)
                 {
                     var t = JVTransaction.Start();
-                    if (b.Read(t))
-                    {
-                        b.Put(t, false);
-                    }
-                    else
-                    {
-                        b.Put(t, true);
-                    }
+                    b.Put(t, !b.Read(t));
                     notCommitted = !t.Commit();
                 }
             }

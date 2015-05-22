@@ -10,17 +10,17 @@ namespace Evaluation.Locking.SantaClausImpl
 {
     public class LockingSanta : IStartable
     {
-        private Queue<LockingReindeer> _rBuffer;
-        private Queue<LockingElf> _eBuffer;
-        private Semaphore _santaHandle;
-        private Semaphore _sleigh;
-        private Semaphore _warmingHut;
-        private Semaphore _reindeerDone;
-        private Semaphore _elfsWaiting;
-        private Semaphore _elfsDone;
+        private readonly Queue<LockingReindeer> _rBuffer;
+        private readonly Queue<LockingElf> _eBuffer;
+        private readonly SemaphoreSlim _santaHandle;
+        private readonly SemaphoreSlim _sleigh;
+        private readonly SemaphoreSlim _warmingHut;
+        private readonly SemaphoreSlim _reindeerDone;
+        private readonly SemaphoreSlim _elfsWaiting;
+        private readonly SemaphoreSlim _elfsDone;
 
-        public LockingSanta(Queue<LockingReindeer> rBuffer, Queue<LockingElf> eBuffer, Semaphore santaHandle, 
-            Semaphore sleigh, Semaphore warmingHut, Semaphore reindeerDone, Semaphore elfsWaiting, Semaphore elfsDone)
+        public LockingSanta(Queue<LockingReindeer> rBuffer, Queue<LockingElf> eBuffer, SemaphoreSlim santaHandle,
+            SemaphoreSlim sleigh, SemaphoreSlim warmingHut, SemaphoreSlim reindeerDone, SemaphoreSlim elfsWaiting, SemaphoreSlim elfsDone)
         {
             _rBuffer = rBuffer;
             _eBuffer = eBuffer;
@@ -39,7 +39,7 @@ namespace Evaluation.Locking.SantaClausImpl
                 while (true)
                 {
                     //Santa is resting
-                    _santaHandle.WaitOne();
+                    _santaHandle.Wait();
 
                     var wakeState = WakeState.ElfsIncompetent;
 
@@ -86,11 +86,8 @@ namespace Evaluation.Locking.SantaClausImpl
                             Console.WriteLine("Elfs helped");
                             break;
                     }
-                    
-
                 }
             });
         }
-        
     }
 }

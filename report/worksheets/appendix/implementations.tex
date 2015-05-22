@@ -1,0 +1,222 @@
+\chapter[]{Appendix Evaluation Implementations}
+This appendix presents the implementations of the selected problems, described in \bsref{sec:eval_approach}, on which the evaluation presented in \bsref{chap:evaluation} is based.
+\label{app:eval_implementations}
+
+\section{Lock Based}\label{app:impl_lockbased}
+This sections presents the lockbased implementations of the selected problems.
+
+\subsection{Dining Philosophers Problem}
+The lock based implementation of the dining philosophers problem requires the use of the \bscode{Monitor} class to acquire the second lock with a time out on line \ref{line:dining_lock_try}. As a result a \bscode{try/finally} block is used, on lines \ref{line:dining_lock_try_finally_start} to \ref{line:dining_lock_try_finally_end}, to ensured that the acquired lock is released in case an error occurs while the lock is held.
+\begin{lstlisting}[label=lst:impl_dining_lock,
+  caption={Lock based dining philosophers implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override}]  % Start your code-block
+
+  public class LockingDiningPhilosophers
+  {
+  	public static void Start()
+  	{
+      var fork1 = new object();
+      var fork2 = new object();
+      var fork3 = new object();
+      var fork4 = new object();
+      var fork5 = new object();
+
+      var t1 = StartPhilosopher(fork1, fork2);
+      var t2 = StartPhilosopher(fork2, fork3);
+      var t3 = StartPhilosopher(fork3, fork4);
+      var t4 = StartPhilosopher(fork4, fork5);
+      var t5 = StartPhilosopher(fork5, fork1);
+
+      t1.Join();
+      t2.Join();
+      t3.Join();
+      t4.Join();
+      t5.Join();
+    }
+
+    private static Thread StartPhilosopher(object left, object right)
+    {
+      var t1 = new Thread(() =>
+      {
+        while (true)
+        {
+          lock (left)
+          {
+          
+            var lockTaken = false;
+            try~\label{line:dining_lock_try_finally_start}~
+            {
+              Monitor.TryEnter(right, 100, ref lockTaken);~\label{line:dining_lock_try}~
+              if (lockTaken)
+              {
+                Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
+                Thread.Sleep(100);
+              }
+            }
+            catch (Exception)
+            {
+              if (lockTaken)
+              {
+                Monitor.Exit(right);
+              }
+            }~\label{line:dining_lock_try_finally_end}~
+          }
+
+          Thread.Sleep(100);
+        }
+      });
+
+      t1.Start();
+      return t1;
+    }
+  }
+  
+\end{lstlisting}
+
+\subsection{Santa Claus Problem}
+
+\begin{lstlisting}[label=lst:impl_santa_lock,
+  caption={Lock based Santa Clause implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override}]  % Start your code-block
+
+  public class LockingSantaClausProblem
+  {
+    public static void Start()
+    {
+      var santaHandle = new SemaphoreSlim(0,2); 
+      var sleigh = new SemaphoreSlim(0,SCStats.NR_REINDEER);
+      var warmingHut = new SemaphoreSlim(0, SCStats.NR_REINDEER);
+      var reindeerDone = new SemaphoreSlim(0, SCStats.NR_REINDEER);
+      var elfWaiting = new SemaphoreSlim(0, SCStats.MAX_ELFS);
+      var elfDone = new SemaphoreSlim(0, SCStats.MAX_ELFS);
+      var maxElfs = new SemaphoreSlim(SCStats.MAX_ELFS, SCStats.MAX_ELFS);
+      var rBuffer = new Queue<LockingReindeer>();
+      var eBuffer = new Queue<LockingElf>();
+      var santa = new LockingSanta(rBuffer,eBuffer,santaHandle,sleigh, warmingHut,reindeerDone,elfWaiting, elfDone);
+      santa.Start();
+
+      for (var i = 0; i < SCStats.NR_REINDEER ; i++)
+      {
+        var reindeer = new LockingReindeer(i, rBuffer, santaHandle, sleigh, warmingHut, reindeerDone);
+        reindeer.Start();
+      }
+
+            
+      for (var i = 0; i < SCStats.NR_ELFS; i++)
+      {
+        var elf = new LockingElf(i, eBuffer,santaHandle,maxElfs,elfWaiting,elfDone);
+        elf.Start();
+      }
+            
+    }
+  }
+  
+  public class LockingSanta : IStartable
+  {
+    private readonly Queue<LockingReindeer> _rBuffer;
+    private readonly Queue<LockingElf> _eBuffer;
+    private readonly SemaphoreSlim _santaHandle;
+    private readonly SemaphoreSlim _sleigh;
+    private readonly SemaphoreSlim _warmingHut;
+    private readonly SemaphoreSlim _reindeerDone;
+    private readonly SemaphoreSlim _elfsWaiting;
+    private readonly SemaphoreSlim _elfsDone;
+
+    public LockingSanta(Queue<LockingReindeer> rBuffer, Queue<LockingElf> eBuffer, SemaphoreSlim santaHandle,
+            SemaphoreSlim sleigh, SemaphoreSlim warmingHut, SemaphoreSlim reindeerDone, SemaphoreSlim elfsWaiting, SemaphoreSlim elfsDone)
+    {
+      _rBuffer = rBuffer;
+      _eBuffer = eBuffer;
+      _santaHandle = santaHandle;
+      _sleigh = sleigh;
+      _warmingHut = warmingHut;
+      _reindeerDone = reindeerDone;
+      _elfsWaiting = elfsWaiting;
+      _elfsDone = elfsDone;
+    }
+
+    public Task Start()
+    {
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          //Santa is resting
+          _santaHandle.Wait();
+
+          var wakeState = WakeState.ElfsIncompetent;
+
+          lock (_rBuffer)
+          {
+            if (_rBuffer.Count == SCStats.NR_REINDEER)
+            {
+              wakeState = WakeState.ReindeerBack;    
+            }
+          }
+
+          switch (wakeState)
+          {
+            case WakeState.ReindeerBack:
+              Console.WriteLine("All reindeer are back!");
+
+              //Release reindeers from warming hut
+              _warmingHut.Release(SCStats.NR_REINDEER);
+
+              //Setup the sleigh
+              _sleigh.Release(SCStats.NR_REINDEER);
+
+              //Deliver presents
+              Console.WriteLine("Santa delivering presents");
+              Thread.Sleep(100);
+
+              //Release reindeer
+              _rBuffer.Clear();
+              _reindeerDone.Release(SCStats.NR_REINDEER);
+              Console.WriteLine("Reindeer released");
+              break;
+            case WakeState.ElfsIncompetent:
+              Console.WriteLine("3 elfs at the door!");
+
+              _elfsWaiting.Release(SCStats.MAX_ELFS);
+
+              //Answer questions
+              Thread.Sleep(100);
+
+              //Back to work incompetent elfs!
+              _eBuffer.Clear();
+              _elfsDone.Release(SCStats.MAX_ELFS);
+
+              Console.WriteLine("Elfs helped");
+              break;
+          }
+        }
+      });
+    }
+  }
+  
+\end{lstlisting}
+
+
+\section{STM Library}\label{app:impl_stm_lib}
+\section{\stmname}\label{app:impl_stm_lab}
+
