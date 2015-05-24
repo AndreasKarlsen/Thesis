@@ -20,12 +20,12 @@ namespace Evaluation
             //DiningPhilosophers.Start();
             //LockingDiningPhilosophers.Start();
             //SantaClausProblem.Start();
-            LockingSantaClausProblem.Start();
+            //LockingSantaClausProblem.Start();
             //HashMapTest();
             //STMHashMapSequentialTest();
             //LockingHashMapSequentialTest();
-            /*
-            TestQueue();
+            
+            //TestQueue();
             //TestLockingQueue();
 
             var nrThreads = 4;
@@ -33,6 +33,8 @@ namespace Evaluation
             {
                 using(var sw = new StreamWriter(s))
                 {
+                    /*
+
                     for (int i = 0; i < 10; i++)
                     {
                         LockingHashMapConcurrent(nrThreads, sw);
@@ -59,7 +61,7 @@ namespace Evaluation
                         STMHashMapConcurrent(nrThreads, sw);
                     }
 
-                    Console.WriteLine("STM done");
+                    Console.WriteLine("STM done");*/
 
                     for (int i = 0; i < 10; i++)
                     {
@@ -69,7 +71,7 @@ namespace Evaluation
                     Console.WriteLine("JVSTM done");
                 }
             }
-            */
+            
             Console.ReadKey();
         }
 

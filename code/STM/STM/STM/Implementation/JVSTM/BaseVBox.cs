@@ -11,7 +11,7 @@ namespace STM.Implementation.JVSTM
     {
         internal abstract bool Validate(BaseVBoxBody readBody);
 
-        internal abstract void Install(object value, int version);
+        internal abstract BaseVBoxBody Install(object value, int version);
 
         internal abstract void RegisterRetryLatch(IRetryLatch latch, BaseVBoxBody expectedBody, int expectedEra);
 

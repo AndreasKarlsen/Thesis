@@ -21,14 +21,17 @@ namespace STM.Implementation.JVSTM
 
         public VBox(T value)
         {
-            _body = new VBoxBody<T>(value, 0, null);
+            _body = new VBoxBody<T>(value, 0);
         }
+
+
 
         public T Read(JVTransaction transaction)
         {
+
             if (transaction.WriteMap.Contains(this))
             {
-                return (T)transaction.WriteMap[this];
+                return (T) transaction.WriteMap[this];
             }
 
             var body = _body;
@@ -38,7 +41,7 @@ namespace STM.Implementation.JVSTM
                 body = body.Next;
             }
 
-            transaction.ReadMap.Put(this,body);
+            transaction.ReadMap.Put(this, body);
 
             return body.Value;
         }
@@ -53,11 +56,11 @@ namespace STM.Implementation.JVSTM
             return _body == readBody;
         }
 
-        internal override void Install(object value, int version)
+        internal override BaseVBoxBody Install(object value, int version)
         {
             _body = new VBoxBody<T>((T)value,version,_body);
 
-            if (_listeners.Count == 0) return;
+            if (_listeners.Count == 0) return _body;
 
             var temp = _listeners;
             foreach (var retryLatch in temp)
@@ -65,12 +68,13 @@ namespace STM.Implementation.JVSTM
                 retryLatch.Open(retryLatch.Era);
             }
 
-
             ImmutableList<IRetryLatch> initial;
             do
             {
                 initial = _listeners;
             } while (initial != Interlocked.CompareExchange(ref _listeners, ImmutableList<IRetryLatch>.Empty, initial));
+
+            return _body;
         }
 
         internal override void RegisterRetryLatch(IRetryLatch latch, BaseVBoxBody expectedBody, int expectedEra)
@@ -124,6 +128,19 @@ namespace STM.Implementation.JVSTM
         public void Commute(JVTransaction transaction, Func<T, T> action)
         {
             transaction.Commutes.Add(new Commute<T>(action,this));
+        }
+
+        public int GetNrBodies()
+        {
+            var body = _body;
+            var count = 1;
+            while (body.Next != null)
+            {
+                body = body.Next;
+                count++;
+            }
+
+            return count;
         }
     }
 }

@@ -68,6 +68,7 @@ namespace STMUnitTest
         [TestMethod]
         public void JVNestingOrElseTest2()
         {
+            
             var tm1 = new VBox<int>(1);
             var tm2 = new VBox<int>(2);
 
@@ -86,12 +87,14 @@ namespace STMUnitTest
             });
 
             var result = JVSTMSystem.Atomic(t => tm2.Read(t));
-            Assert.AreEqual(400, result); 
+            Assert.AreEqual(400, result);
+            
         }
 
         [TestMethod]
         public void JVNestingOrElseTest3()
         {
+            
             var tm1 = new VBox<int>(1);
             var tm2 = new VBox<int>(2);
 
@@ -173,6 +176,7 @@ namespace STMUnitTest
         [TestMethod]
         public void JVNestingEnclosingWriteTest()
         {
+            
             var s = new VBox<string>(string.Empty);
             var result = JVSTMSystem.Atomic((t) =>
             {
@@ -186,6 +190,7 @@ namespace STMUnitTest
             });
 
             Assert.AreEqual(result, "abcdef");
+            
         }
     }
 }

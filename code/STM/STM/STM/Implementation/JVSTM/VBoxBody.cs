@@ -6,17 +6,29 @@ using System.Threading.Tasks;
 
 namespace STM.Implementation.JVSTM
 {
-    class VBoxBody<T> : BaseVBoxBody
+    public class VBoxBody<T> : BaseVBoxBody
     {
         public readonly T Value;
         public readonly int Version;
-        public readonly VBoxBody<T> Next;
+        public VBoxBody<T> Next;
+        public VBoxBody<T> Previous;
 
-        public VBoxBody(T value, int version, VBoxBody<T> next)
+        internal VBoxBody(T value, int version)
         {
             Value = value;
             Version = version;
+        }
+
+        internal VBoxBody(T value, int version, VBoxBody<T> next)
+            : this(value, version)
+        {
             Next = next;
+            next.Previous = this;
+        }
+
+        internal override void Clean()
+        {
+            Next = null;
         }
     }
 }

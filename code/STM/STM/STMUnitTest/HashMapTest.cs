@@ -4,6 +4,7 @@ using Evaluation.Library;
 using Evaluation.Locking;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Evaluation.Common;
+using Evaluation.Library.Collections;
 
 namespace STMUnitTest
 {
@@ -157,14 +158,14 @@ namespace STMUnitTest
         [TestMethod]
         public void JVSTMHashMapConcurrent()
         {
-            var map = new JVSTMHashMap<int, int>();
+            var map = new JVSTMHashMapAtomic<int, int>();
             TestMapConcurrent(map);
         }
 
         [TestMethod]
         public void JVSTMHashMapTestAll()
         {
-            TestMap(new JVSTMHashMap<int, int>());
+            TestMap(new JVSTMHashMapAtomic<int, int>());
         }
     }
 }

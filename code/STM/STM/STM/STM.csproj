@@ -64,6 +64,7 @@
     <Compile Include="Implementation\Exceptions\STMInvalidRetryException.cs" />
     <Compile Include="Implementation\Exceptions\STMMaxAttemptException.cs" />
     <Compile Include="Implementation\Exceptions\STMRetryException.cs" />
+    <Compile Include="Implementation\JVSTM\ActiveTXNRecord.cs" />
     <Compile Include="Implementation\JVSTM\AtomicInteger.cs" />
     <Compile Include="Implementation\JVSTM\BaseCommute.cs" />
     <Compile Include="Implementation\JVSTM\BaseMap.cs" />

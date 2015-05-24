@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -31,6 +32,7 @@ namespace STM.Implementation.JVSTM
         internal IList<BaseCommute> Commutes { get; private set; }
         internal readonly IRetryLatch RetryLatch = new RetryLatch();
         public TransactionStatus Status { get; internal set; }
+        private readonly ActiveTxnRecord _txnRecord;
 
         internal bool IsNested
         {
@@ -38,47 +40,52 @@ namespace STM.Implementation.JVSTM
         }
 
 
-        private JVTransaction(int id) : this(TransactionStatus.Active, id,null,new ReadMap(), new WriteMap())
+        private JVTransaction(ActiveTxnRecord txnRecord) : this(TransactionStatus.Active, txnRecord,null,new ReadMap(), new WriteMap())
         {
 
         }
 
         private JVTransaction()
-            : this(TransactionStatus.Active, _lastCommitted, null, new ReadMap(), new WriteMap())
+            : this(TransactionStatus.Active, ActiveTxnRecord.StartTransaction(), null, new ReadMap(), new WriteMap())
         {
 
         }
 
          private JVTransaction(TransactionStatus status)
-            : this(status, _lastCommitted, null, new ReadMap(), new WriteMap())
+            : this(status, 0, null, new ReadMap(), new WriteMap())
         {
 
         }
 
-        private JVTransaction(int id, JVTransaction parent)
-            : this(TransactionStatus.Active, id, parent, new ReadMap(), new WriteMap())
-        {
+         private JVTransaction(TransactionStatus status, int id, JVTransaction parent, ReadMap readMap, WriteMap writeMap)
+         {
+             Number = id;
+             Parent = parent;
+             ReadMap = readMap;
+             WriteMap = writeMap;
+             Status = status;
+             //Commutes = new List<BaseCommute>();
+         }
 
-        }
-
-        private JVTransaction(TransactionStatus status, int id, JVTransaction parent, ReadMap readMap, WriteMap writeMap)
+        private JVTransaction(TransactionStatus status, ActiveTxnRecord txnRecord, JVTransaction parent, ReadMap readMap, WriteMap writeMap)
         {
-            Number = id;
+            Number = txnRecord.TxNumber;
             Parent = parent;
             ReadMap = readMap;
             WriteMap = writeMap;
             Status = status;
-            Commutes = new List<BaseCommute>();
+            _txnRecord = txnRecord;
+            //Commutes = new List<BaseCommute>();
         }
 
         public static JVTransaction Start()
         {
-            return new JVTransaction(_lastCommitted);
+            return new JVTransaction(ActiveTxnRecord.StartTransaction());
         }
 
         public static JVTransaction StartNested(JVTransaction parent)
         {
-            return new JVTransaction(TransactionStatus.Active, _lastCommitted, parent, new ReadMap(), new WriteMap(parent.WriteMap));
+            return new JVTransaction(TransactionStatus.Active, parent.Number, parent, new ReadMap(), new WriteMap(parent.WriteMap));
         }
 
         public bool Commit()
@@ -86,9 +93,12 @@ namespace STM.Implementation.JVSTM
             if (WriteMap.Count == 0)
             {
                 Status = TransactionStatus.Committed;
+                _txnRecord.FinishTransaction();
                 return true;
             }
 
+            bool result;
+            ActiveTxnRecord commitRecord = null;
             lock (CommitLock)
             {
                 var newNumber = _lastCommitted + 1;
@@ -96,40 +106,56 @@ namespace STM.Implementation.JVSTM
                 var valid = ReadMap.Validate();
                 if (!valid)
                 {
-                    return false;
-                }
-
-                if (IsNested)
-                {
-                    Parent.ReadMap.Merge(ReadMap);
-                    Parent.WriteMap.Merge(WriteMap);
+                    result = false;
                 }
                 else
                 {
-                    foreach (var kvpair in WriteMap)
+                    if (IsNested)
                     {
-                        kvpair.Key.Install(kvpair.Value, newNumber);
+                        Parent.ReadMap.Merge(ReadMap);
+                        Parent.WriteMap.Merge(WriteMap);
                     }
-                }
-
-
-                if (Commutes.Count > 0)
-                {
-                    foreach (var commute in Commutes)
+                    else
                     {
-                        commute.Perform(newNumber);
-                    }
-                }
+                        var bodies = new BaseVBoxBody[WriteMap.Count];
+                        var i = 0;
+                        foreach (var kvpair in WriteMap)
+                        {
+                            bodies[i] = kvpair.Key.Install(kvpair.Value, newNumber);
+                            i++;
+                        }
 
-                _lastCommitted = newNumber;
-                Status = TransactionStatus.Committed;
-                return true;
+                        commitRecord = new ActiveTxnRecord(newNumber, bodies);
+                        ActiveTxnRecord.InsertNewRecord(commitRecord);
+                    }
+
+                    _lastCommitted = newNumber;
+                    Status = TransactionStatus.Committed;
+                    result = true;
+                }
             }
+
+            if (result && !IsNested)
+            {
+                _txnRecord.FinishTransaction();
+
+                if (commitRecord != null)
+                {
+                    Interlocked.Decrement(ref commitRecord.Running);
+                }
+            }
+
+            return result;;
         }
+
 
         public void Abort()
         {
             Status = TransactionStatus.Aborted;
+            if (_txnRecord != null)
+            {
+                Interlocked.Decrement(ref _txnRecord.Running);
+            } 
         }
 
         public void Await(int expectedEra)

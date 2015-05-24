@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace STM.Implementation.JVSTM
 {
-    public class BaseVBoxBody
+    public abstract class BaseVBoxBody
     {
-
+        internal abstract void Clean();
     }
 }

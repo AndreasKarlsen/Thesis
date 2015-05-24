@@ -82,9 +82,9 @@ namespace STM.Implementation.JVSTM
                 var stmAction = stmActions[index];
 
                 var localTransaction = JVTransaction.LocalTransaction;
-                var transaction = localTransaction.Status == TransactionStatus.Committed
-                    ? JVTransaction.Start()
-                    : JVTransaction.StartNested(localTransaction);
+                var transaction = localTransaction.Status == TransactionStatus.Active
+                    ? JVTransaction.StartNested(localTransaction)
+                    : JVTransaction.Start();
                 JVTransaction.LocalTransaction = transaction;
 
                 try
@@ -103,7 +103,7 @@ namespace STM.Implementation.JVSTM
                 {
                     index = HandleRetry(stmActions, transaction, index, overAllReadSet);
                 }
-                catch (Exception) //Catch non stm related exceptions which occurs in transactions
+                catch (Exception ex) //Catch non stm related exceptions which occurs in transactions
                 {
                     //Throw exception of transaction can commit
                     //Else abort and rerun transaction

@@ -66,6 +66,7 @@
     <Compile Include="ExceptionTest.cs" />
     <Compile Include="LinkedListTest.cs" />
     <Compile Include="RetryLatchTest.cs" />
+    <Compile Include="JVSTMTest.cs" />
     <Compile Include="VariousTest.cs" />
   </ItemGroup>
   <ItemGroup>
