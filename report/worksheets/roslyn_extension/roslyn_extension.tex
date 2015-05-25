@@ -271,8 +271,7 @@ In \bsref{subsec:design_properties} the design for transactional properties were
 	\item Construct a manual property with the access modifier of the original property, together with the get-body and set-body constructed earlier.
 	\item Construct a private transactional field of the same type as the original property, used as backing field.
 	\item Insert the new property after the original property and replace the original property with the private transactional field.
-\end{enumerate}\toby{Hvad med den originale property? Bliver den replaced af noget af det her, eller bliver den slettet?}
-\andreas{The code performing the transformation can be found in: STM.cs - ReplaceProperties(SyntaxNode root)}
+\end{enumerate}\andreas{The code performing the transformation can be found in: STM.cs - ReplaceProperties(SyntaxNode root)}
 
 Transactional properties are transformed before transactional fields, which enables reuse of the transformation done for atomic fields, as the backing field can be constructed as a transactional field instead of fully transforming it. Additionally, no transformation has to be done for the manual form, as the transactional field used for backing the property is processed as described in \bsref{subsec:extension_field}. The automatic form before transformation is exemplified in \bsref{lst:before_atomic_property}, where the transformation result is shown in \bsref{lst:after_atomic_property}.
 
