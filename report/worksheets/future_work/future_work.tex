@@ -18,7 +18,7 @@ Comparing \stmname to other \ac{STM} implementations, could give valuable insigh
 	%Antal cores? (gamle rapport havde vi noget med de fik andre resultater over xx cores)
 %Valuable to know whether \stmname performs better than a regular sequential program C\#
 %Some of the design choices made, may have looked different if the focus was on performance to begin with
-\section{Integration into \ac{CLR}}
+\section{Integration into \acs{CLR}}
 \bsref{chap:roslyn_extension} describes how \ac{STM} is integrated into C\# by modifying the Roslyn compiler to transforming the source code containing \ac{STM} language constructs to standard C\# code utilizing the \ac{STM} library described in \bsref{chap:implementation}. As a result no modifications are required to the \ac{CLR} as it receives byte code in the standard \ac{CIL} format produced by the Roslyn compilers code generator.
 
 As an alternative a deeper integration, similar to that of \cite{harris2003language} and \cite{duffy2010stmnet}, could be utilized. One approach is to extend the \ac{CLR} and its associated byte code format \ac{CIL} with support for respectively, the execution and definition of memory transaction. Extending \ac{CIL} with support for the definition of transactions allow the \ac{JIT} compiler to apply further optimization to the execution of transactions. Additionally, if the executing hardware supports it, the \ac{CLR} could delegate smaller transactions to the hardware, potentially providing a performance boost.

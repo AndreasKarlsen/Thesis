@@ -1,6 +1,31 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
-\worksheetstart{Conclusion}{1}{Februar 10, 2015}{Andreas}{../../}
-%
-Some text here
+\worksheetstart{Conclusion}{1}{May 25, 2015}{Andreas}{../../}
+This chapter describes the conclusion of the hypothesis, based on the evaluation described in \bsref{chap:evaluation}. 
 \label{chap:conclusion}
+
+\textit{``Language integrated \ac{STM} provides a valid alternative to locking in terms of usability, and provides additional benefits over library based \ac{STM}, when solving concurrent problems in C\#''}\toby{Be sure it is identical to the one in problem statement at the end} defined in \bsref{sec:problem_statement}.
+
+
+\section{Valid alternative compared to locking terms of usability}
+% STM have a more implicit degree of concurrency than locking, as it allows abstracting synchronization details away.
+
+% STM is more fault restrictive than locking as synchronization details is handled by the underlying STM system. This hinder potential errors known from locking e.g. deadlock. Both approaches uses shared memory for communication, and still require the programmer to specify the scope for synchronization. 
+
+% The optimistic nature of STM makes it assume correct execution, and correcting errors if they occour. The correcting results in aborting a transaction, and running it again. Thus all effects occouring inside of a transaction, cannot persist after an abortion. This decreases the usability of STM, as the programmer needs knowledge of operations which cannot be used inside transactions.
+
+% Readability
+
+
+% Writability
+
+
+\section{Provides additional benefits over library based STM}
+
+% Data types improves write and readability
+
+% 
+
+
+
+% Answering Problem statement questions?
 \worksheetend
