@@ -808,7 +808,7 @@ C\# requires that the default value given when declaring an optional parameter i
 \end{enumerate}
 As described in \bsref{subsec:roslyn_extension_parameters} the transformation of an \bscode{atomic} parameter transforms the type of the parameter to one of the \ac{STM} types. Providing a default value to an \bscode{atomic} parameter therefore amounts to initializing a new \ac{STM} object with the same type as the parameter, supplied with the defined default value to its constructor. All \ac{STM} types are however reference types and the creation of a new \ac{STM} object can therefore, per the three rules described above, not be supplied as the replacement default value, as this would result in a compile time error. As a result default values for transactional value parameters are not implemented in the initial prototype described in this chapter. Analysis has been implemented to produce an error if an \bscode{atomic} value parameter is given a default value. This is done in the parsing phase, by checking if a parameter is declared with the \bscode{atomic} modifier and has an optional value.
 
-\subsection{Transactional Ref/Out Parameters \& Arguments}
+\subsection{Transactional Ref/Out Parameters \& Arguments}\label{subsec:roslyn_extension_ref_out_revisited}
 As described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters} the intended design was that assignment to transactional \bscode{ref/out} parameters takes effect when the transaction in which the assignment takes place, commits. This behavior holds true for the case:
 \begin{itemize}
 	\item $\bscode{atomic} \quad T \quad \rightarrow \quad \bscode{atomic} \quad T$
@@ -830,9 +830,7 @@ Disallowing the \bscode{ref/out} cases where both an \bscode{atomic} and non \bs
 
 Disallowing \bscode{atomic ref/out} parameters, prevents the programmer from declaring \bscode{atomic ref/out} parameters, which removes the timing issues present in the cases where an intermediate \bscode{atomic} variable is required. However, the ability to pass an \bscode{atomic} variable by reference is lost and the case of passing a variable of type \bscode{atomic} $T$ into a parameter of type $T$ is still unsolved. Consequently, this would limit the orthogonality of the \bscode{atomic} construct.
 
-For the initial prototype presented in this chapter the first option of warning the programmer of the change in semantics has been selected. This ensures that the change in semantics is not hidden from the programmer thereby allowing her to adapt the program. This choice follows the approach taken by C\# in the case of a \bscode{volatile} field passed by ref into a method. As the C\# compiler cannot guarantee the volatile property, it gives the programmer the warning: ``A reference to a volatile field will not be treated as volatile''.\toby{Dette med volatile er også beskrevet lige efter enumeration punkterne - evt. slet det, det ene sted - eller nævn det kort}
-
-The impact of the feature will be closely observed throughout the evaluation with the aim of determining the final form of the feature, or even if the feature should be part of the language at all.\andreas{We MUST follow up on this in the evaluation}
+For the initial prototype presented in this chapter the first option of warning the programmer of the change in semantics has been selected. This ensures that the change in semantics is not hidden from the programmer thereby allowing her to adapt the program. This choice follows the approach taken by C\# in the case of a \bscode{volatile} field passed by ref into a method as described above.
 
 \toby[i]{Fejl med variable \bscode{i} ikke er initialiseret, hvis man prøver at returnere \bscode{i}, hvor \bscode{i} bliver assigned i en indre nested atomic.}
 
