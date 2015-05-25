@@ -19,6 +19,7 @@ Comparing \stmname to other \ac{STM} implementations, could give valuable insigh
 %Valuable to know whether \stmname performs better than a regular sequential program C\#
 %Some of the design choices made, may have looked different if the focus was on performance to begin with
 \section{Integration into \ac{CLR}}
+\bsref{chap:roslyn_extension} describes how \ac{STM} is integrated into C\# by modifying the Roslyn compiler to transforming the source code containing \ac{STM} language constructs to standard C\# code utilizing the \ac{STM} library described in \bsref{chap:implementation}. As a result no modifications are required to the \ac{CLR} as it receives byte code in the standard \ac{CIL} format produced by the Roslyn compilers code generator.
 % Deep integration throughout the compiler (emitting new CIL instructions), and the \ac{CLR}. Could give better performance. Link to performance with Harris (Lightweight Transactions). 
 % 
 \section{Irreversible Actions}\toby{Ved ikke det skal være i reflection}
