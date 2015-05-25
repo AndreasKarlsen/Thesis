@@ -26,7 +26,7 @@ The \ac{STM} based approaches delegate the details of how synchronization is ach
 \end{figure}
 
 \section{Pessimistic or Optimistic}
-Locking applies synchronization by enforcing mutual exclusion. This approach is well suited in scenarios where errors are common resulting in a high number of aborts if a \ac{STM} based approach had been used. Locking is therefore an inherently pessimistic concurrency approach as it prevents errors from occurring instead of correcting them when they occur. \ac{STM} on the other hand allows multiple threads to proceed simultaneously, correcting any errors that may occur by aborting and re-executing transactions. Hence \ac{STM} takes an optimistic approach to concurrency.
+Locking applies synchronization by enforcing mutual exclusion. This approach is well suited in scenarios where errors are common resulting in a high number of aborts if an \ac{STM} based approach had been used. Locking is therefore an inherently pessimistic concurrency approach as it prevents errors from occurring instead of correcting them when they occur. \ac{STM} on the other hand allows multiple threads to proceed simultaneously, correcting any errors that may occur by aborting and re-executing transactions. Hence \ac{STM} takes an optimistic approach to concurrency.
 Therefore \stmnamesp and the \ac{STM} library resides at the optimistic extreme of the pessimistic - optimistic spectrum while locking resides at the pessimistic extreme. The placement of the three concurrency approaches on the pessimistic - optimistic spectrum is depicted in \bsref{fig:char_pes_opti}. 
 \begin{figure}[htbp]
 \centering
@@ -36,7 +36,7 @@ Therefore \stmnamesp and the \ac{STM} library resides at the optimistic extreme 
 \end{figure}
 
 \section{Readability \& Writability}\label{subsec:tl_charac_read_and_write}
-The evaluation of readability and writability is based on a number of shared criteria: Simplicity, Orthogonality, Data Types, and Syntax Design. The analysis of Data Types and Syntax Design will not be evaluated on a spectrum of two extremes, as the choices made are trade offs affecting other characteristics, e.g. simplicity and readability. The analysis will therefore be taken into account when the other characteristics are evaluated.
+The evaluation of readability and writability is based on a number of shared criteria: Simplicity, Orthogonality, Data Types, and Syntax Design. The analysis of Data Types and Syntax Design will not be evaluated on a spectrum of two extremes, as the choices made are trade-offs affecting other characteristics, e.g. simplicity and readability. The analysis will therefore be taken into account when the other characteristics are evaluated.
 
 In addition to the shared criteria, writability is based on the level of abstraction and expressivity.
 %that of simplicity and orthogonality as well as a number of other considerations. Simplicity and orthogonality is described in the following sections followed by a final evaluation of readability.
