@@ -6,7 +6,7 @@ This chapter contains background knowledge required to understand the following 
 Locking in C\# can be done with the \bscode{lock} statement, and for special cases the \bscode{Monitor} class can be used which provides additional functionality. Furthermore, there are a number of other special case locking constructs is found in the \bscode{System.Threading} namespace e.g. \cite{microsoftSyncPrim,} \bscode{Mutex,} \bscode{Semaphore,} \bscode{SpinLock} and \bscode{ReaderWriterLock} that can help the programmer specify synchronization. This is not an exhaustive list, but encompasses the constructs used to solve the concurrency problems defined in \bsref{sec:eval_approach}.
 \subsection{Lock Statement}\label{subsec:lock_statement}
 The \bscode{lock} statement\cite[p. 102]{csharp2013specificaiton} provides a way to acquire and release a lock on a resource. In the scope following the lock statement, a lock is automatically taken at the beginning and released at the end. The lock provides mutual-exclusion, and other threads trying to acquire a used lock waits until the lock is released. The \bscode{lock} statement ensures that the programmer does not forget to release the lock. \bsref{lst:lock_statement} exemplifies the usage of the lock statement. 
-\begin{lstlisting}[float, label=lst:lock_statement,
+\begin{lstlisting}[label=lst:lock_statement,
   caption={Lock Statement},
   language=Java,  
   showspaces=false,
@@ -22,9 +22,8 @@ The \bscode{lock} statement\cite[p. 102]{csharp2013specificaiton} provides a way
   private Object thisLock = new Object();
   public int Get() { 
     lock(thisLock){
-      if (!_queue.IsEmpty()) {
+      if (!_queue.IsEmpty())
         return _queue.Dequeue();
-      }
     }
   }
 \end{lstlisting}

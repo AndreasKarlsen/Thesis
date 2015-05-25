@@ -19,7 +19,7 @@ Although non-transactional writes to transactional variables cannot conflict wit
 \label{subsec:stm_impl_selection_conditional}
 The \bscode{retry} construct described in \bsref{sec:req_conditional} requires knowledge of which transactional variables have been read, up to the point where a retry is requested\cite{harris2005composable}. The \ac{STM} system needs to maintain a set of transactional variables which has been read, for all active transactions, so that a transaction can be blocked until one of these variables change. Such a set is often referred to as a read-set\cite{dice2006transactional}\cite{harris2010transactional}\cite{herlihy2012art}. \ac{STM} systems employing lazy conflict detection commonly use such a set to record reads for validation when the transaction is about to commit\cite{dice2006transactional}\cite{mohamedin2013bytestm}. Choosing an algorithm which already maintains a read-set will limit the overhead of the \bscode{retry} statement as well as simplify the implementation as the algorithm must not be modified to support the accumulation of a read-set. Thus selecting an algorithm which inherently supports a read-set is a priority.
 
-\subsection{Library Implementation}
+\subsection{Library Implementation}\label{subsec:stm_impl_lib_implmentation}
 As described in \bsref{sec:problem_statement}, both a language integrated \ac{STM} system for C\#, in the form of \stmname, and an \ac{STM} library for the .NET platform must be build. A single \ac{STM} system can advantageously be build as a .NET library which builds the foundation for both language and library based \ac{STM}, where \stmname is implemented using the library internally.\toby{Skal der mere på om hvorfor det er advantageous?}
 The strategy employed must therefore not entail details which require changes to the runtime system, as seen by a number of \ac{STM} implementations\cite{mohamedin2013bytestm}\cite{harris2003language}. Furthermore the \ac{STM} library's \ac{API} must be designed with usability in mind, as this is the focus of the evaluation, while simultaneously facilitating use from compiler generated code, allowing the extension to the Roslyn compiler described in \bsref{chap:roslyn_extension} to generate code which utilizes the library to execute transactions.
 
@@ -124,7 +124,7 @@ While performance of the \ac{STM} system, as described in \bsref{sec:scope}, is 
 
 \section{Library Interface} 
 \label{sec:stm_library_interface}
-The \ac{STM} system which executes transactions in \stmnamesp is implemented as a C\# library\andreas{Can we reference to a design decision?}. Transactions are started by using one of the overloads of the static \bscode{Atomic} method on the \bscode{STMSystem} class. The static method \bscode{Atomic} is overloaded with support for transaction with and without return values as well as specification of zero to many \bscode{orelse} blocks. \bsref{lst:library_atomic} presents an example of transaction declarations. On lines 5-8 the simple transaction declaration corresponding to the \bscode{atomic} block is shown. Lines 10-14 depict the declaration of a transaction with a return value. Finally lines 16-23 depict the declaration of a transaction with an associated \bscode{orelse} block. 
+The \ac{STM} system which executes transactions in \stmnamesp is implemented as a C\# library, as described in \bsref{subsec:stm_impl_lib_implmentation}. Transactions are started by using one of the overloads of the static \bscode{Atomic} method on the \bscode{STMSystem} class. The static method \bscode{Atomic} is overloaded with support for transaction with and without return values as well as specification of zero to many \bscode{orelse} blocks. \bsref{lst:library_atomic} presents an example of transaction declarations. On lines 5-8 the simple transaction declaration corresponding to the \bscode{atomic} block is shown. Lines 10-14 depict the declaration of a transaction with a return value. Finally lines 16-23 depict the declaration of a transaction with an associated \bscode{orelse} block. 
 
 \begin{lstlisting}[label=lst:library_atomic,
   caption={Library Transaction Declaration},
@@ -278,70 +278,6 @@ The \ac{STM} library supports both lexical and dynamic nesting of transactions. 
         var item = buffer1.Dequeue();
         buffer2.Enqueue(item);
       });
-    }
-  }
-\end{lstlisting}
-\subsection{Dining Philosophers as Example}
-As a final example employing many of the library features in conjunction, \bsref{lst:library_dinning} presents an implementation of the dining philosophers problem\cite[p. 673]{hoare1978communicating}.  The \bscode{DiningPhilosophers} method on line 3 sets up the required forks and philosophers. The \bscode{StartPhilosopher} method starts a new thread representing a philosopher. The philosopher will first attempt to acquire both forks as defined in the transaction on lines 24-31. If one of the forks is not available, the transaction will execute a retry on line 27, blocking until this state changes. When a philosopher acquires both forks she will eat, represented by the sleep on line 33, followed by putting back the forks in the transaction defined on line 35-39.
-
-\begin{lstlisting}[label=lst:library_dinning,
-  caption={Library Dining Philosophers},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
-
-  public class TransactionExamples {
-    
-    public static void DiningPhilosophers()
-    {
-      var fork1 = new TMVar<bool>(true);
-      var fork2 = new TMVar<bool>(true);
-      var fork3 = new TMVar<bool>(true);
-      var fork4 = new TMVar<bool>(true);
-      var fork5 = new TMVar<bool>(true);
-
-      StartPhilosopher(fork1, fork2);
-      StartPhilosopher(fork2, fork3);
-      StartPhilosopher(fork3, fork4);
-      StartPhilosopher(fork4, fork5);
-      StartPhilosopher(fork5, fork1);
-    }
-
-    private static void StartPhilosopher( TMVar<bool> left, TMVar<bool> right)
-    {
-      var t1 = new Thread(() =>
-      {
-        while (true)
-        {
-          STMSystem.Atomic(() =>
-          {
-            if (!left || !right)
-              STMSystem.Retry();
-
-            left.Value = false;
-            right.Value = false;
-          });
-
-          Thread.Sleep(100); //Eating
-
-          STMSystem.Atomic(() =>
-          {
-            left.Value = true;
-            right.Value = true;
-          });
-
-          Thread.Sleep(100); //Thinking
-        }
-      });
-
-      t1.Start();
     }
   }
 \end{lstlisting}
