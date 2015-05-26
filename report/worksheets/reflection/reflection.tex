@@ -30,6 +30,41 @@ The initial thought behind including transactional ref/out parameters was to pre
 As described in \bsref{subsec:roslyn_extension_ref_out_revisited}, providing the intended semantics for transactional ref/out parameters \& arguments proved problematic due to the types of transactional variables being substituted with their corresponding \ac{STM} types. As a result the simplicity of \stmname is reduced due to the programmer having to reason about the changed semantics.
 
 To remove the problem, a library with an interface based on central metadata and applying functions to variables in order to read/modify could be adopted. Such an interface will remove the need for transforming the types during compilation, allowing transactional variables to be passed directly into non transactional parameters and vice versa. If a transactional variable is passed by ref/out into a method, transactional access will however still be lost, as the body of the method does not treat the variable as transactional. As described in \bsref{subsec:roslyn_extension_ref_out_revisited} C\# utilizes a similar approach for \bscode{volatile} variables passed by ref/out.
+
+\bsref{lst:lib_function_interface} presents a example of how a \bscode{STM} interface based on applying functions to variables could look. The \bscode{STMSystem.TMRead} and \bscode{STMSystem.TMRead} are applied to the \bscode{\_balance} variables in order to read and write their associated value. 
+
+\begin{lstlisting}[float,label=lst:lib_function_interface,
+  caption={\ac{STM} library interfaced based on applying functions},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out}]  % Start your code-block
+
+  public class Account
+  {
+  	private double _balance;
+  	
+    public void AtomicTransfer(Account other, double amount)
+    {
+      STMSystem.Atomic(() =>
+      {
+      	var newBalance = STMSystem.TMRead(ref _balance)+amount;
+      	STMSystem.TMWrite(ref _balance, newBalance);
+      	newBalance = STMSystem.TMRead(ref other._balance)-amount;
+      	STMSystem.TMWrite(ref other._balance, newBalance);
+      });
+    }
+  }
+
+  
+\end{lstlisting}
  
 %properties
 %local and parameters
