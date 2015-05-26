@@ -1,7 +1,7 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Future Work}{1}{Februar 10, 2015}{Andreas}{../../}
 \andreas[inline]{This chapter describes our thoughts of the future work}
-This chapter presents possible ideas for extending the work done in this project. \bsref{sec:fut_perf_test} suggests a performance test in order to examine how \stmname performs in comparison to locking in C\#.\toby{Mangler mere intro}
+This chapter presents possible ideas for extending the work done in this project. \bsref{sec:fut_perf_test} suggests a performance test in order to examine how \stmname performs in comparison to locking in C\#. \bsref{sec:fut_inte_clr} suggests a deep \ac{STM} integration in order to achieve better performance. Finally, \bsref{sec:fut_irreversible_actions} suggests to investigate a better way to handle irreversible actions in \stmname.
 
 \label{chap:future_work}
 \section{Performance Test}\label{sec:fut_perf_test}
@@ -18,7 +18,7 @@ Comparing \stmname to other \ac{STM} implementations, could give valuable insigh
 	%Antal cores? (gamle rapport havde vi noget med de fik andre resultater over xx cores)
 %Valuable to know whether \stmname performs better than a regular sequential program C\#
 %Some of the design choices made, may have looked different if the focus was on performance to begin with
-\section{Integration into \acs{CLR}}
+\section{Integration into \acs{CLR}}\label{sec:fut_inte_clr}
 \bsref{chap:roslyn_extension} describes how \ac{STM} is integrated into C\# by modifying the Roslyn compiler to transforming the source code containing \ac{STM} language constructs to standard C\# code utilizing the \ac{STM} library described in \bsref{chap:implementation}. As a result no modifications are required to the \ac{CLR} as it receives byte code in the standard \ac{CIL} format produced by the Roslyn compilers code generator.
 
 As an alternative a deeper integration, similar to that of \cite{harris2003language} and \cite{duffy2010stmnet}, could be utilized. One approach is to extend the \ac{CLR} and its associated byte code format \ac{CIL} with support for respectively, the execution and definition of memory transaction. Extending \ac{CIL} with support for the definition of transactions allow the \ac{JIT} compiler to apply further optimization to the execution of transactions. Additionally, if the executing hardware supports it, the \ac{CLR} could delegate smaller transactions to the hardware, potentially providing a performance boost.
@@ -27,7 +27,7 @@ If \ac{CIL} is extended with support for the definition of transactions the Rosl
  
 % Deep integration throughout the compiler (emitting new CIL instructions), and the \ac{CLR}. Could give better performance. Link to performance with Harris (Lightweight Transactions). 
 % 
-\section{Irreversible Actions}\toby{Ved ikke det skal være i reflection}
+\section{Irreversible Actions}\label{sec:fut_irreversible_actions}
 Integration between transactions and irreversible actions, such as \ac{IO} and exceptions, is out of scope for this master thesis, as described in \bsref{sec:scope}, because they combine poorly and it is an unsolved problem how to handle it gracefully\cite{harris2005exceptions}. The result is that there is no support or warning against irreversible actions in \stmname, which hurts its usability if used in combination with irreversible actions, as it leaves it up to the programmer to manually handle it correctly, which is hard or even impossible.
 
 The integration between transaction and irreversible actions is therefore an candidate for future work, both in terms of how to manage it in \stmname, but also in terms of research purposes, if it is possible to come up with new and better solutions.
