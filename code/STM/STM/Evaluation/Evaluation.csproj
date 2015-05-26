@@ -56,6 +56,7 @@
     <Compile Include="Library\Collections\JVSTMHashMapAtomic.cs" />
     <Compile Include="Library\Collections\Queue.cs" />
     <Compile Include="Library\JVSTMHashMap.cs" />
+    <Compile Include="Library\STMHashMapInternalList.cs" />
     <Compile Include="Library\STMHashmapLinkedList.cs" />
     <Compile Include="Library\StmHashMapRetry.cs" />
     <Compile Include="Library\DiningPhilosophers.cs" />

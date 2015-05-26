@@ -167,5 +167,17 @@ namespace STMUnitTest
         {
             TestMap(new JVSTMHashMapAtomic<int, int>());
         }
+
+        [TestMethod]
+        public void STMHashMapInternalListTestAll()
+        {
+            TestMap(new STMHashMapInternalList<int, int>());
+        }
+
+        [TestMethod]
+        public void STMHashMapInternalListConcurrent()
+        {
+            TestMapConcurrent(new STMHashMapInternalList<int, int>());
+        }
     }
 }
