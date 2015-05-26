@@ -20,6 +20,11 @@ Comparing \stmname to other \ac{STM} implementations, could give valuable insigh
 %Some of the design choices made, may have looked different if the focus was on performance to begin with
 \section{Integration into \acs{CLR}}
 \bsref{chap:roslyn_extension} describes how \ac{STM} is integrated into C\# by modifying the Roslyn compiler to transforming the source code containing \ac{STM} language constructs to standard C\# code utilizing the \ac{STM} library described in \bsref{chap:implementation}. As a result no modifications are required to the \ac{CLR} as it receives byte code in the standard \ac{CIL} format produced by the Roslyn compilers code generator.
+
+As an alternative a deeper integration, similar to that of \cite{harris2003language} and \cite{duffy2010stmnet}, could be utilized. One approach is to extend the \ac{CLR} and its associated byte code format \ac{CIL} with support for respectively, the execution and definition of memory transaction. Extending \ac{CIL} with support for the definition of transactions allow the \ac{JIT} compiler to apply further optimization to the execution of transactions. Additionally, if the executing hardware supports it, the \ac{CLR} could delegate smaller transactions to the hardware, potentially providing a performance boost.
+
+If \ac{CIL} is extended with support for the definition of transactions the Roslyn compiler will have to be extended as well, as the compiler must generated code utilizing the new \ac{CIL} instructions. As a result the lexing, parsing, semantic analysis and code generation of the Roslyn compiler must be extended to support the \ac{STM} constructs. The lexing and parsing implemented in this project can be reused for such an extension. 
+ 
 % Deep integration throughout the compiler (emitting new CIL instructions), and the \ac{CLR}. Could give better performance. Link to performance with Harris (Lightweight Transactions). 
 % 
 \section{Irreversible Actions}\toby{Ved ikke det skal være i reflection}
