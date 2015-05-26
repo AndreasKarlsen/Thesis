@@ -62,7 +62,7 @@ namespace STM.Implementation.JVSTM
         internal void FinishTransaction()
         {
             if (Interlocked.Decrement(ref Running) == 0)
-            {/*
+            {
                 // when running reachs 0 maybe
                 // it is time to clean our successor
                 var rec = this;
@@ -85,7 +85,7 @@ namespace STM.Implementation.JVSTM
                         }
                     }
                     break;
-                }*/
+                }
             }
         }
 
