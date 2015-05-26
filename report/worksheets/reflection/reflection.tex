@@ -1,7 +1,7 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Reflection}{1}{Marts 2, 2015}{Andreas}{../../}
 \label{chap:reflection}
-This chapter presents a reflection of decisions made throughout the report. \bsref{sec:reflection_preliminary} presents reflection on the findings of the preliminary analysis. \bsref{sec:reflection_design} describes reflections related to transactional local variable and parameters as well as \bscode{ref/out} arguments and parameters. Reflections related to the \ac{STM} library are described in \bsref{chap:roslyn_extension}. Finally the reflections related to the Roslyn extension and C\# 6.0 are covered in \bsref{sec:reflection_roslyn_extension} and \bsref{sec:reflection_csharpsix} respectively. 
+This chapter presents a reflection of the decisions made throughout the report. \bsref{sec:reflection_preliminary} presents a reflection on the findings of the preliminary analysis. \bsref{sec:reflection_design} describes reflections related to transactional local variables and parameters as well as \bscode{ref/out} arguments and parameters. Reflections related to the \ac{STM} library, described in \bsref{chap:roslyn_extension}, are presented in \bsref{sec:reflection_stm_implementation}. Finally, the reflections related to the Roslyn extension and C\# 6.0 are covered in \bsref{sec:reflection_roslyn_extension} and \bsref{sec:reflection_csharpsix} respectively. 
 
 \section{Preliminary Investigation}\label{sec:reflection_preliminary}
 A preliminary investigation was conducted , in order to reduce the risk associated with the Roslyn compiler and the implementation of an \ac{STM} system. 
@@ -12,9 +12,6 @@ As the Roslyn compiler was released 10 months prior to the start of the project,
 
 Getting preliminary hands on experience with the required technologies at an early stage of the project, helped ensure the feasibility for the implementations and provided the project group with confidence in the feasibility of the project. Bringing more information to the table at an early stage assisted in deciding on the implementation strategies for the \ac{STM} system and for the extension of the Roslyn compiler. With regards to the Roslyn compiler, the preliminary investigation functioned as a starting point for a larger investigation. If knowledge of the limited amount of literature had not been obtained at an early stage, the investigation of the Roslyn compiler may have been pushed to a later stage, causing the amount of time needed for investigating the structure of the compiler to become problematic.
 
-\section{Requirements}\toby{Måske noget om tracking level}
-%Tracking level
-%Strong vs Weak atomicity 
 \section{Design}\label{sec:reflection_design}
 This sections describes the project groups reflections over areas related to the design of \stmname described in \bsref{chap:stm_design}. 
 

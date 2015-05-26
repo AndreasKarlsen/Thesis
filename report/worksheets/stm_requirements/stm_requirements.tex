@@ -1,10 +1,9 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Requirements for \stmname}{0}{Februar 10, 2015}{}{../../}
-This chapter describes the requirements for the \ac{STM} system powering \stmname. The requirements are based on known \ac{STM} constructs as well as the criteria for which the final system must be evaluated. The requirements will be used when designing and integrating the \ac{STM} features into C\#, as discussion in \bsref{chap:stm_design}. Furthermore, the requirements will used when the \ac{STM} system must be implemented, as discussed in \bsref{chap:implementation}.
+This chapter describes the requirements for the \ac{STM} system powering \stmname. The requirements are based on known \ac{STM} constructs and the characteristics, described in \bsref{sec:eval_approach}, which the final system must be evaluated upon. The requirements will be used to design and integrate the \ac{STM} features into C\#, described in \bsref{chap:stm_design}. Furthermore, the requirements will be used to implement the \ac{STM} system, described in \bsref{chap:implementation}.
+
+Tracking granularity is described in \bsref{sec:tracking}. The relationship between transactions and variables i.e. what and how variables should be tracked is addressed in \bsref{subsec:rec_transactions_variables}. Strong or weak atomicity is described in \bsref{sec:design_strong_weak_atomicity}. The different types of side-effects and how they are handled is discussed in \bsref{sec:side-effects}. Conditional synchronization is described in \bsref{sec:req_conditional} and nesting in \bsref{sec:stm_req_nesting}. The last requirement is opacity which is described in \bsref{sec:stm_req_opacity}. Finally, a summary of the requirements described in this chapter is presented in \bsref{sec:sum_of_req}.\toby{Skal alle henvisninger til sektionerne indeholde ordet requirement? det gør det ikke nu}
 \label{sec:stm_requirements}
-\kasper[inline]{Refer to work last semester}
-\kasper[inline]{Be able to pass atomic int -> int parameter including ref/out}
-\toby[i]{Describe what we will describe in the sections in this chapter}
 
 \section{Tracking Granularity}\label{sec:tracking}
 A variable tracked by the \ac{STM} system can be tracked with different granularity: by tracking assignments to the variable, or tracking changes to the object referenced by the variable. These different approaches affect the semantics of the \ac{STM} system, and will be discussed in the subsequent sections.
@@ -335,7 +334,7 @@ Here we see two transactional variables \bscode{X} and \bscode{Y} defined on lin
 
 As opacity bolster the simplicity of using \ac{STM}, it is required for \stmname. This will positively impact the level of abstraction, readability and writability.
 
-\section{Summary of Requirements}
+\section{Summary of Requirements}\label{sec:sum_of_req}
 In the following section, the requirements will be summarized in order to get a clear overview of properties \stmnamesp must have. 
 
 The granularity of tracking \stmnamesp will provide, is on the variable level. That is, the assignments to variables will be tracked, however side-effects to the referenced object will not. Tracking the internals of an object will require the objects field to be marked as transactional variables. A transaction scope can be defined by a syntax extension provided in \stmname. Transactions in \stmnamesp is under the guarantee of strong atomicity, providing isolation between transactional and non-transactional code. As the \ac{STM} system does not track side-effects, use of immutable objects is promoted. Exceptions occurring inside a transaction will be propagated out of the transaction, in if the transaction is able to commit. Thus transactions will only be used for synchronization, not recovery of state. All irreversible actions, as mentioned in \bsref{subsec:irreversible} are discouraged. \stmnamesp must facilitate conditional synchronization, this is done by supplying the \bscode{retry} and \bscode{orElse} constructs. Nesting is allowed in \stmnamesp under closed nesting semantics, which strikes a balance between minimizing aborts and ensuring simple semantics for nested transactions. Lastly, opacity will be required for \stmname, as this correctness criteria will bolster the simplicity of the \ac{STM} system.

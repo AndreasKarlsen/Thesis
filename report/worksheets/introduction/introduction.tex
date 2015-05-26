@@ -1,9 +1,10 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Introduction}{0}{Februar 10, 2015}{}{../../}
 %
-\andreas[inline]{In section 1.1 bla bla}
+This chapter describes the motivation of the work behind this project in \bsref{sec:motivation}. Related work is presented in \bsref{sec:intro_related_work} and the scope of the project is addressed in \bsref{sec:scope}. The hypothesis and problem statement questions are presented in \bsref{sec:problem_statement}. Finally, the project evaluation method is stated in \bsref{sec:eval_approach}.
+
 \label{chap:introduction}
-\section{Motivation}
+\section{Motivation}\label{sec:motivation}
 Today the increase in \acsu{CPU} speed comes in the form of additional cores, and not faster clock speed\cite{sutter2005free}. In order to utilize this increase in speed, many of the popular sequential programming languages, such as C, C++, Java, and C\#, require changes or new additions in order to adapt\cite[p. 56]{sutter2005software}. Our recent study\cite{dpt907e14trending}, analyzed the runtime performance and characteristics of three different approaches to concurrent programming: \ac{TL}, \ac{STM}, and the Actor model. The study concluded that \ac{STM} eliminates many of the risks related to programming in the context of shared-memory concurrency, notably deadlocks, leading to simpler reasoning and improved usability. Additionally, \ac{STM} fits with the thread model used by sequential languages, and can thereby be applied to existing implementations, without requiring major rewrites. The runtime performance of \ac{STM} is at a competitive level compared to fine-grained locking\cite{dpt907e14trending}. The analysis uncovered one major caveat of \ac{STM}, it is not orthogonal with side-effects, such as \ac{IO} and exceptions\cite{dpt907e14trending}.
 %Utilizing tomorrows increasingly faster \acp{CPU} requires changes to the sequential programming paradigm\cite[p. 56]{sutter2005software} which is popularized in languages such as C, C++, Java, and C\#.
 
