@@ -1,26 +1,32 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Conclusion}{1}{May 25, 2015}{Andreas}{../../}
-This chapter describes the conclusion of the hypothesis, based on the evaluation described in \bsref{chap:evaluation}. 
+Driven by the motivation of utilizing the increasing amount of \ac{CPU} cores, we have created \stmname, which integrates \ac{STM} into C\# as an integrated language feature. This enables concurrent calculations without introducing many of the risk of shared-memory concurrency. The language integration gives C\# users a first class \ac{STM} experience thus improving the usability, making it easier to write correct concurrent programs in C\#. 
+
+This is done by analyzing other the requirements for \stmname, designing and integrating the \ac{STM} system to fit C\#, implementing the \ac{STM} system, and leveraging the Roslyn project by extending it to become a \stmname compiler. With the \stmname language, library based \ac{STM}, and locking in C\#, we evaluated the concurrency approaches based on cases representing different aspects of concurrency. Based on this evaluation, this chapter describes how we answered our problem statement questions and the conclude on the hypothesis. 
+
+When the term \ac{STM} is used in this chapter, it covers both \stmname and library based \ac{STM}. 
+
+
+
 \label{chap:conclusion}
 
-\textit{``Language integrated \ac{STM} provides a valid alternative to locking in terms of usability, and provides additional benefits over library based \ac{STM}, when solving concurrent problems in C\#''}\toby{Be sure it is identical to the one in problem statement at the end} defined in \bsref{sec:problem_statement}.
+\section{Problem Statement Questions}
+Answering Problem statement questions?
 
-\andreas[inline]{Explain that when the term \ac{STM} is used, it is both \stmname and library based STM}.
+\section{Hypothesis}
+\textit{``Language integrated \ac{STM} provides a valid alternative to locking in terms of usability, and provides additional benefits over library based \ac{STM}, when solving concurrent problems in C\#''}\toby{Be sure it is identical to the one in problem statement at the end}
 
-\ac{STM} have a more implicit degree of concurrency than locking, as synchronization details are abstracted away.
+\ac{STM} have a more implicit degree of concurrency than locking, as synchronization details are abstracted away. This also makes \ac{STM} more fault restrictive than locking as synchronization details are handled correctly by the underlying \ac{STM} system. This hinder potential errors known from locking e.g. deadlock. Both locking and \ac{STM} uses shared memory for communication, and still require the programmer to specify the scope of synchronization.
 
-\ac{STM} is more fault restrictive than locking as synchronization details is handled by the underlying \ac{STM} system. This hinder potential errors known from locking e.g. deadlock. Both approaches uses shared memory for communication, and still require the programmer to specify the scope for synchronization. 
-
-The optimistic nature of \ac{STM} makes it assume correct execution, and correcting errors if they occur. The correcting results in aborting a transaction, and running it again. Thus all effects occurring inside of a transaction, cannot persist after an abortion. This decreases the usability of \ac{STM}, as the programmer needs knowledge of operations which cannot be used inside transactions.
-\andreas[inline]{TODO: Alle punkterne op herfra skal kigges på igen}
+The optimistic nature of \ac{STM} makes it assume correct execution, and correcting errors if they occur. The correction results in aborting a transaction, and running it again. Thus all effects occurring inside of a transaction, cannot persist after an abortion. This decreases the usability of \ac{STM}, as the programmer needs knowledge of operations which cannot be used inside transactions.
 
 \stmname keeps the original type, which increases the readability. This is a benefit compared to the library based \ac{STM}, as the type does not have to be wrapped in a \bscode{TMVar}. Compared to locking, the usability of the two approaches are similar in regards to data types. 
 
-In \stmname, changes to an array containing transactional types cannot be tracked. To track changes in an array, the programmer can: Use an \bscode{ImmutableList}, wrap the elements in an atomic object, or use a special \ac{STM} list provided in a library. These workaround does however reduce both readability and writability. 
+In \stmname, changes to an array containing transactional types cannot be tracked. To track changes in an array, the programmer can: Use an \bscode{ImmutableList,} wrap the elements in an atomic object, or use a special \ac{STM} list provided in a library. These workaround does however reduce both readability and writability. 
 
-The keywords in \stmname increases the readability as the intent stands out clearly. The simplicity is however reduced, as special keywords adds complexity since it requires grasping of new concepts. The syntax of \stmname is reduced compared to library based \ac{STM}, as boilerplate syntax is abstracted away. This is a benefit to \stmname over library based \ac{STM}, and it provides the same level of language integration as locking. The possibility of passing \bscode{atomic} variables as non-atomic arguments, and vice versa, also provides a clear benefit of \stmname over library based \ac{STM}. 
+The keywords in \stmname increases the readability as the intent stands out clearly. The simplicity is however reduced, as special keywords adds complexity since it requires grasping new concepts. The syntax of \stmname is improved compared to library based \ac{STM}, as boilerplate syntax is abstracted away. This is a benefit to \stmname over library based \ac{STM}, and it provides the same level of language integration as locking. The possibility of passing \bscode{atomic} variables as non-atomic arguments, and vice versa, also provides a clear benefit of \stmname over library based \ac{STM}. 
 
-The declarative approach of controlling synchronization \ac{STM} gives high simplicity, level of abstraction and expressivity. Compared to locking, where the programmer explicitly has to control synchronization details, which is hard to get right, \ac{STM} handles synchronization if the critical regions are specified. This gives better usability to \ac{STM}. \stmname provide static analysis, which can identify some erroneous code. This benefits \stmname.
+The declarative synchronization approach in \ac{STM} gives high simplicity, level of abstraction and expressivity. Compared to locking, where the programmer explicitly has to control synchronization details, which is hard to get right, \ac{STM} handles synchronization if the critical regions are specified. This gives better usability to \ac{STM}. \stmname provide static analysis, which can identify some erroneous code. This benefits \stmname over library based \ac{STM}.
 
 The locking constructs can be used and combined to handle different scenarios. This makes locks orthogonal, albeit the thread of deadlocks when combining locks reduces the orthogonality. \ac{STM} removes the issue of deadlocks, and allows transactions to be nested, which is highly orthogonal. A major caveat is, that \ac{STM} cannot be combined with irreversible actions, keeping the orthogonality, level of abstraction and expressivity from reaching its potential, impacting both readability and writability. Library based \ac{STM} relies on implicit conversion and explicit access to the \bscode{Value} property of the transactional variables for certain usage e.g. comparisons. As \stmname does not have the type mismatch between regular types and the corresponding \ac{STM} types, these usages can be done normally. This provides a benefit to \stmname over library based \ac{STM}, as it gives improved writability.
 
@@ -30,11 +36,4 @@ Conclusively language integrated \ac{STM} provides a valid alternative to lockin
 
 Furthermore, \stmname provides additional benefits over language integrated \ac{STM}. This is based on being evaluated as equal in implicit concurrency, fault restrictiveness, and optimism. It is evaluated to have better readability and writability based on not requiring change of types, a less intrusive syntax design, higher simplicity, orthogonality, level of abstraction, and expressivity.
 
-
-
-
-
-
-
-% Answering Problem statement questions?
 \worksheetend

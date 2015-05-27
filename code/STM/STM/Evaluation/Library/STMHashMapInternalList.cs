@@ -209,9 +209,8 @@ namespace Evaluation.Library
                 return true;
             }
 
-
             while (node.Next != null && !key.Equals(node.Next.Value.Key))
-                node = node.Next;
+                node = node.Next.Value;
 
             //node.Next == null || node.Next.Key == key
             if (node.Next == null) return false;
