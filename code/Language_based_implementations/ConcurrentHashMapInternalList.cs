@@ -132,8 +132,6 @@ namespace LanguagedBasedHashMap
         }
     }
 
-
-
     public class StmHashMap<K,V> : BaseHashMap<K,V>
     {
         private atomic Bucket[] _buckets;
@@ -183,9 +181,21 @@ namespace LanguagedBasedHashMap
             return FindNode(key, _buckets[bucketIndex].Value);
         }
 
-        private Node FindNode(K key, ImmutableList<Node> chain)
+        private Node FindNode(K key, Node node)
         {
-            return chain.Find(n => n.Key.Equals(key));
+            while (node != null && !key.Equals(node.Key))
+                node = node.Next;
+            return node;
+        }
+
+        private void InsertInBucket(Bucket bucketVar, Node node)
+        {
+            var curNode = bucketVar.Value;
+            if (curNode != null)
+            {
+                node.Next = curNode;
+            }
+            bucketVar.Value = node;
         }
 
         #endregion Utility
@@ -226,7 +236,7 @@ namespace LanguagedBasedHashMap
                 else
                 {
                     //Else insert the node
-                    bucketVar.Value = bucketVar.Value.Add(CreateNode(key, value));
+                    InsertInBucket(bucketVar, CreateNode(key, value));
                     _size++;
                     ResizeIfNeeded();
                 }
@@ -245,7 +255,7 @@ namespace LanguagedBasedHashMap
                 if (node == null)
                 {
                     //If node is not found key does not exist so insert
-                    bucketVar.Value = bucketVar.Value.Add(CreateNode(key, value));
+                    InsertInBucket(bucketVar, CreateNode(key, value));
                     _size++;
                     ResizeIfNeeded();
                     return true;
@@ -272,10 +282,12 @@ namespace LanguagedBasedHashMap
             for (var i = 0; i < _buckets.Length; i++)
             {
                 var bucket = _buckets[i];
-                foreach (var node in bucket.Value)
+                var node = bucket.Value;
+                while (node != null)
                 {
                     var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
-                    newBuckets[bucketIndex].Value = newBuckets[bucketIndex].Value.Add(node);
+                    InsertInBucket(newBuckets[bucketIndex], CreateNode(node.Key, node.Value));
+                    node = node.Next;
                 }
             }
 
@@ -291,38 +303,35 @@ namespace LanguagedBasedHashMap
                 var bucketIndex = GetBucketIndex(key);
                 //TMVar wrapping the immutable chain list
                 var bucketVar = _buckets[bucketIndex];
-                var node = FindNode(key, bucketVar.Value);
+                var firstNode = bucketVar.Value;
 
-                if (node != null)
-                {
-                    //If node is not found key does not exist so insert
-                    bucketVar.Value = bucketVar.Value.Remove(node);
-                    _size--;
-                    return true;
-                }
-
-                return false;
+                return RemoveNode(key, firstNode, bucketVar);
             }
         }
 
-        private IEnumerator<KeyValuePair<K, V>> BuildEnumerator()
+        private bool RemoveNode(K key, Node node, Bucket bucketVar)
         {
-            Bucket[] backingArray = _buckets;
-            Thread.MemoryBarrier();
-            //Thread.MemoryBarrier();  Forces the compiler to not move the local variable into the loop header
-            //This is important as the iterator will otherwise start iterating over a resized backing array 
-            // if a resize happes during iteration.
-            //Result if allowed could be the same key value pair being iterated over more than once or not at all
-            //This way the iterator only iterates over one backing array if a resize occurs those changes are not taken into account
-            //Additions or removals are still possible during iteration => same guarantee as System.Collections.Concurrent.ConcurrentDictionary
-            for (var i = 0; i < backingArray.Length; i++)
+            if (node == null)
             {
-                var bucket = backingArray[i];
-                foreach (var node in bucket.Value)
-                {
-                    yield return new KeyValuePair<K, V>(node.Key, node.Value);
-                }
+                return false;
             }
+
+            if (node.Key.Equals(key))
+            {
+                _size--;
+                bucketVar.Value = node.Next;
+                return true;
+            }
+
+            while (node.Next != null && !key.Equals(node.Next.Key))
+                node = node.Next;
+
+            //node.Next == null || node.Next.Key == key
+            if (node.Next == null) return false;
+
+            _size--;
+            node.Next = node.Next.Next;
+            return true;
         }
 
         public override IEnumerator<KeyValuePair<K, V>> GetEnumerator()
@@ -333,10 +342,12 @@ namespace LanguagedBasedHashMap
                 for (var i = 0; i < _buckets.Length; i++)
                 {
                     var bucket = _buckets[i];
-                    foreach (var node in bucket.Value)
+                    var node = bucket.Value;
+                    while (node != null)
                     {
                         var keyValuePair = new KeyValuePair<K, V>(node.Key, node.Value);
                         list.Add(keyValuePair);
+                        node = node.Next;
                     }
                 }
                 return list.GetEnumerator();
@@ -357,10 +368,11 @@ namespace LanguagedBasedHashMap
 
         private class Bucket
         {
-            public atomic ImmutableList<Node> Value { get; set; }
+            public atomic Node Value { get; set; }
+
             public Bucket()
             {
-                Value = ImmutableList.Create<Node>();
+                
             }
         }
 
@@ -368,6 +380,7 @@ namespace LanguagedBasedHashMap
         {
             public K Key { get; private set; }
             public atomic V Value { get; set; }
+            public atomic Node Next { get; set; }
 
             public Node(K key, V value)
             {
