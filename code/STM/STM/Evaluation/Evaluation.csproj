@@ -54,6 +54,7 @@
     <Compile Include="Common\IStartable.cs" />
     <Compile Include="Common\SCStats.cs" />
     <Compile Include="Library\Collections\JVSTMHashMapAtomic.cs" />
+    <Compile Include="Library\Collections\JVSTMHashMapInternalList.cs" />
     <Compile Include="Library\Collections\Queue.cs" />
     <Compile Include="Library\JVSTMHashMap.cs" />
     <Compile Include="Library\STMHashMapInternalList.cs" />

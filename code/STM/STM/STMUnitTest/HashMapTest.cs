@@ -179,5 +179,18 @@ namespace STMUnitTest
         {
             TestMapConcurrent(new STMHashMapInternalList<int, int>());
         }
+
+        [TestMethod]
+        public void JVSTMHashMapInternalListConcurrent()
+        {
+            var map = new JVSTMHashMapInternalList<int, int>();
+            TestMapConcurrent(map);
+        }
+
+        [TestMethod]
+        public void JVSTMHashMapInternalListTestAll()
+        {
+            TestMap(new JVSTMHashMapInternalList<int, int>());
+        }
     }
 }

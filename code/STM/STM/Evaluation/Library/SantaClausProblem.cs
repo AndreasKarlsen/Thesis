@@ -17,13 +17,13 @@ namespace Evaluation.Library
             var santa = new Santa(rBuffer,eBuffer);
             santa.Start();
 
-            for (int i = 0; i < SCStats.NR_REINDEER ; i++)
+            for (var i = 0; i < SCStats.NR_REINDEER ; i++)
             {
                 var reindeer = new Reindeer(i, rBuffer);
                 reindeer.Start();
             }
             
-            for (int i = 0; i < SCStats.NR_ELFS; i++)
+            for (var i = 0; i < SCStats.NR_ELFS; i++)
             {
                 var elf = new Elf(i, eBuffer);
                 elf.Start();

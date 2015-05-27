@@ -9,22 +9,22 @@ using STM.Implementation.JVSTM;
 
 namespace Evaluation.Library.Collections
 {
-    public class JVSTMHashMapAtomic<K, V> : BaseHashMap<K, V>
+    public class JVSTMHashMapInternalList<K,V> : BaseHashMap<K,V>
     {
-        //TMVar to (array of TMVars to (ImmutableList of nodes) )
-        private readonly VBox<VBox<ImmutableList<Node>>[]> _buckets;
+                //TMVar to (array of TMVars to (ImmutableList of nodes) )
+        private readonly VBox<VBox<Node>[]> _buckets;
         private readonly VBox<int> _threshold;
         private readonly VBox<int> _size = new VBox<int>(0);
 
-        public JVSTMHashMapAtomic()
+        public JVSTMHashMapInternalList()
             : this(DefaultNrBuckets)
         {
 
         }
 
-        public JVSTMHashMapAtomic(int nrBuckets)
+        public JVSTMHashMapInternalList(int nrBuckets)
         {
-            _buckets = new VBox<VBox<ImmutableList<Node>>[]>(MakeBuckets(nrBuckets));
+            _buckets = new VBox<VBox<Node>[]>(MakeBuckets(nrBuckets));
             _threshold = new VBox<int>(CalculateThreshold(nrBuckets));
         }
 
@@ -33,12 +33,12 @@ namespace Evaluation.Library.Collections
         /// </summary>
         /// <param name="nrBuckets"></param>
         /// <returns></returns>
-        private VBox<ImmutableList<Node>>[] MakeBuckets(int nrBuckets)
+        private VBox<Node>[] MakeBuckets(int nrBuckets)
         {
-            var temp = new VBox<ImmutableList<Node>>[nrBuckets];
+            var temp = new VBox<Node>[nrBuckets];
             for (var i = 0; i < nrBuckets; i++)
             {
-                temp[i] = new VBox<ImmutableList<Node>>(ImmutableList.Create<Node>());
+                temp[i] = new VBox<Node>();
             }
 
             return temp;
@@ -64,12 +64,24 @@ namespace Evaluation.Library.Collections
 
         private Node FindNode(JVTransaction transaction, K key, int bucketIndex)
         {
-            return FindNode(key, _buckets.Read(transaction)[bucketIndex].Read(transaction));
+            return FindNode(transaction, key, _buckets.Read(transaction)[bucketIndex].Read(transaction));
         }
 
-        private Node FindNode(K key, ImmutableList<Node> chain)
+        private Node FindNode(JVTransaction transaction, K key, Node node)
         {
-            return chain.Find(n => n.Key.Equals(key));
+            while (node != null && !key.Equals(node.Key))
+                node = node.Next.Read(transaction);
+            return node;
+        }
+
+        private void InsertInBucket(JVTransaction transaction, VBox<Node> bucketVar, Node node)
+        {
+            var curNode = bucketVar.Read(transaction);
+            if (curNode != null)
+            {
+                node.Next.Put(transaction,curNode);
+            }
+            bucketVar.Put(transaction,node);
         }
 
         #endregion Utility
@@ -98,7 +110,7 @@ namespace Evaluation.Library.Collections
             {
                 var bucketIndex = GetBucketIndex(transaction, key);
                 var bucketVar = _buckets.Read(transaction)[bucketIndex];
-                var node = FindNode(key, bucketVar.Read(transaction));
+                var node = FindNode(transaction,key, bucketVar.Read(transaction));
 
                 if (node != null)
                 {
@@ -108,7 +120,8 @@ namespace Evaluation.Library.Collections
                 else
                 {
                     //Else insert the node
-                    bucketVar.Put(transaction, bucketVar.Read(transaction).Add(CreateNode(key, value)));
+                    InsertInBucket(transaction, bucketVar, CreateNode(key, value));
+                    
                     //_size.Commute(transaction, i => i + 1);
                     _size.Put(transaction, _size.Read(transaction) + 1);
                     ResizeIfNeeded(transaction);
@@ -123,12 +136,12 @@ namespace Evaluation.Library.Collections
             {
                 var bucketIndex = GetBucketIndex(transaction, key);
                 var bucketVar = _buckets.Read(transaction)[bucketIndex];
-                var node = FindNode(key, bucketVar.Read(transaction));
+                var node = FindNode(transaction, key, bucketVar.Read(transaction));
 
                 if (node == null)
                 {
                     //If node is not found key does not exist so insert
-                    bucketVar.Put(transaction, bucketVar.Read(transaction).Add(CreateNode(key, value)));
+                    InsertInBucket(transaction, bucketVar, CreateNode(key, value));
                     //_size.Commute(transaction,i => i + 1);
                     _size.Put(transaction, _size.Read(transaction) + 1);
                     ResizeIfNeeded(transaction);
@@ -160,10 +173,12 @@ namespace Evaluation.Library.Collections
             for (var i = 0; i < _buckets.Read(transaction).Length; i++)
             {
                 var bucket = _buckets.Read(transaction)[i];
-                foreach (var node in bucket.Read(transaction))
+                var node = bucket.Read(transaction);
+                while (node != null)
                 {
                     var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
-                    newBuckets[bucketIndex].Put(transaction, newBuckets[bucketIndex].Read(transaction).Add(node));
+                    InsertInBucket(transaction, newBuckets[bucketIndex],CreateNode(node.Key,node.Value.Read(transaction)));
+                    node = node.Next.Read(transaction);
                 }
             }
 
@@ -178,22 +193,36 @@ namespace Evaluation.Library.Collections
             {
                 var bucketIndex = GetBucketIndex(transaction, key);
                 var bucketVar = _buckets.Read(transaction)[bucketIndex];
-                var node = FindNode(key, bucketVar.Read(transaction));
+                var firstNode = bucketVar.Read(transaction);
 
-                if (node != null)
-                {
-                    //If node is not found key does not exist so insert
-                    bucketVar.Put(transaction, bucketVar.Read(transaction).Remove(node));
-                    //_size.Commute(transaction, i => i - 1);
-                    _size.Put(transaction, _size.Read(transaction) - 1);
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                return RemoveNode(transaction, key, firstNode,bucketVar);
             });
 
+        }
+
+        private bool RemoveNode(JVTransaction transaction, K key, Node node, VBox<Node> bucketVar)
+        {
+            if (node == null)
+            {
+                return false;
+            }
+
+            if (node.Key.Equals(key))
+            {
+                _size.Put(transaction, _size.Read(transaction) - 1);
+                bucketVar.Put(transaction,node.Next.Read(transaction));
+                return true;
+            }
+
+            while (node.Next != null && !key.Equals(node.Next.Read(transaction).Key))
+                node = node.Next.Read(transaction);
+
+            //node.Next == null || node.Next.Key == key
+            if (node.Next == null) return false;
+
+            _size.Put(transaction, _size.Read(transaction) - 1);
+            node.Next.Put(transaction, node.Next.Read(transaction).Next.Read(transaction));
+            return true;
         }
 
 
@@ -208,9 +237,11 @@ namespace Evaluation.Library.Collections
                 for (var i = 0; i < _buckets.Read(transaction).Length; i++)
                 {
                     var bucket = _buckets.Read(transaction)[i];
-                    foreach (var node in bucket.Read(transaction))
+                    var node = bucket.Read(transaction);
+                    while (node != null)
                     {
                         list.Add(new KeyValuePair<K, V>(node.Key, node.Value.Read(transaction)));
+                        node = node.Next.Read(transaction);
                     }
                 }
                 result = list.GetEnumerator();
@@ -242,11 +273,13 @@ namespace Evaluation.Library.Collections
         {
             public K Key { get; private set; }
             public VBox<V> Value { get; private set; }
+            public VBox<Node> Next { get; private set; }
 
             public Node(K key, V value)
             {
                 Key = key;
                 Value = new VBox<V>(value);
+                Next = new VBox<Node>();
             }
         }
     }
