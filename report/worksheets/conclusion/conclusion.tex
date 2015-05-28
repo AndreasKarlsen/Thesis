@@ -1,6 +1,8 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Conclusion}{1}{May 25, 2015}{Andreas}{../../}
-Driven by the motivation of utilizing the increasing amount of \ac{CPU} cores, we have created \stmname, which integrates \ac{STM} into C\# as a language feature. This enables concurrent calculations without introducing many of the risks in shared-memory concurrency. The language integration gives C\# users a first class \ac{STM} experience thus improving the usability, making it easier to write correct concurrent programs in C\#. 
+Driven by the motivation of utilizing the increasing amount of \ac{CPU} cores, we have created \stmname, which integrates \ac{STM} into C\# as a language feature. This enables concurrent calculations without introducing many of the risks in shared-memory concurrency. The language integration gives C\# users a first class \ac{STM} experience thus improving the usability, making it easier to write correct concurrent programs in C\#.  
+
+This chapter will answer the problem statement questions, summarize the evaluation of the characteristics in order to conclude on our hypothesis. When the term \ac{STM} is used in this chapter, it covers both \stmname and library based \ac{STM}. 
 
 \label{chap:conclusion}
 
@@ -9,12 +11,10 @@ The goal of this master thesis was to investigate the usability of language inte
 
 Selecting features to a \ac{STM} system for C\# was done by analyzing different approaches to: Tracking granularity, transactions \& variables, atomicity, side-effects, conditional synchronization, nesting, and opacity. These features determined the requirements for the design. The requirements and the existing language features of C\# was taken into account in the design and integration process, identifying how to make a seamless integration with: Blocks \& variables, parameters \& arguments, conditional synchronization, and nesting. The implementation strategies McRT, TL\rom{2}, and JVSTM was analyzed based on criteria from the requirements. TL\rom{2} was selected based on its fit with strong atomicity and retry, as well as being well documented. To find out how the Roslyn compiler was structured, a review of whitepapers, blogs, forum posts, and the source code was conducted. This resulted in a description of Roslyns compiler phases, syntax tree, and \ac{API}. This knowledge allowed us to extend Roslyn to encompass the features of \stmname, by modifying its lexer, parser, and syntax tree. Additionally, a transformation of the syntax tree was performed, to transform \stmname constructs to ordinary C\#, allowing us to reuse the rest of the compilation phases.
 
+\section{Hypothesis}
 With a functional \stmname language, library based \ac{STM}, and locking in C\#, we evaluated the concurrency approaches based on cases representing different aspects of concurrency. Based on this evaluation, this chapter describes how we answered our problem statement questions and the conclude on the hypothesis: 
 
 \paragraph{Hypothesis} Language integrated \ac{STM} provides a valid alternative to locking in terms of usability, and provides additional benefits compared to library based \ac{STM}, when solving concurrency problems in C\#.\andreas{If we change this, we must change Preliminary Knowledge and Evaluation} 
-
-\section{Hypothesis}
-When the term \ac{STM} is used in this chapter, it covers both \stmname and library based \ac{STM}. 
 
 \ac{STM} have a more implicit degree of concurrency than locking, as synchronization details are abstracted away. This also makes \ac{STM} more fault restrictive than locking as synchronization details are handled correctly by the underlying \ac{STM} system. This hinder potential errors known from locking e.g. deadlock. Both locking and \ac{STM} uses shared memory for communication, and still require the programmer to specify the scope of synchronization.
 
