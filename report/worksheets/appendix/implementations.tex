@@ -1,8 +1,8 @@
 \chapter[]{Appendix Evaluation Implementations}
-This appendix presents the implementations of the selected problems, described in \bsref{sec:eval_approach}, on which the evaluation presented in \bsref{chap:evaluation} is based.
+This appendix presents the implementations of the selected problems, described in \bsref{sec:eval_approach}, on which the evaluation presented in \bsref{chap:evaluation} is based. Along with each implementation follows a brief description.
 \label{app:eval_implementations}
 
-\section{Lock Based}\label{app:impl_lockbased}
+\section{Lock-Based}\label{app:impl_lockbased}
 This sections presents the lockbased implementations of the selected problems.
 
 \subsection{Dining Philosophers Problem}
@@ -19,7 +19,7 @@ The lock based implementation of the dining philosophers problem requires the us
   keywordstyle=\color{bluekeywords},
   stringstyle=\color{redstrings},
   escapechar=~,
-  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override}]  % Start your code-block
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, lock}]  % Start your code-block
 
   public class LockingDiningPhilosophers
   {
@@ -84,6 +84,7 @@ The lock based implementation of the dining philosophers problem requires the us
 \end{lstlisting}
 
 \subsection{Santa Claus Problem}
+As seen on line \ref{line:santa_lock_santa_sem}, the lock based Santa Claus problem implementation uses a semanphore to allow the elfs and reindeer to wake Santa given their respective conditions are true. When Santa is awoken he must check whether he was awoken by the elfs or by the reindeer, as shown on lines \ref{line:santa_lock_santa_check_start} to \ref{line:santa_lock_santa_check_end}. As the reindeer must take priority, as defined in \bsbilagref{app:santa}, their condition is checked in order to determine the action which Santa takes. Similarly, as shown on line \ref{line:santa_lock_elf_wait}, the elfs utilize a semaphore to ensure that only three elfs go to santa at a time. As shown on lines \ref{line:santa_lock_elf_queue_start} to \ref{line:santa_lock_elf_queue_end} as well as \ref{line:santa_lock_reindeer_queue_start} to \ref{line:santa_lock_reindeer_queue_end}, both the elfs and the reindeer enqueue themselves and check their condition while holding a lock on their respective queues, ensuring that only a single thread observes the condition as true and notifies Santa.
 
 \begin{lstlisting}[label=lst:impl_santa_lock,
   caption={Lock based Santa Clause Implementation},
@@ -97,7 +98,7 @@ The lock based implementation of the dining philosophers problem requires the us
   keywordstyle=\color{bluekeywords},
   stringstyle=\color{redstrings},
   escapechar=~,
-  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override}]  % Start your code-block
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, lock}]  % Start your code-block
 
   public class LockingSantaClausProblem
   {
@@ -120,14 +121,12 @@ The lock based implementation of the dining philosophers problem requires the us
         var reindeer = new LockingReindeer(i, rBuffer, santaHandle, sleigh, warmingHut, reindeerDone);
         reindeer.Start();
       }
-
             
       for (var i = 0; i < SCStats.NR_ELFS; i++)
       {
         var elf = new LockingElf(i, eBuffer,santaHandle,maxElfs,elfWaiting,elfDone);
         elf.Start();
       }
-            
     }
   }
   
@@ -162,17 +161,17 @@ The lock based implementation of the dining philosophers problem requires the us
         while (true)
         {
           //Santa is resting
-          _santaHandle.Wait();
+          _santaHandle.Wait();~\label{line:santa_lock_santa_sem}~
 
           var wakeState = WakeState.ElfsIncompetent;
 
-          lock (_rBuffer)
+          lock (_rBuffer)~\label{line:santa_lock_santa_check_start}~
           {
             if (_rBuffer.Count == SCStats.NR_REINDEER)
             {
               wakeState = WakeState.ReindeerBack;    
             }
-          }
+          }~\label{line:santa_lock_santa_check_end}~
 
           switch (wakeState)
           {
@@ -243,16 +242,16 @@ The lock based implementation of the dining philosophers problem requires the us
           Thread.Sleep(100 * _randomGen.Next(21));
 
           //Only a fixed amount of elfs can go to santa at a time
-          _maxElfs.Wait();
+          _maxElfs.Wait();~\label{line:santa_lock_elf_wait}~
 
-          lock (_buffer)
+          lock (_buffer)~\label{line:santa_lock_elf_queue_start}~
           {
             _buffer.Enqueue(this);
             if (_buffer.Count == SCStats.MAX_ELFS)
             {
               _santaHandle.Release();
             }
-          }
+          }~\label{line:santa_lock_elf_queue_end}~
 
           Console.WriteLine("Elf {0} at the door", ID);
 
@@ -304,14 +303,14 @@ The lock based implementation of the dining philosophers problem requires the us
           //Tan on the beaches in the Pacific until Chistmas is close
           Thread.Sleep(100 * _randomGen.Next(10));
 
-          lock (_reindeerBuffer)
+          lock (_reindeerBuffer)~\label{line:santa_lock_reindeer_queue_start}~
           {
             _reindeerBuffer.Enqueue(this);
             if (_reindeerBuffer.Count == SCStats.NR_REINDEER)
             {
               _santaHandle.Release();
             }
-          }
+          }~\label{line:santa_lock_reindeer_queue_end}~
 
           //Console.WriteLine("Reindeer {0} is back",ID);
 
@@ -334,6 +333,8 @@ The lock based implementation of the dining philosophers problem requires the us
 \end{lstlisting}
 
 \subsection{Concurrent Queue}
+The lock based queue implementation is based on Michael L Scott's lock-based queue algorithm described in \cite{michael1996simple}. The implementation uses two locks, as seen on lines \ref{line:queue_lock_taillock} and \ref{line:queue_lock_headlock}, to protect the tail and head of the queue respectively. The first node in the queue is a dummy node which allows the enqueue and dequeue operations to only operate on the tail and head respectively, thereby allowing enqueuing and dequeuing to occur concurrently. Only a single enqueue or dequeue operation can however execute at at time, due to the use of locking. The dummy node is created by the queue's constructor on line \ref{line:queue_lock_dummynode}.
+
 \begin{lstlisting}[label=lst:impl_queue_lock,
   caption={Lock based Concurrent Queue Implementation},
   language=Java,  
@@ -346,7 +347,7 @@ The lock based implementation of the dining philosophers problem requires the us
   keywordstyle=\color{bluekeywords},
   stringstyle=\color{redstrings},
   escapechar=~,
-  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override}]  % Start your code-block
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, lock}]  % Start your code-block
 
   public class Queue<T> : IQueue<T>
   {
@@ -357,14 +358,14 @@ The lock based implementation of the dining philosophers problem requires the us
 
     public Queue()
     {
-      _head = new Node(default(T));
+      _head = new Node(default(T));~\label{line:queue_lock_dummynode}~
       _tail = _head;
     }
 
     public void Enqueue(T item)
     {
       var node = new Node(item);
-      lock (TailLock)
+      lock (TailLock)~\label{line:queue_lock_taillock}~
       {
         _tail.Next = node;
         _tail = node;
@@ -373,7 +374,7 @@ The lock based implementation of the dining philosophers problem requires the us
 
     public bool Dequeue(out T item)
     {
-      lock (HeadLock)
+      lock (HeadLock)~\label{line:queue_lock_headlock}~
       {
         var newHead = _head.Next;
         if (newHead == null)
@@ -403,6 +404,10 @@ The lock based implementation of the dining philosophers problem requires the us
 \end{lstlisting}
 
 \subsection{Concurrent Hasmap}
+The lock-based concurrent hashmap implementation is based on the concept of lock striping. Lock striping allows $L$ locks to protect $B$ buckets where $B \geq L$ and $B \bmod L = 0$ so that each lock $l$ protects each bucket $b$ where $indexof(b) = indexof(l) \bmod L$\cite[p. 304]{herlihy2012art}. When the number of buckets is doubled as a result of resizing the hashmap the same lock protects a particular bucket before and after the resize completes. The buckets protected by a particular lock are referred to as a stripe and multiple stripes can be accessed concurrently.
+
+Along with the backing array of buckets defined on line \ref{line:hashmap_lock_array} a array of objects representing the locks is defined on line \ref{line:hashmap_lock_locks}. Before a thread access a bucket it must acquire the lock on the stripe containing the bucket in question. As an example, the \bscode{Add} method defined on line \ref{line:hashmap_lock_add} calculates the index of the lock to acquire on line \ref{line:hashmap_lock_lockindex} before adding the item to the bucket. The \bscode{ResizeIfNeeded} method defined on line \ref{line:hashmap_lock_resize} acquires the lock on all stripes on line \ref{line:hashmap_lock_resize_lock} ensuring that no other threads are accessing the backing array while it is being resized. The condition for resizing is checked before all locks are acquired on line \ref{line:hashmap_lock_resize_cond_before} as well as again after all locks have been acquired on line \ref{line:hashmap_lock_resize_cond_after}, ensuring that only a single thread resizes the backing array for every instance where a resize is required.
+
 \begin{lstlisting}[label=lst:impl_hashmap_lock,
   caption={Lock based Concurrent Hasmap Implementation},
   language=Java,  
@@ -415,15 +420,15 @@ The lock based implementation of the dining philosophers problem requires the us
   keywordstyle=\color{bluekeywords},
   stringstyle=\color{redstrings},
   escapechar=~,
-  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, region, endregion, foreach}]  % Start your code-block
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, region, endregion, foreach, lock}]  % Start your code-block
 
   public class LockingHashMap<K,V> : BaseHashMap<K,V>
   {
     private const int DefaultNrLocks = DefaultNrBuckets;
 
     private readonly object _sizeLock = new object();
-    private readonly object[] _locks;
-    private Node[] _buckets;
+    private readonly object[] _locks;~\label{line:hashmap_lock_locks}~
+    private Node[] _buckets;~\label{line:hashmap_lock_array}~
     private int _size;
     private int _threshold;
 
@@ -569,10 +574,10 @@ The lock based implementation of the dining philosophers problem requires the us
       }
     }
 
-    public override void Add(K key, V value)
+    public override void Add(K key, V value)~\label{line:hashmap_lock_add}~
     {
       var hashCode = GetHashCode(key);
-      lock (_locks[GetLockIndex(hashCode)])
+      lock (_locks[GetLockIndex(hashCode)])~\label{line:hashmap_lock_lockindex}~
       {
         var index = GetBucketIndex(hashCode);
         var bucket = _buckets[index];
@@ -661,14 +666,14 @@ The lock based implementation of the dining philosophers problem requires the us
         return true;
     }
 
-    private void ResizeIfNeeded()
+    private void ResizeIfNeeded()~\label{line:hashmap_lock_resize}~
     {
-      if (ResizeCondtion())
+      if (ResizeCondtion())~\label{line:hashmap_lock_resize_cond_before}~
       {
-          LockAll();
+          LockAll();~\label{line:hashmap_lock_resize_lock}~
           try
           {
-            if (!ResizeCondtion())
+            if (!ResizeCondtion())~\label{line:hashmap_lock_resize_cond_after}~
             {
               return;
             }
