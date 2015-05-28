@@ -2,7 +2,7 @@
 This appendix presents the implementations of the selected problems, described in \bsref{sec:eval_approach}, on which the evaluation presented in \bsref{chap:evaluation} is based. Along with each implementation follows a brief description.
 \label{app:eval_implementations}
 
-\section{Lock Based}\label{app:impl_lockbased}
+\section{Lock-Based}\label{app:impl_lockbased}
 This sections presents the lockbased implementations of the selected problems.
 
 \subsection{Dining Philosophers Problem}
@@ -335,7 +335,6 @@ As seen on line \ref{line:santa_lock_santa_sem}, the lock based Santa Claus prob
 \subsection{Concurrent Queue}
 The lock based queue implementation is based on Michael L Scott's lock-based queue algorithm described in \cite{michael1996simple}. The implementation uses two locks, as seen on lines \ref{line:queue_lock_taillock} and \ref{line:queue_lock_headlock}, to protect the tail and head of the queue respectively. The first node in the queue is a dummy node which allows the enqueue and dequeue operations to only operate on the tail and head respectively, thereby allowing enqueuing and dequeuing to occur concurrently. Only a single enqueue or dequeue operation can however execute at at time, due to the use of locking. The dummy node is created by the queue's constructor on line \ref{line:queue_lock_dummynode}.
 
-
 \begin{lstlisting}[label=lst:impl_queue_lock,
   caption={Lock based Concurrent Queue Implementation},
   language=Java,  
@@ -405,6 +404,10 @@ The lock based queue implementation is based on Michael L Scott's lock-based que
 \end{lstlisting}
 
 \subsection{Concurrent Hasmap}
+The lock-based concurrent hashmap implementation is based on the concept of lock striping. Lock striping allows $L$ locks to protect $B$ buckets where $B \geq L$ and $B \bmod L = 0$ so that each lock $l$ protects each bucket $b$ where $indexof(b) = indexof(l) \bmod L$\cite[p. 304]{herlihy2012art}. When the number of buckets is doubled as a result of resizing the hashmap the same lock protects a particular bucket before and after the resize completes. The buckets protected by a particular lock are referred to as a stripe and multiple stripes can be accessed concurrently.
+
+Along with the backing array of buckets defined on line \ref{line:hashmap_lock_array} a array of objects representing the locks is defined on line \ref{line:hashmap_lock_locks}. Before a thread access a bucket it must acquire the lock on the stripe containing the bucket in question. As an example, the \bscode{Add} method defined on line \ref{line:hashmap_lock_add} calculates the index of the lock to acquire on line \ref{line:hashmap_lock_lockindex} before adding the item to the bucket. The \bscode{ResizeIfNeeded} method defined on line \ref{line:hashmap_lock_resize} acquires the lock on all stripes on line \ref{line:hashmap_lock_resize_lock} ensuring that no other threads are accessing the backing array while it is being resized. The condition for resizing is checked before all locks are acquired on line \ref{line:hashmap_lock_resize_cond_before} as well as again after all locks have been acquired on line \ref{line:hashmap_lock_resize_cond_after}, ensuring that only a single thread resizes the backing array for every instance where a resize is required.
+
 \begin{lstlisting}[label=lst:impl_hashmap_lock,
   caption={Lock based Concurrent Hasmap Implementation},
   language=Java,  
@@ -424,8 +427,8 @@ The lock based queue implementation is based on Michael L Scott's lock-based que
     private const int DefaultNrLocks = DefaultNrBuckets;
 
     private readonly object _sizeLock = new object();
-    private readonly object[] _locks;
-    private Node[] _buckets;
+    private readonly object[] _locks;~\label{line:hashmap_lock_locks}~
+    private Node[] _buckets;~\label{line:hashmap_lock_array}~
     private int _size;
     private int _threshold;
 
@@ -571,10 +574,10 @@ The lock based queue implementation is based on Michael L Scott's lock-based que
       }
     }
 
-    public override void Add(K key, V value)
+    public override void Add(K key, V value)~\label{line:hashmap_lock_add}~
     {
       var hashCode = GetHashCode(key);
-      lock (_locks[GetLockIndex(hashCode)])
+      lock (_locks[GetLockIndex(hashCode)])~\label{line:hashmap_lock_lockindex}~
       {
         var index = GetBucketIndex(hashCode);
         var bucket = _buckets[index];
@@ -663,14 +666,14 @@ The lock based queue implementation is based on Michael L Scott's lock-based que
         return true;
     }
 
-    private void ResizeIfNeeded()
+    private void ResizeIfNeeded()~\label{line:hashmap_lock_resize}~
     {
-      if (ResizeCondtion())
+      if (ResizeCondtion())~\label{line:hashmap_lock_resize_cond_before}~
       {
-          LockAll();
+          LockAll();~\label{line:hashmap_lock_resize_lock}~
           try
           {
-            if (!ResizeCondtion())
+            if (!ResizeCondtion())~\label{line:hashmap_lock_resize_cond_after}~
             {
               return;
             }
