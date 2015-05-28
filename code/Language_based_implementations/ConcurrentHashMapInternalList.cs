@@ -369,11 +369,6 @@ namespace LanguagedBasedHashMap
         private class Bucket
         {
             public atomic Node Value { get; set; }
-
-            public Bucket()
-            {
-                
-            }
         }
 
         private class Node
