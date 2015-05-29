@@ -26,6 +26,10 @@
   DK-9220 Aalborg Ø\\
   \href{http://www.cs.aau.dk}{http://www.cs.aau.dk}
 }{% the abstract
-
+% Our motivation
+% What have we done
+% How did we do it
+% Our contribution
+This master thesis contributes with \stmnamesp -- an integration of \ac{STM} into C\#. Motivated by the increased need for concurrency, \stmname offers an alternative approach for synchronization than locking. \stmname uses transactional blocks to specify critical regions, with orelse blocks for alternative executions, the retry statement for conditional synchronization, and transactional annotation of variables to mark what should be tracked in transactions. The goal was to investigate the usability of \stmname, and compare it to library based \ac{STM} and locking. This was done by using the three approaches to implement solutions to four different concurrency problems, representing different aspects of concurrent programming. These solutions were then analyzed by their characteristics in a qualitative manner. Our evaluation concludes that \stmname is a valid alternative to locking, and provides better usability than library based \ac{STM}. \stmname was build by extending the open source Roslyn C\# compiler. The integration required insight to the Roslyn compiler, which was documented as an additional contribution.
 }
 \end{titlingpage}
