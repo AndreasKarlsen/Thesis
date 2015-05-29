@@ -406,7 +406,7 @@ The lock based queue implementation is based on Michael L Scott's lock-based que
 \subsection{Concurrent Hasmap}
 The lock-based concurrent hashmap implementation is based on the concept of lock striping. Lock striping allows $L$ locks to protect $B$ buckets where $B \geq L$ and $B \bmod L = 0$ so that each lock $l$ protects each bucket $b$ where $indexof(b) = indexof(l) \bmod L$\cite[p. 304]{herlihy2012art}. When the number of buckets is doubled as a result of resizing the hashmap the same lock protects a particular bucket before and after the resize completes. The buckets protected by a particular lock are referred to as a stripe and multiple stripes can be accessed concurrently.
 
-Along with the backing array of buckets defined on line \ref{line:hashmap_lock_array} a array of objects representing the locks is defined on line \ref{line:hashmap_lock_locks}. Before a thread access a bucket it must acquire the lock on the stripe containing the bucket in question. As an example, the \bscode{Add} method defined on line \ref{line:hashmap_lock_add} calculates the index of the lock to acquire on line \ref{line:hashmap_lock_lockindex} before adding the item to the bucket. The \bscode{ResizeIfNeeded} method defined on line \ref{line:hashmap_lock_resize} acquires the lock on all stripes on line \ref{line:hashmap_lock_resize_lock} ensuring that no other threads are accessing the backing array while it is being resized. The condition for resizing is checked before all locks are acquired on line \ref{line:hashmap_lock_resize_cond_before} as well as again after all locks have been acquired on line \ref{line:hashmap_lock_resize_cond_after}, ensuring that only a single thread resizes the backing array for every instance where a resize is required.
+Along with the backing array of buckets defined on line \ref{line:hashmap_lock_array} a array of objects representing the locks is defined on line \ref{line:hashmap_lock_locks}. Before a thread access a bucket it must acquire the lock on the stripe containing the bucket in question. As an example, the \bscode{Add} method defined on line \ref{line:hashmap_lock_add} calculates the index of the lock to acquire on line \ref{line:hashmap_lock_lockindex} before adding the item to the bucket. The \bscode{ResizeIfNeeded} method defined on line \ref{line:hashmap_lock_resize} acquires the lock on all stripes on line \ref{line:hashmap_lock_resize_lock} ensuring that no other threads are accessing the backing array while it is being resized. The condition for resizing is checked before all locks are acquired on line \ref{line:hashmap_lock_resize_cond_before} as well as again after all locks have been acquired on line \ref{line:hashmap_lock_resize_cond_after}, ensuring that only a single thread resizes the backing array for every instance where a resize is required. The object defined on line \ref{line:hashmap_lock_size_lock} protect the \bscode{\_size} variable defined on line \ref{line:hashmap_lock_size}. This is required as multiple threads can add or remove items to different stripes simultaneously requiring their access to the \bscode{\_size} variable to be synchronized.
 
 \begin{lstlisting}[label=lst:impl_hashmap_lock,
   caption={Lock based Concurrent Hasmap Implementation},
@@ -426,10 +426,10 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
   {
     private const int DefaultNrLocks = DefaultNrBuckets;
 
-    private readonly object _sizeLock = new object();
+    private readonly object _sizeLock = new object();~\label{line:hashmap_lock_size_lock}~
     private readonly object[] _locks;~\label{line:hashmap_lock_locks}~
     private Node[] _buckets;~\label{line:hashmap_lock_array}~
-    private int _size;
+    private int _size;~\label{line:hashmap_lock_size}~
     private int _threshold;
 
     public LockingHashMap() : this(DefaultNrBuckets){}
