@@ -800,7 +800,10 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
   }
 \end{lstlisting}
 \section{STM Library}\label{app:impl_stm_lib}
+This section presents the library-based \ac{STM} implementations used for the evaluation.
 \subsection{Dining Philosophers Problem}
+The library based \ac{STM} uses five \ac{STM} objects of type \bscode{TMVar<bool>}, defined on lines \ref{line:dining_libstm_fork_start} to \ref{line:dining_libstm_fork_end}, to represent each of the forks on the table. The \bscode{StartPhilosopher} on line \ref{line:dining_libstm_startphil} is called for each philosopher in order to start at thread with access to the correct forks. The transaction defined on line \ref{line:dining_libstm_t1} attempts to acquired both forks in order to begin eating. Implicit conversion is employed on line \ref{line:dining_libstm_t1_implicit} to read the state of the forks without having to access the \bscode{Value} property. The call to \bscode{STMSystem.Retry} on line \ref{line:dining_libstm_t1_retry} blocks the calling thread until the state of the forks change, if atleast one of the forks is unavailable. The transaction on line \ref{line:dining_libstm_t2} simply makes both forks available, after the philosopher has finished eating on lines \ref{line:dining_libstm_eatstart} to \ref{line:dining_libstm_eatend}.
+
 \begin{lstlisting}[label=lst:impl_dining_lib,
   caption={STM Library Based Dining Philosophers Implementation},
   language=Java,  
@@ -822,11 +825,11 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
     public static void Start()
     {
       var eatCounter = new TMInt(0);
-      var fork1 = new TMVar<bool>(true);
+      var fork1 = new TMVar<bool>(true);~\label{line:dining_libstm_fork_start}~
       var fork2 = new TMVar<bool>(true);
       var fork3 = new TMVar<bool>(true);
       var fork4 = new TMVar<bool>(true);
-      var fork5 = new TMVar<bool>(true);
+      var fork5 = new TMVar<bool>(true);~\label{line:dining_libstm_fork_end}~
 
       var t1 = StartPhilosopher(eatCounter, fork1, fork2);
       var t2 = StartPhilosopher(eatCounter, fork2, fork3);
@@ -834,31 +837,35 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
       var t4 = StartPhilosopher(eatCounter, fork4, fork5);
       var t5 = StartPhilosopher(eatCounter, fork5, fork1);
 
-      Task.WaitAll(t1, t2, t3, t4, t5);
+      t1.Join();
+      t2.Join();
+      t3.Join();
+      t4.Join();
+      t5.Join();
     }
 
-    private static Task StartPhilosopher(TMInt eatCounter, TMVar<bool> left, TMVar<bool> right)
+    private static Thread StartPhilosopher(TMInt eatCounter, TMVar<bool> left, TMVar<bool> right)~\label{line:dining_libstm_startphil}~
     {
-      var t1 = new Task(() =>
+      var t1 = new Thread(() =>
       {
         while (eatCounter < MAX_EAT_COUNT)
         {
-          STMSystem.Atomic(() =>
+          STMSystem.Atomic(() =>~\label{line:dining_libstm_t1}~
           {
-            if (!left || !right)
+            if (!left || !right)~\label{line:dining_libstm_t1_implicit}~
             {
-              STMSystem.Retry();
+              STMSystem.Retry();~\label{line:dining_libstm_t1_retry}~
             }
 
             left.Value = false;
             right.Value = false;
           });
 
-          Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
+          Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");~\label{line:dining_libstm_eatstart}~
           Thread.Sleep(100);
-          Console.WriteLine("Eat count: " + ++eatCounter);
+          Console.WriteLine("Eat count: " + ++eatCounter);~\label{line:dining_libstm_eatend}~
 
-          STMSystem.Atomic(() =>
+          STMSystem.Atomic(() =>~\label{line:dining_libstm_t2}~
           {
             left.Value = true;
             right.Value = true;
@@ -1195,6 +1202,8 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
   
 \end{lstlisting}
 \subsection{Concurrent Queue}
+The \ac{STM} concurrent queue implementation is implemented as a linked list of nodes. As with the lock-based concurrent queue implementation, the library-based \ac{STM} concurrent queue implementation uses a dummy node, allowing the enqueue and dequeue operations to operate only on the tail and head respectively. The \bscode{\_head} and \bscode{\_tail}, defined on lines \ref{line:queue_libstm_head} and \ref{line:queue_libstm_tail}, are of type \bscode{TMVar<Node>} allowing the \ac{STM} system to track assignments to the encapsulated variables. Similarly the \bscode{Next} field of the \bscode{Node} class defined on line \ref{line:queue_stmlib_node} is of type \bscode{TMVar<Node>}. The \bscode{Dequeue} method defined in line \ref{line:queue_libstm_dequeue}, skips over the dummy item when reading the node to remove from the queue on line \ref{line:queue_libstm_dequeue_skip}. The call to \bscode{STMSystem.Retry} on line \ref{line:queue_libstm_dequeue_retry} causes a thread calling \bscode{Dequeue} on an empty queue to block until the queue is is non longer empty. The assignment on line \ref{line:queue_libstm_dequeue_retry} sets the node representing the item to dequeue as the new dummy node, as it is no longer needed and already points to the next item in the queue. 
+
 \begin{lstlisting}[label=lst:impl_queue_lib,
   caption={STM Library Based Concurrent Queue Implementation},
   language=Java,  
@@ -1211,9 +1220,8 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
 
   public class Queue<T>
   {
-
-    private readonly TMVar<Node> _head = new TMVar<Node>(null);
-    private readonly TMVar<Node> _tail = new TMVar<Node>(null);
+    private readonly TMVar<Node> _head = new TMVar<Node>(null);~\label{line:queue_libstm_head}~
+    private readonly TMVar<Node> _tail = new TMVar<Node>(null);~\label{line:queue_libstm_tail}~
 
     public Queue()
     {
@@ -1233,23 +1241,23 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
       });
     }
 
-    public T Dequeue()
+    public T Dequeue()~\label{line:queue_libstm_dequeue}~
     {
       return STMSystem.Atomic(() =>
       {
-        var node = _head.Value.Next.Value;
+        var node = _head.Value.Next.Value;~\label{line:queue_libstm_dequeue_skip}~ 
 
         if (node == null)
         {
-          STMSystem.Retry();
+          STMSystem.Retry();~\label{line:queue_libstm_dequeue_retry}~
         }
 
-        _head.Value = node;
+        _head.Value = node;~\label{line:queue_libstm_dequeue_new_dummy}~
         return node.Value;
       });
     }
 
-    private class Node
+    private class Node~\label{line:queue_stmlib_node}~
     {
       public readonly TMVar<Node> Next = new TMVar<Node>(null);
       public readonly T Value;
@@ -1535,9 +1543,14 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
 
 \end{lstlisting}
 \section{\stmname}\label{app:impl_stm_lab}
+This section presents the \stmname implementations used for the evaluation. As the strategies employed for the \stmname implementations are similar to those of the library-based \ac{STM} implementations the descriptions focus on the differences between the implementations as well as how the abstractions provided by \stmname are utilized.
+
 \subsection{Dining Philosophers Problem}
+The \stmname dining philosophers implementation represents the forks as instances of the \bscode{Fork} class defined on line \ref{}.
+
+
 \begin{lstlisting}[label=lst:impl_dining_lang,
-  caption={\stmname Based Concurrent Hashmap Implementation},
+  caption={\stmname Based Dining Philosophers Implementation},
   language=Java,  
   showspaces=false,
   showtabs=false,
@@ -1555,12 +1568,6 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
     private static readonly int MAX_EAT_COUNT = 1000;
     private static atomic int eatCounter = 0;
 
-    public static void Main()
-    {
-      var dinning = new DiningPhilosopher();
-      dinning.Start();
-    }
-
     public void Start()
     {
       var fork1 = new Fork();
@@ -1575,12 +1582,16 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
       var t4 = StartPhilosopher(fork4, fork5);
       var t5 = StartPhilosopher(fork5, fork1);
 
-      Task.WaitAll(t1, t2, t3, t4, t5);
+      t1.Join();
+      t2.Join();
+      t3.Join();
+      t4.Join();
+      t5.Join();
     }
 
-    private Task StartPhilosopher(Fork left, Fork right)
+    private Thread StartPhilosopher(Fork left, Fork right)
     {
-      var t1 = new Task(() =>
+      var t1 = new Thread(() =>
       {
         while (eatCounter < MAX_EAT_COUNT)
         {
@@ -1978,8 +1989,10 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
 
 \end{lstlisting}
 \subsection{Concurrent Queue}
+As with the lock and library-based implementations the \stmname implementation is implemented as a linked list of nodes and uses a dummy node. The head and tail nodes, defined on lines \ref{line:queue_langstm_head} and \ref{line:queue_langstm_tail}, are declared \bscode{atomic} along with the \bscode{Next} property of the \bscode{Node} class defined on \ref{line:queue_langstm_node}. The \bscode{retry} on line \ref{line:queue_langstm_retry} is used to block a thread calling \bscode{Dequeue} on an empty queue.
+
 \begin{lstlisting}[label=lst:impl_dining_lib,
-  caption={Lock Based Concurrent Hashmap Implementation},
+  caption={\stmname Based Concurrent Queue Implementation},
   language=Java,  
   showspaces=false,
   showtabs=false,
@@ -1994,8 +2007,8 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
 
   public class Queue<T>
   {
-    private atomic Node _head;
-    private atomic Node _tail;
+    private atomic Node _head;~\label{line:queue_langstm_head}~
+    private atomic Node _tail;~\label{line:queue_langstm_tail}~
 
     public Queue()
     {
@@ -2023,7 +2036,7 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
 
         if (node == null)
         {
-          retry;
+          retry;~\label{line:queue_langstm_retry}~
         }
 
         _head = node;
@@ -2031,7 +2044,7 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
       }
     }
 
-    private class Node
+    private class Node~\label{line:queue_langstm_node}~
     {
       public atomic Node Next { get; set; }
       public readonly T Value;
