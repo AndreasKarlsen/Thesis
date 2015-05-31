@@ -456,7 +456,6 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
       return hashCode % length;
     }
 
-
     public abstract IEnumerator<KeyValuePair<K, V>> GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -883,6 +882,7 @@ The library based \ac{STM} uses five \ac{STM} objects of type \bscode{TMVar<bool
 \end{lstlisting}
 
 \subsection{Santa Claus Problem}
+As shown on line \ref{line:santa_libstm_wake_transaction}, the library-based Santa Claus problem implementation uses a transaction with a associated orelse clause to wake Santa given either the reindeer or elf condition is true true. The calls to \bscode{STMSystem.Retry} on lines \ref{line:santa_libstm_wake_transaction_retry1} and \ref{line:santa_libstm_wake_transaction_retry2} causes Santa to block if non the transaction is executed and non of the conditions are true. If one of the read variable change Santa automatically tests the conditions again. As a result the elfs and reindeer does not have to take an explicit action in order to wake Santa. If fact the need not even know that Santa exists. A call to \bscode{STMSystem.Retry} is used on line \ref{line:santa_libstm_elf_retry} to ensure that only three elfs can go to Santa at the same time. Generally, transactions containing calls to \bscode{STMSystem.Retry} are used ensure that the elfs and reindeer do not progress to the next state before the required conditions eg. having delivered the presents, is true. The queue utilized is a transactional queue implementation available trough the \bscode{STM} library.
 \begin{lstlisting}[label=lst:impl_santa_lib,
   caption={STM Library Based Santa Claus Implementation},
   language=Java,  
@@ -1020,11 +1020,11 @@ The library based \ac{STM} uses five \ac{STM} objects of type \bscode{TMVar<bool
 
     private WakeState SleepUntilAwoken()
     {
-      return STMSystem.Atomic(() =>
+      return STMSystem.Atomic(() =>~\label{line:santa_libstm_wake_transaction}~
       {
         if (_rBuffer.Count != SCStats.NR_REINDEER)
         {
-          STMSystem.Retry();
+          STMSystem.Retry();~\label{line:santa_libstm_wake_transaction_retry1}~
         }
 
         return WakeState.ReindeerBack;
@@ -1033,7 +1033,7 @@ The library based \ac{STM} uses five \ac{STM} objects of type \bscode{TMVar<bool
         {
           if (_eBuffer.Count != SCStats.MAX_ELFS)
           {
-            STMSystem.Retry();
+            STMSystem.Retry();~\label{line:santa_libstm_wake_transaction_retry2}~
           }
 
           return WakeState.ElfsIncompetent;
@@ -1067,7 +1067,7 @@ The library based \ac{STM} uses five \ac{STM} objects of type \bscode{TMVar<bool
           {
             if (_buffer.Count == SCStats.MAX_ELFS)
             {
-              STMSystem.Retry();
+              STMSystem.Retry();~\label{line:santa_libstm_elf_retry}~
             }
 
             _buffer.Enqueue(this);
@@ -1271,7 +1271,8 @@ The \ac{STM} concurrent queue implementation is implemented as a linked list of 
 
 \end{lstlisting}
 \subsection{Concurrent Hashmap}
-\begin{lstlisting}[label=lst:impl_hashmap_lib,
+The library-based \ac{STM} hashmap defines the collision list as a linked list of instances of the \bscode{Node} class defined on line \ref{line:hasmap_libstm_node_class}. The backing array, defined on line \ref{line:hashmap_libstm_backingarray}, of type \bscode{TMVar<TMVar<Node>[]>}, that is a transactional variable to an array of transactional variables to instances of the node \bscode{Node} class. This allows the \ac{STM} system to track the assignment of a new backing array as a result of resizing the hashmap as well as track the assignment of the first node in each bucket trough the \bscode{TMVars} in the backing array. As the \bscode{Next} property of the \bscode{Node} class, defined on line \ref{line:hasmap_libstm_node_next}, is type \bscode{TMVar<Node>} the \ac{STM} system is able to track changes to the collision list. As the \bscode{Add} method defined on line \ref{line:hashmap_libstm_add} updates the value of a node if the key to add is already present in the hashmap, the \bscode{Value} property of the \bscode{Node} class is of type \bscode{TMVar<V>} where \bscode{V} is the type parameter, defining the type of the values added to the hashmap. The \bscode{\_size} variable is of type \bscode{TMInt} and is increment and decremented using the supplied \bscode{++} and \bscode{--} overloads defined in the \ac{STM} library.
+\begin{lstlisting}[label=lst:impl_hashmap_lib, 
   caption={STM Library Based Concurrent Hashmap Implementation},
   language=Java,  
   showspaces=false,
@@ -1285,19 +1286,19 @@ The \ac{STM} concurrent queue implementation is implemented as a linked list of 
   escapechar=~,
   morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, region, endregion, foreach, lock}]  % Start your code-block
 
-    public class STMHashMapInternalList<K,V> : BaseHashMap<K,V>
+  public class STMHashMap<K,V> : BaseHashMap<K,V>
   {
-     //TMVar to (array of TMVars to (ImmutableList of nodes) )
-    private readonly TMVar<TMVar<Node>[]> _buckets = new TMVar<TMVar<Node>[]>(); 
+     //TMVar to (array of TMVars to Node )
+    private readonly TMVar<TMVar<Node>[]> _buckets = new TMVar<TMVar<Node>[]>();~\label{line:hashmap_libstm_backingarray}~
     private readonly TMInt _threshold = new TMInt();
     private TMInt _size = new TMInt();
 
-    public STMHashMapInternalList() : this(DefaultNrBuckets)
+    public STMHashMap() : this(DefaultNrBuckets)
     {
       
     }
 
-    public STMHashMapInternalList(int nrBuckets)
+    public STMHashMap(int nrBuckets)
     {
       _buckets.Value = MakeBuckets(nrBuckets);
       _threshold.Value = CalculateThreshold(nrBuckets);
@@ -1381,7 +1382,7 @@ The \ac{STM} concurrent queue implementation is implemented as a linked list of 
       });
     }
 
-    public override void Add(K key, V value)
+    public override void Add(K key, V value)~\label{line:hashmap_libstm_add}~
     {
       STMSystem.Atomic(() =>
       {
@@ -1526,11 +1527,12 @@ The \ac{STM} concurrent queue implementation is implemented as a linked list of 
     {
       get { return _size.Value; }
     }
-    private class Node
+    
+    private class Node~\label{line:hasmap_libstm_node_class}~
     {
       public K Key { get; private set; }
       public TMVar<V> Value { get; private set; }
-      public TMVar<Node> Next { get; private set; }
+      public TMVar<Node> Next { get; private set; }~\label{line:hasmap_libstm_node_next}~
 
       public Node(K key, V value)
       {
@@ -1546,7 +1548,7 @@ The \ac{STM} concurrent queue implementation is implemented as a linked list of 
 This section presents the \stmname implementations used for the evaluation. As the strategies employed for the \stmname implementations are similar to those of the library-based \ac{STM} implementations the descriptions focus on the differences between the implementations as well as how the abstractions provided by \stmname are utilized.
 
 \subsection{Dining Philosophers Problem}
-The \stmname dining philosophers implementation represents the forks as instances of the \bscode{Fork} class defined on line \ref{}.
+The \stmname dining philosophers implementation represents the forks as instances of the \bscode{Fork} class defined on line \ref{line:dining_stmlang_fork_class}. Five forks are created on lines \ref{line:dining_stmlib_fork1} to \ref{line:dining_stmlib_fork2} and passed to the \bscode{StartPhilosopher} method on lines \ref{line:dining_stmlib_fork_pass1} to \ref{line:dining_stmlib_fork_pass2}. The transaction defined in line \ref{line:dining_stmlib_t1} acquires both forks by calling the forks \bscode{AttemptToPickUp} which is itself defined using a transaction. If a fork is unavailable the calling thread will block until the state changes as a result of the retry statement on line \ref{line:dining_stmlang_fork_retry}. The transaction defined on line \ref{line:dining_stmlib_t2} puts down both forks after eating on lines \ref{line:dining_stmlib_eat1} to \ref{line:dining_stmlib_eat2} has finished.
 
 
 \begin{lstlisting}[label=lst:impl_dining_lang,
@@ -1570,17 +1572,17 @@ The \stmname dining philosophers implementation represents the forks as instance
 
     public void Start()
     {
-      var fork1 = new Fork();
+      var fork1 = new Fork();~\label{line:dining_stmlib_fork1}~
       var fork2 = new Fork();
       var fork3 = new Fork();
       var fork4 = new Fork();
-      var fork5 = new Fork();
+      var fork5 = new Fork();~\label{line:dining_stmlib_fork2}~
 
-      var t1 = StartPhilosopher(fork1, fork2);
+      var t1 = StartPhilosopher(fork1, fork2);~\label{line:dining_stmlib_fork_pass1}~
       var t2 = StartPhilosopher(fork2, fork3);
       var t3 = StartPhilosopher(fork3, fork4);
       var t4 = StartPhilosopher(fork4, fork5);
-      var t5 = StartPhilosopher(fork5, fork1);
+      var t5 = StartPhilosopher(fork5, fork1);~\label{line:dining_stmlib_fork_pass2}~
 
       t1.Join();
       t2.Join();
@@ -1595,17 +1597,17 @@ The \stmname dining philosophers implementation represents the forks as instance
       {
         while (eatCounter < MAX_EAT_COUNT)
         {
-          atomic
+          atomic~\label{line:dining_stmlib_t1}~
           {
             left.AttemptToPickUp();
             right.AttemptToPickUp();
           }
 
-          Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
+          Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");~\label{line:dining_stmlib_eat1}~
           Thread.Sleep(100);
-          Console.WriteLine("Eat count: " + ++eatCounter);
+          Console.WriteLine("Eat count: " + ++eatCounter);~\label{line:dining_stmlib_eat2}~
 
-          atomic
+          atomic~\label{line:dining_stmlib_t2}~
           {
             left.PutDown();
             right.PutDown();
@@ -1620,7 +1622,7 @@ The \stmname dining philosophers implementation represents the forks as instance
       return t1;
     }
 
-    public class Fork
+    public class Fork~\label{line:dining_stmlang_fork_class}~
     {
       private atomic 
       private bool State { get; set; }
@@ -1636,7 +1638,7 @@ The \stmname dining philosophers implementation represents the forks as instance
         {
           if (!State)
           {
-            retry;
+            retry;~\label{line:dining_stmlang_fork_retry}~
           }
 
           State = false;
@@ -1655,7 +1657,9 @@ The \stmname dining philosophers implementation represents the forks as instance
 
 \end{lstlisting}
 \subsection{Santa Claus Problem}
-\begin{lstlisting}[label=lst:impl_dining_lib,
+As with the library-based Santa Claus problem implementation the language based implementation uses a \bscode{atomic} block with an associated \bscode{orelse} block, defined on line \ref{line:santa_langstm_wake}, to wake Santa when either the reindeer or elf condition is true. On line \ref{line:santa_langstm_elf_retry} the \bscode{retry} statement is used to ensure that no more than three elfs can go to Santa at any given point. Similarly, transactions utilizing \bscode{retry} statement are us ensure that the elfs and reindeer do not proceeded to next state before the required condition is true throughout the implementation.
+
+\begin{lstlisting}[label=lst:impl_santa_lang,
   caption={\stmname Based Santa Claus Implementation},
   language=Java,  
   showspaces=false,
@@ -1698,168 +1702,7 @@ The \stmname dining philosophers implementation represents the forks as instance
       System.Console.ReadKey();
     }
   }
-
-  public class Elf
-  {
-    private Random randomGen = new Random(Guid.NewGuid().GetHashCode());
-    public int ID { get; private set; }
-    private Queue<Elf> _buffer;
-    private atomic bool _waitingToAsk = false;
-    private atomic bool _questionAsked = false;
-
-    public Elf(int id, Queue<Elf> buffer)
-    {
-      _buffer = buffer;
-      ID = id;
-    }
-
-    public Task Start()
-    {
-      return Task.Run(() =>
-      {
-        while (true)
-        {
-          Thread.Sleep(100 * randomGen.Next(21));
-
-          atomic
-          {
-            if (_buffer.Count == SantaClausProblem.MAX_ELFS)
-            {
-              retry;
-            }
-
-            _buffer.Enqueue(this);
-            _waitingToAsk = true;
-          }
-
-          Console.WriteLine("Elf {0} at the door", ID);
-          
-          //Waiting on santa
-          atomic
-          {
-            if (_waitingToAsk)
-            {
-              retry;
-            }
-          }
-
-          //Asking question
-
-          //Done asking
-          atomic
-          {
-            if (!_questionAsked)
-            {
-              retry;
-            }
-
-            _questionAsked = false;
-          }
-        }
-      });
-    }
-
-    public void AskQuestion()
-    {
-      _waitingToAsk = false;
-    }
-
-    public void BackToWork()
-    {
-      _questionAsked = true;
-    }
-  }
-
-
-  public class Reindeer
-  {
-    private readonly Random randomGen = new Random(Guid.NewGuid().GetHashCode());
-    public int ID { get; private set; }
-
-    private Queue<Reindeer> reindeerBuffer;
-    private atomic bool _workingForSanta = false;
-    private atomic bool _waitingAtSleigh = false;
-        private atomic bool _waitingInHut = false;
-
-    public Reindeer(int id, Queue<Reindeer> buffer)
-    {
-      ID = id;
-      reindeerBuffer = buffer;
-    }
-    
-    public Task Start()
-    {
-      return Task.Run(() =>
-      {
-        while (true)
-        {
-          Thread.Sleep(100 * randomGen.Next(10));
-
-          atomic
-          {
-            reindeerBuffer.Enqueue(this);
-            _waitingInHut = true;
-          }
-
-          Console.WriteLine("Reindeer {0} is back",ID);
-
-                    //Waiting in the warming hut
-          atomic
-          {
-            if (_waitingInHut)
-            {
-              retry;
-            }
-          }
-                    
-          //Wait for santa to be ready
-          atomic
-          {
-            if (_waitingAtSleigh)
-            {
-              retry;
-            }
-          }
-
-          //Delivering presents
-
-          //Wait to be released by santa
-          atomic
-          {
-            if (_workingForSanta)
-            {
-              retry;
-            }
-          } 
-        }
-      });
-    }
-
-        public void CallToSleigh()
-    {
-      atomic
-      {
-        _waitingInHut = false;
-        _waitingAtSleigh = true;
-      }
-    }
-        
-    public void HelpDeliverPresents()
-    {
-      atomic
-      {
-        _waitingAtSleigh = false;
-        _workingForSanta = true;
-      }
-       
-    }
-
-    public void ReleaseReindeer()
-    {
-      _workingForSanta = false;
-    }
-  }
-
+  
   public class Santa
   {
     private readonly Queue<Reindeer> _rBuffer;
@@ -1894,7 +1737,7 @@ The \stmname dining philosophers implementation represents the forks as instance
 
     private WakeState SleepUntilAwoken()
     {
-      atomic
+      atomic~\label{line:santa_langstm_wake}~
       {
         if (_rBuffer.Count != SantaClausProblem.NR_REINDEER)
         {
@@ -1981,6 +1824,166 @@ The \stmname dining philosophers implementation represents the forks as instance
     }
   }
 
+  public class Elf
+  {
+    private Random randomGen = new Random(Guid.NewGuid().GetHashCode());
+    public int ID { get; private set; }
+    private Queue<Elf> _buffer;
+    private atomic bool _waitingToAsk = false;
+    private atomic bool _questionAsked = false;
+
+    public Elf(int id, Queue<Elf> buffer)
+    {
+      _buffer = buffer;
+      ID = id;
+    }
+
+    public Task Start()
+    {
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          Thread.Sleep(100 * randomGen.Next(21));
+
+          atomic
+          {
+            if (_buffer.Count == SantaClausProblem.MAX_ELFS)
+            {
+              retry;~\label{line:santa_langstm_elf_retry}~
+            }
+
+            _buffer.Enqueue(this);
+            _waitingToAsk = true;
+          }
+
+          Console.WriteLine("Elf {0} at the door", ID);
+          
+          //Waiting on santa
+          atomic
+          {
+            if (_waitingToAsk)
+            {
+              retry;
+            }
+          }
+
+          //Asking question
+
+          //Done asking
+          atomic
+          {
+            if (!_questionAsked)
+            {
+              retry;
+            }
+
+            _questionAsked = false;
+          }
+        }
+      });
+    }
+
+    public void AskQuestion()
+    {
+      _waitingToAsk = false;
+    }
+
+    public void BackToWork()
+    {
+      _questionAsked = true;
+    }
+  }
+
+  public class Reindeer
+  {
+    private readonly Random randomGen = new Random(Guid.NewGuid().GetHashCode());
+    public int ID { get; private set; }
+
+    private Queue<Reindeer> reindeerBuffer;
+    private atomic bool _workingForSanta = false;
+    private atomic bool _waitingAtSleigh = false;
+    private atomic bool _waitingInHut = false;
+
+    public Reindeer(int id, Queue<Reindeer> buffer)
+    {
+      ID = id;
+      reindeerBuffer = buffer;
+    }
+    
+    public Task Start()
+    {
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          Thread.Sleep(100 * randomGen.Next(10));
+
+          atomic
+          {
+            reindeerBuffer.Enqueue(this);
+            _waitingInHut = true;
+          }
+
+          Console.WriteLine("Reindeer {0} is back",ID);
+
+                    //Waiting in the warming hut
+          atomic
+          {
+            if (_waitingInHut)
+            {
+              retry;
+            }
+          }
+                    
+          //Wait for santa to be ready
+          atomic
+          {
+            if (_waitingAtSleigh)
+            {
+              retry;
+            }
+          }
+
+          //Delivering presents
+
+          //Wait to be released by santa
+          atomic
+          {
+            if (_workingForSanta)
+            {
+              retry;
+            }
+          } 
+        }
+      });
+    }
+
+        public void CallToSleigh()
+    {
+      atomic
+      {
+        _waitingInHut = false;
+        _waitingAtSleigh = true;
+      }
+    }
+        
+    public void HelpDeliverPresents()
+    {
+      atomic
+      {
+        _waitingAtSleigh = false;
+        _workingForSanta = true;
+      }
+       
+    }
+
+    public void ReleaseReindeer()
+    {
+      _workingForSanta = false;
+    }
+  }
+
   public enum WakeState
   {
     ReindeerBack,
@@ -1991,7 +1994,7 @@ The \stmname dining philosophers implementation represents the forks as instance
 \subsection{Concurrent Queue}
 As with the lock and library-based implementations the \stmname implementation is implemented as a linked list of nodes and uses a dummy node. The head and tail nodes, defined on lines \ref{line:queue_langstm_head} and \ref{line:queue_langstm_tail}, are declared \bscode{atomic} along with the \bscode{Next} property of the \bscode{Node} class defined on \ref{line:queue_langstm_node}. The \bscode{retry} on line \ref{line:queue_langstm_retry} is used to block a thread calling \bscode{Dequeue} on an empty queue.
 
-\begin{lstlisting}[label=lst:impl_dining_lib,
+\begin{lstlisting}[label=lst:impl_queue_lang,
   caption={\stmname Based Concurrent Queue Implementation},
   language=Java,  
   showspaces=false,
@@ -2058,7 +2061,9 @@ As with the lock and library-based implementations the \stmname implementation i
 
 \end{lstlisting}
 \subsection{Concurrent Hashmap}
-\begin{lstlisting}[label=lst:impl_dining_lib,
+As with the other concurrent hashmap implementations, the \stmname concurrent hashmap implementation utilizes a linked list of nodes for the collision lists. The \bscode{Node} class is defined on line \ref{line:hashmap_langstm_node_class}. As seen on line \ref{line:hashmap_langstm_node_class_next} its next property is declared with the \bscode{atomic} modifier, allowing the \ac{STM} system to detect changes to the list. Similarly the \bscode{Node} class's \bscode{Value} property is declared with the \bscode{atomic} modifier, as a call to the \bscode{Add} method with a key already present in the hashmap causes the value of the node representing the key/value pair to be updated. The backing array, seen on line \ref{line:hasmmap_langstm_backingarray}, is of type \bscode{Bucket[]} and is declared with the atomic modifier. The \bscode{atomic} modifier allows the \ac{STM} system to track the assignment of a new backing array as a result of resizing the hashmap. The \bscode{Bucket} class is defined on line \ref{line:hashmap_langstm_bucket_class} and has a \bscode{atomic Value} property to which the first node in the buckets linked list is assigned, if such an item exists. Together with the \bscode{atomic Next} property of the \bscode{Node} class, this allows the \ac{STM} system to detect any changes to the collision list. 
+
+\begin{lstlisting}[label=lst:impl_hasmap_lib,
   caption={\stmname Based Concurrent Hashmap Implementation},
   language=Java,  
   showspaces=false,
@@ -2074,7 +2079,7 @@ As with the lock and library-based implementations the \stmname implementation i
 
   public class StmHashMap<K,V> : BaseHashMap<K,V>
   {
-    private atomic Bucket[] _buckets;
+    private atomic Bucket[] _buckets;~\label{line:hasmmap_langstm_backingarray}~
     private atomic int _threshold;
     private atomic int _size;
 
@@ -2305,16 +2310,16 @@ As with the lock and library-based implementations the \stmname implementation i
       get { return _size; }
     }
 
-    private class Bucket
+    private class Bucket~\label{line:hashmap_langstm_bucket_class}~
     {
       public atomic Node Value { get; set; }
     }
 
-    private class Node
+    private class Node~\label{line:hashmap_langstm_node_class}~
     {
       public K Key { get; private set; }
-      public atomic V Value { get; set; }
-      public atomic Node Next { get; set; }
+      public atomic V Value { get; set; }~\label{line:hashmap_langstm_node_class_value}~
+      public atomic Node Next { get; set; }~\label{line:hashmap_langstm_node_class_next}~
 
       public Node(K key, V value)
       {
