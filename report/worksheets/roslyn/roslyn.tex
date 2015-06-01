@@ -118,17 +118,17 @@ However fitting all those characteristics into a single data structure is proble
 \begin{itemize}
 \item One problem is simply constructing a tree node, because both the child and parent are immutable and must have a reference to each other, so it is not possible to create one before the other.
 \item Another problem is reusing nodes for other parents when modifying the tree, as nodes are immutable and it is therefore not allowed to change the parent of a node. 
-\item A third problem is inserting a new character into the source code, as the position in source code of all nodes after that point changes. This is problematic in relation to adhering to the characteristic of reusing most nodes when modifying trees, because a modification to source code can change the character offset of many nodes.
+\item A third problem is inserting a new character into the source code, as the position in source code of all nodes changes after that point. This is makes it problematic to adhere to the characteristic of reusing most nodes when modifying trees, because a modification to source code can change the character offset of many nodes.
 %til den sidste, husk at de selv bruger roslyn til at udvikle interne værktøjer, derfor er det vigtigt at når man skrive et nyt tegn i starten af source koden, at de ikke skal bygge træet helt på nyt.
 \end{itemize}
 
 Instead the Roslyn compiler uses two types of trees, green trees and red trees, in order to fulfill all their requirements.
 
-\paragraph{The green tree} is immutable, has the ability upon modification to reuse most unaffected nodes, has no parent references, is built bottom-up, and does not know the absolute positions of nodes in source code, only their widths\cite{lippert2012redgreen}.
+\paragraph{The green tree} is immutable, has the ability upon modification to reuse most unaffected nodes, has no parent references, is built bottom-up, and does not know the absolute positions of nodes in the source code, only their widths\cite{lippert2012redgreen}.
 
 For the expression ``5*5+5*5'', a typical parse tree is shown in \bsref{fig:normal_syntax_tree}, and a potential green tree is shown in \bsref{fig:green_syntax_deduplication}. As the green tree nodes do not have parent references and positions in source code, sub-trees and nodes can be reused, which results in a more compact tree. Factory methods are used to create new nodes in the tree in order to determine if existing nodes can be reused or new ones must be created. If nodes for a given expression already exist they are reused, otherwise new nodes are created. 
 
-However reuse of existing nodes is not guaranteed, as that requires all nodes to be cached, which according to Vladimir Sadov in \bsref{sadovRoslynPerf} makes the reuse caches unnecessarily big. The caches are instead a fixed size, where new nodes will replace older ones when the max size is reached. Sadov states that it works pretty well because recently accessed nodes are likely to be accessed in the near future. Another trade-off is that they do not reuse non-terminals with more than 3 children, as it gets more expensive and less likely to match, the more children a non-terminal has\cite{sadovRoslynPerf}.
+However reuse of existing nodes is not guaranteed, as that requires all nodes to be cached, which according to Vladimir Sadov in \cite{sadovRoslynPerf} makes the reuse caches unnecessarily big. The caches are instead a fixed size, where new nodes will replace older ones when the maximum size is reached. Sadov states that it works pretty well because recently accessed nodes are likely to be accessed in the near future. Another trade-off is that they do not reuse non-terminals with more than 3 children, as it gets more expensive and less likely to match, the more children a non-terminal has\cite{sadovRoslynPerf}.
 
 \begin{figure}[htbp]
 \centering
@@ -144,14 +144,14 @@ However reuse of existing nodes is not guaranteed, as that requires all nodes to
 \label{fig:green_syntax_deduplication}
 \end{figure}
 
-\paragraph{The red tree} is an immutable facade built around the green tree. It has parent references and knows the absolute positions of nodes in source code. However these features prevent nodes from being reused, which means that making modifications to a red tree is expensive. Therefore they take another approach than building a new red tree upon every modification\cite{lippert2012redgreen}. 
+\paragraph{The red tree} is an immutable facade built around the green tree. It has parent references and knows the absolute positions of nodes in the source code. However these features prevent nodes from being reused, which means that making modifications to a red tree is expensive. Therefore another approach than building a new red tree upon every modification\cite{lippert2012redgreen} is used. 
 
-The red tree is build lazily using a top-down approach, starting from the root of the tree and descending into children. To access a given node in the tree, the parent must first be available, otherwise the parents parent must be available, and so on. Once the parent of a node is available, all information required to construct a red node is available. The parent reference is known, as it is the current node. Additionally the internal data for the child can be obtained from the corresponding green node. Furthermore the absolute position of the node in source code can be computed, as the position of the parent is known, along with the source code width of all children that come before the given node\cite{sadovRoslynPerf}.
+The red tree is built lazily using a top-down approach, starting from the root of the tree and descending into children. To access a given node in the tree, the parent must first be available otherwise the parent's parent must be available, and so on. Once the parent of a node is available, all information required to construct a red node is available. The parent reference is known as it is the current node. The internal data for the child can be obtained from the corresponding green node. Furthermore the absolute position of the node in source code can be computed, as the position of the parent is known, along with the source code width of all children that come before the given node\cite{sadovRoslynPerf}.
 
-So when modifications are made to source code, an entire new red tree is not computed. Instead the green tree is modified, which is a relatively cheap operation, as most nodes can be reused. In terms of the red tree, a new root red node is created with 0 as position, null as parent and the root green node as the corresponding green node. The red tree will then only build itself if a user descends into its children, which may not happen and it might only descend into a small fraction of all the nodes in the tree\cite{sadovRoslynPerf}. % i forhold til hvad det er godt til? med ide typing tankegang
+So when modifications are made to the source code, an entire new red tree is not computed. Instead the green tree is modified, which is a relatively cheap operation, because most nodes can be reused. In terms of the red tree, a new red node is created as root with 0 as position, null as parent and the root green node as the corresponding green node. The red tree will then only build itself if a user descends into its children and it might only descend into a small fraction of all the nodes in the tree\cite{sadovRoslynPerf}. % i forhold til hvad det er godt til? med ide typing tankegang
 
 \subsection{Contents Of Syntax Trees}
-The elements contained within syntax trees are syntax nodes, tokens and trivia. We will in this section describe these and some of their properties.
+The elements contained within syntax trees are syntax nodes, tokens and trivia. In this section we will describe these and some of their properties.
 
 \subsubsection{Syntax Nodes}
 Syntax nodes represent non-terminals of the language grammar, such as declarations, statements and expressions. It is one of the main elements of syntax trees and each syntax node type is represented as a separate class that derives from a base \bscode{SyntaxNode} class. As syntax nodes are non-terminals, they always have children, either in the form of other syntax nodes or syntax tokens. 
@@ -169,14 +169,14 @@ Additionally, optional children are allowed, which are represented as \bscode{nu
 \subsubsection{Syntax Tokens}
 Syntax tokens represent terminals of the language grammar, such as keywords, literals and identifiers. Opposed to syntax nodes, syntax tokens do not have any children. 
 
-Each syntax token does not have a separate class, instead all syntax tokens are represented by a single \bscode{SyntaxToken} type. This means that there is a single structure for all tokens. To get the value of a token, there exist three properties: \bscode{Text}, \bscode{ValueText} and \bscode{Value}. The first returns the raw source text as a \bscode{String}, this includes extra characters such as escape characters. The second returns only the value of the token as a \bscode{String.} The last returns the value as the actual value type e.g. if the token is an integer literal then the property returns the actual integer. To allow different return types, the return type of the last property is \bscode{Object}\cite[p. 7-8]{ng2012roslyn}.
+A syntax token does not have a separate class, instead all syntax tokens are represented by a single \bscode{SyntaxToken} type. This means that there is a single structure for all tokens. To get the value of a token, three properties exist: \bscode{Text}, \bscode{ValueText} and \bscode{Value}. The first returns the raw source text as a \bscode{String}, including extra characters such as escape characters. The second returns only the value of the token as a \bscode{String.} The last returns the value as the actual value type e.g. if the token is an integer literal then the property returns the actual integer. To allow different return types, the return type of the last property is \bscode{Object}\cite[p. 7-8]{ng2012roslyn}.
 
 Additionally, for performance reasons the \bscode{SyntaxToken} type is defined as a struct, which is a value type\cite[p. 7]{ng2012roslyn}.
 
 \subsubsection{Syntax Trivia}
-Syntax trivia represent extra parts of source code that can appear between any two tokens, such as white space and comments. Syntax trivia is not included as a child node in the tree, but instead associated with a given token. In general, a token holds all trivia that follows it, on the same line, up to the next token. Syntax tokens hold trivia in two collections: \bscode{LeadingTrivia} and \bscode{TrailingTrivia}. The first token holds all leading initial trivia, and the end-of-file token holds the last trailing trivia in source code\cite[p. 8]{ng2012roslyn}.
+Syntax trivia represent extra parts of source code that can appear between any two tokens, such as white space and comments. Syntax trivia is not included as a child node in the tree, but instead associated with a given token. A token holds all the following trivia on the same line, up to the next token. Syntax tokens hold trivia in two collections: \bscode{LeadingTrivia} and \bscode{TrailingTrivia}. The first token holds all leading initial trivia, and the end-of-file token holds the last trailing trivia in source code\cite[p. 8]{ng2012roslyn}.
 
-As trivia are not nodes in the tree, they do not have a \bscode{Parent} property. Instead the associated token for some trivia, can be accessed with the \bscode{Token} property. Additionally, like syntax tokens, trivia's are also value types and have only a single \bscode{SyntaxTrivia} type to describe them all.
+As trivia are not nodes in the tree, they do not have a \bscode{Parent} property. Instead the associated token for some trivia, can be accessed with the \bscode{Token} property. Additionally, like syntax tokens, trivia are also value types and have only a single \bscode{SyntaxTrivia} type to describe them all.
 
 \subsubsection{Spans}
 Every node, token and trivia knows its position in source code. This is accomplished by the use of a \bscode{TextSpan} struct type. A \bscode{TextSpan} object holds the start position of a node, token or trivia in source code and a count of how long it spans, both as 32-bit integers\cite[p. 8]{ng2012roslyn}.
@@ -185,7 +185,7 @@ Every node, token and trivia has two properties to obtain spans: \bscode{Span} a
 
 \subsubsection{Kinds}
 \label{subsubsec:roslyn_kinds}
-Every node, token and trivia has an integer \bscode{RawKind} property, used to identify the syntax element type. Each language, C\# or \ac{VB}, then contains a \bscode{SyntaxKind} enumeration that contains all the nodes, tokens and trivia in the language, that the integer can be cast to. The \bscode{CSharpSyntaxKind} method does the casting automatically\cite{roslynwikiOverview}\cite[p. 9]{ng2012roslyn}.
+Every node, token and trivia has an integer \bscode{RawKind} property, used to identify the syntax element type. Each language, C\# or \ac{VB}, contains a \bscode{SyntaxKind} enumeration that contains all the nodes, tokens and trivia in the language, that the integer can be cast to. The \bscode{CSharpSyntaxKind} method does the casting automatically\cite{roslynwikiOverview}\cite[p. 9]{ng2012roslyn}.
 
 Kinds are especially important for tokens and trivia, as they have only a single type, \bscode{SyntaxToken} and \bscode{SyntaxTrivia}, for all tokens and trivia. Thus, the only way to identify the particular token or trivia at hand, is by identifying its associated kind.
 
@@ -198,10 +198,7 @@ If programs are invalid as a result of errors in source code, a syntax tree is s
 
 \subsection{Syntax Tree Generation}
 \label{subsec:roslyn_syntax_tree_generation}
-The nodes, associated factory methods and visitor pattern implementation of the syntax tree is generated based on the contents of the \bscode{Syntax.xml} file located in the \bscode{CSharpCodeAnalysis (Portable)} project. The contents of the file describes information such as the fields and base class for each node in tree. Whenever the compiler is build, a tool, which source code resides in the \bscode{Tools\textbackslash CSharpSyntaxGenerator} project, generates the classes for each node defined in \bscode{Syntax.xml} along with relevant factory methods, properties for getting the value of each field associated with a node and pure methods for updating the fields of a node, that is generating a new node representing the change. The tool also generates the visitor pattern implementation along with the required \bscode{accept} methods on each node. Both the red and green tree, described in \bsref{subsec:roslyn_red_green_trees}, are generated during this process.
-
-
-
+The nodes, associated factory methods and visitor pattern implementation of the syntax tree are generated based on the contents of the \bscode{Syntax.xml} file located in the \bscode{CSharpCodeAnalysis (Portable)} project. The contents of the file describes information such as the fields and base class for each node in the tree. Whenever the compiler is built, a tool which source code resides in the \bscode{Tools\textbackslash CSharpSyntaxGenerator} project run. It generates the classes for each node defined in \bscode{Syntax.xml} along with relevant factory methods, properties for getting the value of each field associated with a node, and pure methods for updating the fields of a node. The tool also generates the visitor pattern implementation along with the required \bscode{accept} methods on each node. Both the red and green tree, described in \bsref{subsec:roslyn_red_green_trees}, are generated during this process.
 
 %EXTRA
 %semantic model evt. (tror kun det er i forhold til api)
