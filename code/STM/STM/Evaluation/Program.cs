@@ -18,7 +18,7 @@ namespace Evaluation
         static void Main(string[] args)
         {
             //DiningPhilosophers.Start();
-            //LockingDiningPhilosophers.Start();
+            LockingDiningPhilosophers.Start();
             //SantaClausProblem.Start();
             //LockingSantaClausProblem.Start();
             //HashMapTest();

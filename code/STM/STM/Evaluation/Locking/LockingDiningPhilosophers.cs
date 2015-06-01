@@ -52,7 +52,7 @@ namespace Evaluation.Locking
                                 Console.WriteLine("Eat count: " + eatCounter.IncrementAndGet());
                             }
                         }
-                        catch (Exception)
+                        finally
                         {
                             if (lockTaken)
                             {
