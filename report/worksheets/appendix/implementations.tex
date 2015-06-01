@@ -1,12 +1,12 @@
 \chapter[]{Appendix Evaluation Implementations}
-This appendix presents the implementations of the selected problems, described in \bsref{sec:eval_approach}, on which the evaluation presented in \bsref{chap:evaluation} is Based. Along with each implementation follows a brief description.
+This appendix presents the implementations of the selected problems, described in \bsref{sec:eval_approach}, on which the evaluation presented in \bsref{chap:evaluation} is based. Along with each implementation follows a brief description.
 \label{app:eval_implementations}
 
-\section{Lock-Based}\label{app:impl_lockBased}
-This sections presents the lockBased implementations of the selected problems.
+\section{Lock-Based}\label{app:impl_lockbased}
+This sections presents the lock based implementations of the selected problems.
 
 \subsection{Dining Philosophers Problem}
-The lock Based implementation of the dining philosophers problem requires the use of the \bscode{Monitor} class to acquire the second lock with a time out on line \ref{line:dining_lock_try}. As a result a \bscode{try/finally} block is used, on lines \ref{line:dining_lock_try_finally_start} to \ref{line:dining_lock_try_finally_end}, to ensured that the acquired lock is released in case an error occurs while the lock is held.
+The lock based implementation of the dining philosophers problem requires the use of the \bscode{Monitor} class to acquire the second lock with a time out on line \ref{line:dining_lock_try}. As a result a \bscode{try/finally} block is used, on lines \ref{line:dining_lock_try_finally_start} to \ref{line:dining_lock_try_finally_end}, to ensured that the acquired lock is released in case an error occurs while the lock is held.
 \begin{lstlisting}[label=lst:impl_dining_lock,
   caption={Lock Based Dining Philosophers Implementation},
   language=Java,  
@@ -52,7 +52,6 @@ The lock Based implementation of the dining philosophers problem requires the us
         {
           lock (left)
           {
-          
             var lockTaken = false;
             try~\label{line:dining_lock_try_finally_start}~
             {
@@ -63,7 +62,7 @@ The lock Based implementation of the dining philosophers problem requires the us
                 Thread.Sleep(100);
               }
             }
-            catch (Exception)
+            finally
             {
               if (lockTaken)
               {
@@ -71,7 +70,6 @@ The lock Based implementation of the dining philosophers problem requires the us
               }
             }~\label{line:dining_lock_try_finally_end}~
           }
-
           Thread.Sleep(100);
         }
       });
@@ -84,7 +82,7 @@ The lock Based implementation of the dining philosophers problem requires the us
 \end{lstlisting}
 
 \subsection{Santa Claus Problem}
-As seen on line \ref{line:santa_lock_santa_sem}, the lock Based Santa Claus problem implementation uses a semanphore to allow the elfs and reindeer to wake Santa given their respective conditions are true. When Santa is awoken he must check whether he was awoken by the elfs or by the reindeer, as shown on lines \ref{line:santa_lock_santa_check_start} to \ref{line:santa_lock_santa_check_end}. As the reindeer must take priority, as defined in \bsbilagref{app:santa}, their condition is checked in order to determine the action which Santa takes. Similarly, as shown on line \ref{line:santa_lock_elf_wait}, the elfs utilize a semaphore to ensure that only three elfs go to santa at a time. As shown on lines \ref{line:santa_lock_elf_queue_start} to \ref{line:santa_lock_elf_queue_end} as well as \ref{line:santa_lock_reindeer_queue_start} to \ref{line:santa_lock_reindeer_queue_end}, both the elfs and the reindeer enqueue themselves and check their condition while holding a lock on their respective queues, ensuring that only a single thread observes the condition as true and notifies Santa.
+As seen on line \ref{line:santa_lock_santa_sem}, the lock Based Santa Claus problem implementation uses a semaphore to allow the elfs and reindeer to wake Santa, given their respective conditions are true. When Santa is awoken he must check whether he was awoken by the elfs or by the reindeer, as shown on lines \ref{line:santa_lock_santa_check_start} to \ref{line:santa_lock_santa_check_end}. As the reindeer must take priority, as defined in \bsbilagref{app:santa}, their condition is checked in order to determine the action which Santa takes. Similarly, as shown on line \ref{line:santa_lock_elf_wait}, the elfs utilize a semaphore to ensure that only three elfs go to santa at a time. As shown on line \ref{line:santa_lock_elf_queue_start} to \ref{line:santa_lock_elf_queue_end} as well as \ref{line:santa_lock_reindeer_queue_start} to \ref{line:santa_lock_reindeer_queue_end}, both the elfs and the reindeer enqueue themselves and check their condition while holding a lock on their respective queues, ensuring that only a single thread observes the condition as true and notifies Santa.
 
 \begin{lstlisting}[label=lst:impl_santa_lock,
   caption={Lock Based Santa Claus Implementation},
@@ -104,8 +102,8 @@ As seen on line \ref{line:santa_lock_santa_sem}, the lock Based Santa Claus prob
   {
     public static void Start()
     {
-      var santaHandle = new SemaphoreSlim(0,2); 
-      var sleigh = new SemaphoreSlim(0,SCStats.NR_REINDEER);
+      var santaHandle = new SemaphoreSlim(0, 2); 
+      var sleigh = new SemaphoreSlim(0, SCStats.NR_REINDEER);
       var warmingHut = new SemaphoreSlim(0, SCStats.NR_REINDEER);
       var reindeerDone = new SemaphoreSlim(0, SCStats.NR_REINDEER);
       var elfWaiting = new SemaphoreSlim(0, SCStats.MAX_ELFS);
@@ -113,10 +111,10 @@ As seen on line \ref{line:santa_lock_santa_sem}, the lock Based Santa Claus prob
       var maxElfs = new SemaphoreSlim(SCStats.MAX_ELFS, SCStats.MAX_ELFS);
       var rBuffer = new Queue<LockingReindeer>();
       var eBuffer = new Queue<LockingElf>();
-      var santa = new LockingSanta(rBuffer,eBuffer,santaHandle,sleigh, warmingHut,reindeerDone,elfWaiting, elfDone);
+      var santa = new LockingSanta(rBuffer, eBuffer, santaHandle, sleigh, warmingHut, reindeerDone, elfWaiting, elfDone);
       santa.Start();
 
-      for (var i = 0; i < SCStats.NR_REINDEER ; i++)
+      for (var i = 0; i < SCStats.NR_REINDEER; i++)
       {
         var reindeer = new LockingReindeer(i, rBuffer, santaHandle, sleigh, warmingHut, reindeerDone);
         reindeer.Start();
@@ -124,7 +122,7 @@ As seen on line \ref{line:santa_lock_santa_sem}, the lock Based Santa Claus prob
             
       for (var i = 0; i < SCStats.NR_ELFS; i++)
       {
-        var elf = new LockingElf(i, eBuffer,santaHandle,maxElfs,elfWaiting,elfDone);
+        var elf = new LockingElf(i, eBuffer, santaHandle, maxElfs, elfWaiting, elfDone);
         elf.Start();
       }
     }
@@ -176,7 +174,7 @@ As seen on line \ref{line:santa_lock_santa_sem}, the lock Based Santa Claus prob
           switch (wakeState)
           {
             case WakeState.ReindeerBack:
-              Console.WriteLine("All reindeer are back!");
+              Console.WriteLine("All reindeers are back!");
 
               //Release reindeers from warming hut
               _warmingHut.Release(SCStats.NR_REINDEER);
@@ -333,7 +331,7 @@ As seen on line \ref{line:santa_lock_santa_sem}, the lock Based Santa Claus prob
 \end{lstlisting}
 
 \subsection{Concurrent Queue}
-The lock Based queue implementation is Based on Michael L Scott's lock-Based queue algorithm described in \cite{michael1996simple}. The implementation uses two locks, as seen on lines \ref{line:queue_lock_taillock} and \ref{line:queue_lock_headlock}, to protect the tail and head of the queue respectively. The first node in the queue is a dummy node which allows the enqueue and dequeue operations to only operate on the tail and head respectively, thereby allowing enqueuing and dequeuing to occur concurrently. Only a single enqueue or dequeue operation can however execute at at time, due to the use of locking. The dummy node is created by the queue's constructor on line \ref{line:queue_lock_dummynode}.
+The lock based queue implementation is based on Michael L Scott's lock-based queue algorithm described in \cite{michael1996simple}. The implementation uses two locks, as seen on line \ref{line:queue_lock_taillock} and \ref{line:queue_lock_headlock}, to protect the tail and head of the queue respectively. The first node in the queue is a dummy node which allows the enqueue and dequeue operations to only operate on the tail and head respectively, thereby allowing enqueuing and dequeuing to occur concurrently. Only a single enqueue or dequeue operation can however execute at a time, due to the use of locking. The dummy node is created by the queue's constructor on line \ref{line:queue_lock_dummynode}.
 
 \begin{lstlisting}[label=lst:impl_queue_lock,
   caption={Lock Based Concurrent Queue Implementation},
@@ -404,9 +402,9 @@ The lock Based queue implementation is Based on Michael L Scott's lock-Based que
 \end{lstlisting}
 
 \subsection{Concurrent Hashmap}
-The lock-Based concurrent hashmap implementation is Based on the concept of lock striping. Lock striping allows $L$ locks to protect $B$ buckets where $B \geq L$ and $B \bmod L = 0$ so that each lock $l$ protects each bucket $b$ where $indexof(b) = indexof(l) \bmod L$\cite[p. 304]{herlihy2012art}. When the number of buckets is doubled as a result of resizing the hashmap the same lock protects a particular bucket before and after the resize completes. The buckets protected by a particular lock are referred to as a stripe and multiple stripes can be accessed concurrently.
+The lock-based concurrent hashmap implementation is based on the concept of lock striping. Lock striping allows $L$ locks to protect $B$ buckets where $B \geq L$ and $B \bmod L = 0$ so that each lock $l$ protects each bucket $b$ where $indexof(b) = indexof(l) \bmod L$\cite[p. 304]{herlihy2012art}. When the number of buckets is doubled as a result of resizing the hashmap the same lock protects a particular bucket before and after the resize completes. The buckets protected by a particular lock are referred to as a stripe and multiple stripes can be accessed concurrently.
 
-Along with the backing array of buckets defined on line \ref{line:hashmap_lock_array} a array of objects representing the locks is defined on line \ref{line:hashmap_lock_locks}. Before a thread access a bucket it must acquire the lock on the stripe containing the bucket in question. As an example, the \bscode{Add} method defined on line \ref{line:hashmap_lock_add} calculates the index of the lock to acquire on line \ref{line:hashmap_lock_lockindex} before adding the item to the bucket. The \bscode{ResizeIfNeeded} method defined on line \ref{line:hashmap_lock_resize} acquires the lock on all stripes on line \ref{line:hashmap_lock_resize_lock} ensuring that no other threads are accessing the backing array while it is being resized. The condition for resizing is checked before all locks are acquired on line \ref{line:hashmap_lock_resize_cond_before} as well as again after all locks have been acquired on line \ref{line:hashmap_lock_resize_cond_after}, ensuring that only a single thread resizes the backing array for every instance where a resize is required. The object defined on line \ref{line:hashmap_lock_size_lock} protect the \bscode{\_size} variable defined on line \ref{line:hashmap_lock_size}. This is required as multiple threads can add or remove items to different stripes simultaneously requiring their access to the \bscode{\_size} variable to be synchronized.
+Along with the backing array of buckets defined on line \ref{line:hashmap_lock_array} an array of objects representing the locks is defined on line \ref{line:hashmap_lock_locks}. Before a thread access a bucket it must acquire the lock on the stripe containing the bucket in question. As an example, the \bscode{Add} method defined on line \ref{line:hashmap_lock_add} calculates the index of the lock to acquire on line \ref{line:hashmap_lock_lockindex} before adding the item to the bucket. The \bscode{ResizeIfNeeded} method defined on line \ref{line:hashmap_lock_resize} acquires the lock on all stripes on line \ref{line:hashmap_lock_resize_lock} ensuring that no other threads are accessing the backing array while being resized. The condition for resizing is checked before all locks are acquired on line \ref{line:hashmap_lock_resize_cond_before} and again after all locks have been acquired on line \ref{line:hashmap_lock_resize_cond_after}, ensuring that only a single thread resizes the backing array for every instance where a resize is required. The object defined on line \ref{line:hashmap_lock_size_lock} protect the \bscode{\_size} variable defined on line \ref{line:hashmap_lock_size}. This is required as multiple threads can add or remove items to different stripes simultaneously requiring their access to the \bscode{\_size} variable to be synchronized.
 
 \begin{lstlisting}[label=lst:impl_hashmap_lock,
   caption={Lock Based Concurrent Hashmap Implementation},
@@ -801,7 +799,7 @@ Along with the backing array of buckets defined on line \ref{line:hashmap_lock_a
 \section{STM Library}\label{app:impl_stm_lib}
 This section presents the library-based \ac{STM} implementations used for the evaluation.
 \subsection{Dining Philosophers Problem}
-The library based \ac{STM} uses five \ac{STM} objects of type \bscode{TMVar<bool>}, defined on lines \ref{line:dining_libstm_fork_start} to \ref{line:dining_libstm_fork_end}, to represent each of the forks on the table. The \bscode{StartPhilosopher} on line \ref{line:dining_libstm_startphil} is called for each philosopher in order to start at thread with access to the correct forks. The transaction defined on line \ref{line:dining_libstm_t1} attempts to acquired both forks in order to begin eating. Implicit conversion is employed on line \ref{line:dining_libstm_t1_implicit} to read the state of the forks without having to access the \bscode{Value} property. The call to \bscode{STMSystem.Retry} on line \ref{line:dining_libstm_t1_retry} blocks the calling thread until the state of the forks change, if atleast one of the forks is unavailable. The transaction on line \ref{line:dining_libstm_t2} simply makes both forks available, after the philosopher has finished eating on lines \ref{line:dining_libstm_eatstart} to \ref{line:dining_libstm_eatend}.
+The library based \ac{STM} uses five \ac{STM} objects of type \bscode{TMVar<bool>}, defined on lines \ref{line:dining_libstm_fork_start} to \ref{line:dining_libstm_fork_end}, to represent each of the forks on the table. The \bscode{StartPhilosopher} method on line \ref{line:dining_libstm_startphil} is called for each philosopher in order to start a thread with access to the correct forks. The transaction defined on line \ref{line:dining_libstm_t1} attempts to acquired both forks in order to begin eating. Implicit conversion is employed on line \ref{line:dining_libstm_t1_implicit} to read the state of the forks without having to access the \bscode{Value} property. The call to \bscode{STMSystem.Retry} on line \ref{line:dining_libstm_t1_retry} blocks the calling thread until the state of the forks change, if atleast one of the forks is unavailable. The transaction on line \ref{line:dining_libstm_t2} simply makes both forks available, after the philosopher has finished eating on lines \ref{line:dining_libstm_eatstart} to \ref{line:dining_libstm_eatend}.
 
 \begin{lstlisting}[label=lst:impl_dining_lib,
   caption={STM Library Based Dining Philosophers Implementation},
@@ -882,7 +880,7 @@ The library based \ac{STM} uses five \ac{STM} objects of type \bscode{TMVar<bool
 \end{lstlisting}
 
 \subsection{Santa Claus Problem}
-As shown on line \ref{line:santa_libstm_wake_transaction}, the library-based Santa Claus problem implementation uses a transaction with a associated orelse clause to wake Santa given either the reindeer or elf condition is true true. The calls to \bscode{STMSystem.Retry} on lines \ref{line:santa_libstm_wake_transaction_retry1} and \ref{line:santa_libstm_wake_transaction_retry2} causes Santa to block if non the transaction is executed and non of the conditions are true. If one of the read variable change Santa automatically tests the conditions again. As a result the elfs and reindeer does not have to take an explicit action in order to wake Santa. If fact the need not even know that Santa exists. A call to \bscode{STMSystem.Retry} is used on line \ref{line:santa_libstm_elf_retry} to ensure that only three elfs can go to Santa at the same time. Generally, transactions containing calls to \bscode{STMSystem.Retry} are used ensure that the elfs and reindeer do not progress to the next state before the required conditions eg. having delivered the presents, is true. The queue utilized is a transactional queue implementation available trough the \bscode{STM} library.
+As shown on line \ref{line:santa_libstm_wake_transaction}, the library-based Santa Claus problem implementation uses a transaction with an associated orelse clause to wake Santa given either the reindeer or elf condition is true true. The calls to \bscode{STMSystem.Retry} on lines \ref{line:santa_libstm_wake_transaction_retry1} and \ref{line:santa_libstm_wake_transaction_retry2} causes Santa to block if the transaction is executed and non of the conditions are true. If one of the read variable change Santa automatically tests the conditions again. As a result the elfs and reindeer does not have to take an explicit action in order to wake Santa. In fact they need not to even know that Santa exists. A call to \bscode{STMSystem.Retry} is used on line \ref{line:santa_libstm_elf_retry} to ensure that only three elfs can go to Santa at the same time. Generally, transactions containing calls to \bscode{STMSystem.Retry} are used ensure that the elfs and reindeer do not progress to the next state before the required conditions e.g. having delivered the presents, are true. The queue utilized is a transactional queue implementation available through the \bscode{STM} library.
 \begin{lstlisting}[label=lst:impl_santa_lib,
   caption={STM Library Based Santa Claus Implementation},
   language=Java,  
@@ -1202,7 +1200,7 @@ As shown on line \ref{line:santa_libstm_wake_transaction}, the library-based San
   
 \end{lstlisting}
 \subsection{Concurrent Queue}
-The \ac{STM} concurrent queue implementation is implemented as a linked list of nodes. As with the lock-based concurrent queue implementation, the library-based \ac{STM} concurrent queue implementation uses a dummy node, allowing the enqueue and dequeue operations to operate only on the tail and head respectively. The \bscode{\_head} and \bscode{\_tail}, defined on lines \ref{line:queue_libstm_head} and \ref{line:queue_libstm_tail}, are of type \bscode{TMVar<Node>} allowing the \ac{STM} system to track assignments to the encapsulated variables. Similarly the \bscode{Next} field of the \bscode{Node} class defined on line \ref{line:queue_stmlib_node} is of type \bscode{TMVar<Node>}. The \bscode{Dequeue} method defined in line \ref{line:queue_libstm_dequeue}, skips over the dummy item when reading the node to remove from the queue on line \ref{line:queue_libstm_dequeue_skip}. The call to \bscode{STMSystem.Retry} on line \ref{line:queue_libstm_dequeue_retry} causes a thread calling \bscode{Dequeue} on an empty queue to block until the queue is is non longer empty. The assignment on line \ref{line:queue_libstm_dequeue_retry} sets the node representing the item to dequeue as the new dummy node, as it is no longer needed and already points to the next item in the queue. 
+The \ac{STM} concurrent queue implementation is implemented as a linked list of nodes. As with the lock-based concurrent queue implementation, the library-based \ac{STM} concurrent queue implementation uses a dummy node, allowing the enqueue and dequeue operations to operate only on the tail and head respectively. The \bscode{\_head} and \bscode{\_tail}, defined on lines \ref{line:queue_libstm_head} and \ref{line:queue_libstm_tail}, are of type \bscode{TMVar<Node>} allowing the \ac{STM} system to track assignments to the encapsulated variables. Similarly the \bscode{Next} field of the \bscode{Node} class defined on line \ref{line:queue_stmlib_node} is of type \bscode{TMVar<Node>}. The \bscode{Dequeue} method defined in line \ref{line:queue_libstm_dequeue}, skips over the dummy item when reading the node to remove from the queue on line \ref{line:queue_libstm_dequeue_skip}. The call to \bscode{STMSystem.Retry} on line \ref{line:queue_libstm_dequeue_retry} causes a thread calling \bscode{Dequeue} on an empty queue to block until the queue is no longer empty. The assignment on line \ref{line:queue_libstm_dequeue_retry} sets the node representing the item to dequeue as the new dummy node, as it is no longer needed and already points to the next item in the queue. 
 
 \begin{lstlisting}[label=lst:impl_queue_lib,
   caption={STM Library Based Concurrent Queue Implementation},
@@ -1657,7 +1655,7 @@ The \stmname dining philosophers implementation represents the forks as instance
 
 \end{lstlisting}
 \subsection{Santa Claus Problem}
-As with the library-based Santa Claus problem implementation the language based implementation uses a \bscode{atomic} block with an associated \bscode{orelse} block, defined on line \ref{line:santa_langstm_wake}, to wake Santa when either the reindeer or elf condition is true. On line \ref{line:santa_langstm_elf_retry} the \bscode{retry} statement is used to ensure that no more than three elfs can go to Santa at any given point. Similarly, transactions utilizing \bscode{retry} statement are us ensure that the elfs and reindeer do not proceeded to next state before the required condition is true throughout the implementation.
+As with the library-based Santa Claus implementation \stmname uses an \bscode{atomic} block with an associated \bscode{orelse} block, defined on line \ref{line:santa_langstm_wake}, to wake Santa when either the reindeer or elf condition are true. On line \ref{line:santa_langstm_elf_retry} the \bscode{retry} statement is used to ensure that no more than three elfs can go to Santa at any given point. Similarly, transactions utilizing \bscode{retry} statement are us ensure that the elfs and reindeer do not proceeded to next state before the required condition is true throughout the implementation.
 
 \begin{lstlisting}[label=lst:impl_santa_lang,
   caption={\stmname Based Santa Claus Implementation},
@@ -2061,7 +2059,7 @@ As with the lock and library-based implementations the \stmname implementation i
 
 \end{lstlisting}
 \subsection{Concurrent Hashmap}
-As with the other concurrent hashmap implementations, the \stmname concurrent hashmap implementation utilizes a linked list of nodes for the collision lists. The \bscode{Node} class is defined on line \ref{line:hashmap_langstm_node_class}. As seen on line \ref{line:hashmap_langstm_node_class_next} its next property is declared with the \bscode{atomic} modifier, allowing the \ac{STM} system to detect changes to the list. Similarly the \bscode{Node} class's \bscode{Value} property is declared with the \bscode{atomic} modifier, as a call to the \bscode{Add} method with a key already present in the hashmap causes the value of the node representing the key/value pair to be updated. The backing array, seen on line \ref{line:hasmmap_langstm_backingarray}, is of type \bscode{Bucket[]} and is declared with the atomic modifier. The \bscode{atomic} modifier allows the \ac{STM} system to track the assignment of a new backing array as a result of resizing the hashmap. The \bscode{Bucket} class is defined on line \ref{line:hashmap_langstm_bucket_class} and has a \bscode{atomic Value} property to which the first node in the buckets linked list is assigned, if such an item exists. Together with the \bscode{atomic Next} property of the \bscode{Node} class, this allows the \ac{STM} system to detect any changes to the collision list. 
+As with the other concurrent hashmap implementations, the \stmname concurrent hashmap implementation utilizes a linked list of nodes for the collision lists. The \bscode{Node} class is defined on line \ref{line:hashmap_langstm_node_class}. As seen on line \ref{line:hashmap_langstm_node_class_next} its next property is declared with the \bscode{atomic} modifier, allowing the \ac{STM} system to detect changes to the list. Similarly the \bscode{Node} class's \bscode{Value} property is declared with the \bscode{atomic} modifier, as a call to the \bscode{Add} method with a key already present in the hashmap causes the value of the node representing the key/value pair to be updated. The backing array, seen on line \ref{line:hasmmap_langstm_backingarray}, is of type \bscode{Bucket[]} and is declared with the atomic modifier. The \bscode{atomic} modifier allows the \ac{STM} system to track the assignment of a new backing array as a result of resizing the hashmap. The \bscode{Bucket} class is defined on line \ref{line:hashmap_langstm_bucket_class} and has an \bscode{atomic Value} property to which the first node in the buckets linked list is assigned, if such an item exists. Together with the \bscode{atomic Next} property of the \bscode{Node} class, this allows the \ac{STM} system to detect any changes to the collision list. 
 
 \begin{lstlisting}[label=lst:impl_hasmap_lib,
   caption={\stmname Based Concurrent Hashmap Implementation},
