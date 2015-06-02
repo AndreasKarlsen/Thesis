@@ -207,7 +207,7 @@ To be a valid alternative to locks in C\#, an \ac{STM} system must be applicable
 
 Our previous work in \cite{dpt907e14trending} includes an implementation of the $k$-means clustering algorithm\cite[p. 451]{dataminingconceptsandtechniques} in the functional programming language Clojure. Clojure contains a language integrated \ac{STM} implementation which does not support constructs such as \bscode{retry} and \bscode{orElse}. As a result the implementation requires the use of condition variables and busy waiting in scenarios where the \bscode{retry} construct could have been employed\cite{duffy2010stmnet}. Supplying \bscode{retry} and \bscode{orElse} constructs in C\# will allow for simpler conditional synchronization without the need for busy waiting, thereby increasing the simplicity, level of abstraction and writability in such scenarios. 
 
-A disadvantage of providing the \bscode{retry} and \bscode{orElse} constructs is increased complexity. However, as the \bscode{retry} and \bscode{orElse} constructs are optional, this disadvantage is negligible. Therefore the conditional synchronization constructs are included in \stmanme.
+A disadvantage of providing the \bscode{retry} and \bscode{orElse} constructs is increased complexity. However, as the \bscode{retry} and \bscode{orElse} constructs are optional, this disadvantage is negligible. Therefore the conditional synchronization constructs are included in \stmname.
 
 \section{Nesting}
 \label{sec:stm_req_nesting}
