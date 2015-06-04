@@ -39,8 +39,8 @@ The $type$ can be any existing or user-defined type including \bscode{dynamic}. 
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var, get, set, string}]  % Start your code-block
 
- private atomic string s = "abc";
- public atomic static int x, y, z;
+  private atomic string s = "abc";
+  public atomic static int x, y, z;
 \end{lstlisting}
 
 \subsection{Transactional Properties}\label{subsec:design_properties}
@@ -70,9 +70,9 @@ Atomic automatic properties simplifies the implementation whenever the property 
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
 
- class Car {
-     public atomic int KmDriven { get; set; }
- }
+  class Car {
+    public atomic int KmDriven { get; set; }
+  }
 \end{lstlisting}
 
 \begin{lstlisting}[label=lst:atomic_property,
@@ -88,18 +88,18 @@ Atomic automatic properties simplifies the implementation whenever the property 
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
 
- class Car {
-   private atomic int _kmDriven;
-   public int KmDriven {
-       get {
-           return _kmDriven;
-       }
-       set {
-           _kmDriven = value;
-           // Announce value changes
-       }
-   }
- }
+  class Car {
+    private atomic int _kmDriven;
+    public int KmDriven {
+      get {
+        return _kmDriven;
+      }
+      set {
+        _kmDriven = value;
+        // Announce value changes
+        }
+    }
+  }
 \end{lstlisting}
 
 No restrictions are made on transactional properties marked \bscode{virtual.} Consequently the programmer can override a \bscode{virtual atomic} property supplying a non-\bscode{atomic} implementation. Similarly the programmer is allowed to override a non-\bscode{atomic}, \bscode{virtual} property with an \bscode{atomic} auto implemented property of the same type. This approach is flexible when supplying transactional implementations of existing non-transactional base classes and allows non transactional implementations based on a transactional base class, raising the orthogonality of \stmname.
@@ -124,8 +124,8 @@ As with transactional fields, $type$ can be any existing or user defined type in
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
 
- atomic var s = "abc";
- atomic int i = 12; 
+  atomic var s = "abc";
+  atomic int i = 12; 
 \end{lstlisting}
 
 \section{Transactional Parameters}\label{sec:parameter_design}
@@ -158,10 +158,10 @@ where $param$-$modifier$ represents C\#'s \bscode{ref} and \bscode{out} keywords
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var, get, set, string}]  % Start your code-block
 
- public void Method(atomic int x, atomic string s)
- {
- 	//Work with transactional parameters
- }
+  public void Method(atomic int x, atomic string s)
+  {
+    //Work with transactional parameters
+  }
   
 \end{lstlisting}
 
@@ -186,16 +186,16 @@ In \stmname, a reference parameter can be marked as atomic, and become a \ac{TRP
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var, get, set, ref, out}]  % Start your code-block
 
- class Point {
-   public atomic int X { get; set; }
-   public atomic int Y { get; set; }
-   public void CopyMe(atomic ref int x, atomic ref int y) {
-     atomic {
-       x = this.X;
-       y = this.Y;
-     }
-   }   
- }
+  class Point {
+    public atomic int X { get; set; }
+    public atomic int Y { get; set; }
+    public void CopyMe(atomic ref int x, atomic ref int y) {
+      atomic {
+        x = this.X;
+        y = this.Y;
+      }
+    }   
+  }
 \end{lstlisting}
 
 \subsection{Transactional Output Parameters}
@@ -219,16 +219,16 @@ In \stmname, an output parameter can be marked as atomic, and it becomes a \ac{T
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var, get, set, ref, out}]  % Start your code-block
 
- class Point {
-   public atomic int X { get; set; }
-   public atomic int Y { get; set; }
-   public void CopyMe(atomic out int x, atomic out int y) {
-     atomic {
-       x = this.X;
-       y = this.Y;
-     }
-   }   
- }
+  class Point {
+    public atomic int X { get; set; }
+    public atomic int Y { get; set; }
+    public void CopyMe(atomic out int x, atomic out int y) {
+      atomic {
+        x = this.X;
+        y = this.Y;
+      }
+    }   
+  }
 \end{lstlisting}
 
 \subsection{Transactional Parameter Array}\label{sec:stm_design_paramter_array}
@@ -267,33 +267,33 @@ When a variable is passed as \bscode{ref} or \bscode{out}, it follows the call-b
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var, get, set, using}]  % Start your code-block
 
- using System;
- using System.Threading;
+  using System;
+  using System.Threading;
   public class RaceCondition
- {
-     public static atomic int number = 10;
-      public static void Main(string[] args)
-     {
-         Thread t1 = new Thread ( () => {
-             atomic {
-                 if (number == 10 )          
-                     number = number * 3;
-             }
-          });
-         Thread t2 = new Thread( () => {
-             atomic {
-                 number = 20;
-             }
-         });
-         t1.Start(); t2.Start();
-         t1.Join(); t2.Join();
-         int result;
-         atomic {
-             result = number;         
-         }
-         Console.WriteLine("Result is: " + result);
-     }
- }
+  {
+    public static atomic int number = 10;
+    public static void Main(string[] args)
+    {
+      Thread t1 = new Thread ( () => {
+        atomic {
+          if (number == 10 )          
+            number = number * 3;
+          }
+      });
+      Thread t2 = new Thread( () => {
+        atomic {
+          number = 20;
+        }
+      });
+      t1.Start(); t2.Start();
+      t1.Join(); t2.Join();
+      int result;
+      atomic {
+        result = number;         
+      }
+      Console.WriteLine("Result is: " + result);
+    }
+  }
 \end{lstlisting}
 
 As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_strong_weak_atomicity} \stmnamesp must provide strong atomicity as well as allowing reads and writes to occur from outside atomic blocks. As a result, reads and writes occurring from outside transactions will be accounted for when validating transactions. With that in mind, the previous example can be slightly simplified to the example in \bsref{lst:stm_atomic_syntax_simplified}. The atomic block on line 17 of \bsref{lst:stm_atomic_syntax} has been removed, since the \bscode{atomic} block contains only a single write. The atomic block on line 24 of \bsref{lst:stm_atomic_syntax} can also be removed as the read can safely be performed from outside a transaction.
@@ -311,27 +311,27 @@ As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var, get, set, using}]  % Start your code-block
 
- using System;
- using System.Threading;
+  using System;
+  using System.Threading;
   public class RaceConditionSimple
- {
-     public static atomic int number = 10;
-      public static void Main(string[] args)
-     {
-         Thread t1 = new Thread ( () => {
-             atomic {
-                 if (number == 10)          
-                     number = number * 3;
-             }
-          });
-         Thread t2 = new Thread( () => {
-                 number = 20;
-         });
-         t1.Start(); t2.Start();
-         t1.Join(); t2.Join();
-         Console.WriteLine("Result is: " + number);
-     }
- }
+  {
+    public static atomic int number = 10;
+    public static void Main(string[] args)
+    {
+      Thread t1 = new Thread ( () => {
+        atomic {
+          if (number == 10)          
+            number = number * 3;
+        }
+      });
+      Thread t2 = new Thread( () => {
+        number = 20;
+      });
+      t1.Start(); t2.Start();
+      t1.Join(); t2.Join();
+      Console.WriteLine("Result is: " + number);
+    }
+  }
 \end{lstlisting}
 Allowing access to transactional variables from outside transactions dispenses the need for defining a transaction whenever only a single read or write is to be performed. The atomic block then serves the purpose of combining multiple operations to be executed as a single atomic step.
 
@@ -351,34 +351,34 @@ As described in \bsref{sec:req_conditional} \stmnamesp supports conditional sync
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var, get, set, using}]  % Start your code-block
 
- using System;
+  using System;
   public class Queue<T>
- {
- 	private atomic Node _head = null;
- 	private atomic Node _tail = null;
- 	private atomic int _size = 0;
+  {
+    private atomic Node _head = null;
+    private atomic Node _tail = null;
+    private atomic int _size = 0;
 
- 	public T Dequeue()
- 	{
- 		atomic{
+    public T Dequeue()
+    {
+      atomic{
  		
- 			if (_size == 0)
- 				retry;
+        if (_size == 0)
+          retry;
 
- 			var oldHead = _head;
+        var oldHead = _head;
 
- 			_head = _head.Next;
- 			if (_head == null)
- 				_tail = null;
+        _head = _head.Next;
+        if (_head == null)
+          _tail = null;
  			
- 			_size--;
+        _size--;
 
- 			return oldHead.Value;
- 		}
- 	}
+        return oldHead.Value;
+      }
+    }
  	
  	...
- }
+  }
 \end{lstlisting}
 
 Furthermore \stmnamesp supports an \bscode{orelse} keyword allowing zero to many \bscode{orElse} blocks to be associated with an atomic block, much like catch clauses are associated with a \bscode{try} statement in many C like languages, including C\#\cite[p. 96]{sestoft2011c}. The  format of the \bscode{atomic} block is therefore extended to:
@@ -400,27 +400,27 @@ where $S$ is the general class of C\# statements. As an example of the \bscode{o
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orelse, var, get, set, using}]  % Start your code-block
 
- using System;
+  using System;
   public class Consumer<T>
- {
-     private Buffer<T> _buffer1;
-     private Buffer<T> _buffer2;
+  {
+    private Buffer<T> _buffer1;
+    private Buffer<T> _buffer2;
 
-     public T ConsumeItem()
-     {
-         atomic {
-             if(_buffer1.Count == 0)
-                 retry;
+    public T ConsumeItem()
+    {
+      atomic {
+        if(_buffer1.Count == 0)
+          retry;
 
-             return _buffer1.Get();
-         } orelse {
-             if(_buffer2.Count == 0)
-                 retry;
+          return _buffer1.Get();
+      } orelse {
+        if(_buffer2.Count == 0)
+          retry;
 
-             return _buffer2.Get();
-         }
-     }
- }
+          return _buffer2.Get();
+        }
+    }
+  }
 \end{lstlisting}
 
 \section{Nesting}\label{sec:nesting_design}
@@ -439,36 +439,36 @@ As described in \bsref{sec:stm_req_nesting} \stmnamesp supports nesting of trans
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orelse, var, get, set, using}]  % Start your code-block
 
- public class LexicalNesting
- {
-     private atomic static int X = 0;
-     private atomic static int Y = 0;
-     private atomic static int Z = 0;
+  public class LexicalNesting
+  {
+    private atomic static int X = 0;
+    private atomic static int Y = 0;
+    private atomic static int Z = 0;
 
-     public void Main(string[] args)
-     {
-         if (args.Length != 2)
-             return;
+    public void Main(string[] args)
+    {
+      if (args.Length != 2)
+        return;
 
-         int tmpx;
-         int tmpy;
-         if (!int.TryParse(args[0], out tmpx)
-             || !int.TryParse(args[1], out tmpy))
-             return;
+      int tmpx;
+      int tmpy;
+      if (!int.TryParse(args[0], out tmpx)
+        || !int.TryParse(args[1], out tmpy))
+        return;
 
-         atomic
-         {
-             atomic
-             {
-                 X = tmpx;
-                 Y = tmpy;
-             }
+      atomic
+      {
+        atomic
+        {
+          X = tmpx;
+          Y = tmpy;
+        }
 
-             Z = X * Y;
-         }
-         System.Console.WriteLine(Z);
-     }
- }
+        Z = X * Y;
+      }
+      System.Console.WriteLine(Z);
+    }
+  }
 \end{lstlisting}
 
 To increase the usability of \stmname, specifically its writability and orthogonality, dynamic nesting of transactions is allowed. As an example, consider \bsref{lst:stm_nested_transactions_real} where a transaction is defined on line 1. The transaction transfers funds from \bscode{account1} to \bscode{account2} by using the \bscode{withdraw} and \bscode{deposit} methods, which are themselves defined using transactions. Because of the semantics of closed nesting, the transfer is executed as single atomic step.
@@ -486,11 +486,11 @@ To increase the usability of \stmname, specifically its writability and orthogon
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var}]  % Start your code-block
 
-	atomic{
-		var amount = 200;
-		account1.withdraw(amount);
-		account2.deposit(amount);
-	}
+  atomic{
+    var amount = 200;
+    account1.withdraw(amount);
+    account2.deposit(amount);
+  }
      
 \end{lstlisting}
 
