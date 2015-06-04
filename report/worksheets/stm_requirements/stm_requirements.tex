@@ -27,17 +27,18 @@ This approach can be used in combination with both user defined code and code in
  keywordstyle=\color{bluekeywords},
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var, get, set, sealed}]  % Start your code-block
+ 
   sealed class Car {
-   private readonly int _kmDriven;
-   public Car(int km) { _kmDriven = km; }
-   public Car Drive (int km) {
-     return new Car(_kmDriven + km);
-   }
- }
+    private readonly int _kmDriven;
+    public Car(int km) { _kmDriven = km; }
+    public Car Drive (int km) {
+      return new Car(_kmDriven + km);
+    }
+  }
   ...
- atomic {
-   _car = _car.drive(25);
- }
+  atomic {
+    _car = _car.drive(25);
+  }
 \end{lstlisting}
 %
 \subsection{Tracking of Objects}
@@ -60,18 +61,19 @@ In \cite{harris2003language}, Harris et al. present an \ac{STM} system which tra
  keywordstyle=\color{bluekeywords},
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+  
   public class Car {
-   private int _kmDriven;
-   private Engine _engine;
-   public void Drive (int km) {
-     _kmDriven += km;
-     _engine.Degrade(km);
-   }
- }
+    private int _kmDriven;
+    private Engine _engine;
+    public void Drive (int km) {
+      _kmDriven += km;
+      _engine.Degrade(km);
+    }
+  }
   ...
- atomic {
-   _car.Drive(25);
- }
+  atomic {
+    _car.Drive(25);
+  }
 \end{lstlisting}
 %
 \subsection{Choice of Tracking Granularity}
@@ -120,22 +122,22 @@ If only weak atomicity is guaranteed, given the same scenario, the change made t
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
 
- public class Car {
-   private int _kmDriven;
-   public int KmDriven {
-     get {
-       return _kmDriven;
-     }
-     set {
-       _kmDriven = value;
-     }
-   }
-   public void Drive (int km) {
-     atomic {
-       _kmDriven += km;
-     }
-   }
- }
+  public class Car {
+    private int _kmDriven;
+    public int KmDriven {
+      get {
+        return _kmDriven;
+      }
+      set {
+        _kmDriven = value;
+      }
+    }
+    public void Drive (int km) {
+      atomic {
+        _kmDriven += km;
+      }
+    }
+  }
 \end{lstlisting}
 
 \subsection{Issues with Atomicity Levels}
@@ -163,16 +165,16 @@ Another issue with weak atomicity is known as the privatization problem. If only
  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
 
  // Thread 1
- atomic {
-   priv = true;
-   }
- x = 100;
+  atomic {
+    priv = true;
+  }
+  x = 100;
   // Thread 2
- atomic {
-   if (!priv) {
-     x = 200;
-   }
- }
+  atomic {
+    if (!priv) {
+      x = 200;
+    }
+  }
 \end{lstlisting}
 
 \subsection{Choice of Atomicity Level}
@@ -283,40 +285,40 @@ By providing opacity, programmers do not have to reason about problems that occu
  stringstyle=\color{redstrings},
  morekeywords={atomic, retry, orelse, var, get, set, using}]  % Start your code-block
 
- using System.Threading;
+  using System.Threading;
 
- public class Opacity
- {
-     private atomic static int X = 10;
-     private atomic static int Y = 10;
+  public class Opacity
+  {
+    private atomic static int X = 10;
+    private atomic static int Y = 10;
 
-     public static void Main(string[] args)
-     {
-         var t1 = new Thread(() =>
-         {
-             atomic
-             {
-               X = 20;
-               Y = 20;
-             }
-         });
+    public static void Main(string[] args)
+    {
+      var t1 = new Thread(() =>
+      {
+        atomic
+        {
+          X = 20;
+          Y = 20;
+        }
+      });
 
-         var t2 = new Thread(() =>
-         {
-             atomic
-             {
-                 var tmpx = X;
-                 var tmpy = Y;
-                 while (tmpx != tmpy)
-                 {
-                 }
-             }
-         });
+      var t2 = new Thread(() =>
+      {
+        atomic
+        {
+          var tmpx = X;
+          var tmpy = Y;
+          while (tmpx != tmpy)
+          {
+          }
+        }
+      });
 
-         t1.Start();
-         t2.Start();
-     }
- }
+      t1.Start();
+      t2.Start();
+    }
+  }
 \end{lstlisting}
 where the two transactional variables \bscode{X} and \bscode{Y} are defined on lines 5 and 6 as well as the two threads \bscode{t1} and \bscode{t2} are defined on lines 10 and 19. \bscode{t1} simply sets the value of \bscode{X} and \bscode{Y} as a transaction. \bscode{t2} enters a transaction in which it reads the values of \bscode{X} and \bscode{Y} entering a loop if the values are not equal. Consider the interleaving shown in \bsref{fig:opacity_interleaving}. The transaction executed by \bscode{t2} reads the value 10 associated with the variable X after which \bscode{t1}'s transaction updates the value of both  \bscode{X} and \bscode{Y} to 20. \bscode{t2} reads the value 20 associated with \bscode{Y.} In an \ac{STM} system providing opacity, this would not be allowed since the transaction would read inconsistent data. If the \ac{STM} system does not provide opacity \bscode{t2} will enter an infinite loop as \bscode{tmpx} and \bscode{tmpy} are not equal.
 
