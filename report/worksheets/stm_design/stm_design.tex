@@ -1,20 +1,20 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Design and Integration}{0}{Februar 10, 2015}{}{../../}
-This chapter describes the considerations and design decisions of \stmname, the integration with existing language features, as well as \stmname's syntax \& semantics. The design of \stmnamesp impacts the way it can be integrated with C\#. Thus we make the design adhere to the requirements made in \bsref{sec:stm_requirements}, while integrating seamlessly with existing language features. The decisions made in this chapter will influence the implementation of the \ac{STM} library described in \bsref{chap:implementation}, and the extension of the Roslyn C\# compiler described in \bsref{chap:roslyn_extension}.
+This chapter describes the considerations and design decisions of \stmname, the integration with existing language features, as well as \stmname's syntax \& semantics. The design adheres to the requirements defined in \bsref{sec:stm_requirements}, while integrating with existing language features. The decisions made in this chapter will influence the implementation of the \ac{STM} library described in \bsref{chap:implementation}, and the extension of the Roslyn C\# compiler described in \bsref{chap:roslyn_extension}.
 
 The atomic block and transactional variables are introduced in \bsref{sec:stm_design}. The different kinds of parameters and their integration with transactions is described in \bsref{sec:parameter_design}. This is followed by an example of the new syntax, demonstrated in \bsref{sec:example_design}. The \bscode{retry} and \bscode{orelse} keywords for supporting conditional synchronization are introduced in \bsref{sec:sync_design}. \bsref{sec:nesting_design} shows how \stmname supports nesting of transactions. Finally, a summary of the design requirements described in this chapter is given in \bsref{sec:summary_design}.
 
-Throughout this chapter, the proposed syntax extensions is described using Extended Backus-Naur Form. The notation uses ? for signaling 0 or 1 occurrences and + signaling for 0 or more occurrences. Parentheses are used for grouping: ( item1, item2 ). Items formatted as \bscode{terminal} are terminals, while items formatted as $non-term$ are non-terminals. The examples presented are based on the syntax used in C\# Precisely\cite{sestoft2011c}. This is chosen due to its compact and readable format. As the examples serve to illustrate how the new constructs integrate with the existing language features, some elements of the syntax will not be explained in depth. A reference to where it can be found will be provided in each example. The complete C\# grammar used for parsing can be found at the C\# specification\cite{csharp2013specificaiton}.
+Throughout this chapter, the proposed syntax extensions is described using Extended Backus-Naur Form. The notation uses ? for signaling 0 or 1 occurrences and + for signaling 0 or more occurrences. Parentheses are used for grouping: ( item1, item2 ). Items formatted as \bscode{terminal} are terminals, while items formatted as $non-term$ are non-terminals. The syntax extensions presented are based on the syntax used in C\# Precisely\cite{sestoft2011c}. This is chosen due to its compact and readable format. As the examples serve to illustrate how the new constructs integrate with the existing language features, some elements of the syntax will not be explained in depth. A reference to where a detailed description can be found will be provided for each example. The complete C\# grammar used for parsing can be found at the C\# specification\cite{csharp2013specificaiton}.
 
 \label{chap:stm_design}
 
-\section{Transactional Block \& Variables}\label{sec:stm_design}
-As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply language integrated support for defining transaction scopes as well as declaration of transactional variables. For this purpose \stmnamesp extends C\# with the \bscode{atomic} keyword. The \bscode{atomic} keyword will serve as both a statement denoting a transaction scope as well as a modifier applicable to the declaration of variables. 
+\section{Transactional Blocks \& Variables}\label{sec:stm_design}
+As described in \bsref{subsec:rec_transactions_variables} \stmnamesp must supply language integrated support for defining transaction scopes as well as declaration of transactional variables. For this purpose \stmnamesp extends C\# with the \bscode{atomic} keyword. The \bscode{atomic} keyword will serve as both a statement denoting a transaction scope as well as a modifier applicable to the declaration of variables.
 
-\subsection{Transactional Block}
+\subsection{Transactional Blocks}
 \label{subsec:design_atomic_block}
-The declaration of a transaction takes the format \bscode{atomic} \{ $S$ \}, where $S$ is the general class of C\# statements. Any assignments to transactional variables inside an atomic block will be perceived as executed in one atomic step by other transactions and non-transactional code. Return statements inside an atomic block will cause a return from the contained method, just like returns in \bscode{if} and \bscode{try} blocks. 
-\subsection{Transactional Field}\label{subsec:design_trans_field}
+The declaration of a transaction takes the format \bscode{atomic} \{ $S$ \}, where $S$ is the general class of C\# statements. Any assignments to transactional variables inside an atomic block will be perceived as executed in one atomic step by other transactions and non-transactional code. Return statements inside an atomic block will cause a return from the contained method, just like returns in \bscode{if} and \bscode{try} blocks.
+\subsection{Transactional Fields}\label{subsec:design_trans_field}
 The declaration of a transactional field takes the format:
 
 $field$-$modifiers$ $type$ \bscode{name} = $initializer$ ( , \bscode{name} = $initializer$ )+ ; \\
@@ -22,86 +22,87 @@ $field$-$modifiers$ $type$ \bscode{name} ( , \bscode{name} )+ ; \\
 
 where $field$-$modifiers$ includes the new \bscode{atomic} keyword in addition to the existing modifiers: \bscode{static}, \bscode{new}, and $access$-$modifiers$\cite[p. 36]{sestoft2011c}. The $field$-$modifiers$ \bscode{readonly} and \bscode{const} are not included, since their unchangeable nature makes tracking them in an \ac{STM} system pointless. \bscode{volatile} is also left out, as the \ac{STM} system ensures safety in concurrent contexts.
 
-The $type$ can be any existing or user-defined type including \bscode{dynamic}. The calculation of \bscode{initial-value} follows the same rules as standard C\# field initializers\cite[p. 40]{sestoft2011c}. 
+The $type$ can be any existing or user-defined type including \bscode{dynamic}. The calculation of $initializer$ follows the same rules as standard C\# field initializers\cite[p. 40]{sestoft2011c}.
 
 \bsref{lst:design_transactional_fields} presents an example of atomic field declarations.
 
 \begin{lstlisting}[label=lst:design_transactional_fields,
-  caption={Local Transactional Variable},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+ caption={Local Transactional Variable},
+ language=Java, 
+ showspaces=false,
+ showtabs=false,
+ breaklines=true,
+ showstringspaces=false,
+ breakatwhitespace=true,
+ commentstyle=\color{greencomments},
+ keywordstyle=\color{bluekeywords},
+ stringstyle=\color{redstrings},
+ morekeywords={atomic, retry, orElse, var, get, set, string}]  % Start your code-block
 
-  private atomic string s = "abc";
-  public atomic static int x, y, z;
+ private atomic string s = "abc";
+ public atomic static int x, y, z;
 \end{lstlisting}
 
 \subsection{Transactional Properties}\label{subsec:design_properties}
-C\# facilitates a language feature which eases the encapsulation of fields typically used in \ac{OOP}. The feature is known as properties, and can be in an automatic or a manual form. The formats in mentioned order are\cite[p. 52]{sestoft2011c}:
+C\# facilitates a language feature which eases the encapsulation of fields typically used in \ac{OOP}. The feature is known as properties, and can appear in an automatic or a manual form. The formats of transactional properties in mentioned order are\cite[p. 52]{sestoft2011c}:
 
-$field$-$modifiers$ $type$ \bscode{name} \{ $access$-$modifier$? \bscode{get}\bscode{;} \\ $access$-$modifier$? \bscode{set}\bscode{;} \}
+\bscode{atomic} $method$-$modifiers$ $type$ \bscode{name} \{ $access$-$modifier$? \bscode{get}\bscode{;} \\ $access$-$modifier$? \bscode{set}\bscode{;} \}
 \\\\
 $method$-$modifiers$ $type$ \bscode{name} $\{$ $access$-$modifier$? \bscode{get} $get$-$body$ \\ $access$-$modifier$? \bscode{set} $set$-$body$ $\}$
 
-where $field$-$modifiers$ includes the new \bscode{atomic} keyword, and $method$-$modifiers$ does not. This is the only change to properties in C\#, and the normal rules of property usage still applies, as defined in \cite[p. 52]{sestoft2011c}.
+$method$-$modifiers$ include the: \bscode{static,} \bscode{new,} \bscode{virtual,} \bscode{override,} \bscode{sealed,} and \bscode{abstract} keywords.
+Only the automatic form of properties can be declared as transactional. This is the only change to properties in C\#, and the normal rules of property usage still applies, as defined in \cite[p. 52]{sestoft2011c}.
 
-The manual property lets the programmer specify a backing field manually, allowing him to specialize the functionality of the getter and setter. The automatic properties generate a backing field automatically, but the getter and setter cannot have specialized functionality. 
+The manual property lets the programmer specify a backing field manually, allowing him to specialize the functionality of the getter and setter. The automatic properties generate a backing field automatically, but the getter and setter cannot have specialized functionality.
 
-Atomic automatic properties simplifies the implementation whenever the property serves as a simple getter and setter. An example of such a property is shown in \bsref{lst:auto_atomic_property}. If the programmer wishes to supply additional logic for the get and set operations the manual property can be made atomic by accessing an atomic backing field as demonstrated in \bsref{lst:atomic_property}. Both cases are frequently used in C\#, thus supplying an \bscode{atomic} version makes the feature usable in a transaction in an orthogonal manner.
+Atomic automatic properties simplifies the implementation whenever the property serves as a simple getter and setter. An example of such a property is shown in \bsref{lst:auto_atomic_property}. If the programmer wishes to supply additional logic for the get and set operations the manual property can be made atomic by accessing an atomic backing field as demonstrated in \bsref{lst:atomic_property}. Both cases are frequently used in C\#, thus supplying an \bscode{atomic} version makes the feature usable in transactions in an orthogonal manner.
 
 \begin{lstlisting}[label=lst:auto_atomic_property,
-  caption={Automatic Transactional Properties},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+ caption={Automatic Transactional Properties},
+ language=Java, 
+ showspaces=false,
+ showtabs=false,
+ breaklines=true,
+ showstringspaces=false,
+ breakatwhitespace=true,
+ commentstyle=\color{greencomments},
+ keywordstyle=\color{bluekeywords},
+ stringstyle=\color{redstrings},
+ morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
 
-  class Car {
-      public atomic int KmDriven { get; set; }
-  }
+ class Car {
+     public atomic int KmDriven { get; set; }
+ }
 \end{lstlisting}
 
 \begin{lstlisting}[label=lst:atomic_property,
-  caption={Manual Transactional Property},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+ caption={Manual Transactional Property},
+ language=Java, 
+ showspaces=false,
+ showtabs=false,
+ breaklines=true,
+ showstringspaces=false,
+ breakatwhitespace=true,
+ commentstyle=\color{greencomments},
+ keywordstyle=\color{bluekeywords},
+ stringstyle=\color{redstrings},
+ morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
 
-  class Car {
-    private atomic int _kmDriven;
-    public int KmDriven {
-        get {
-            return _kmDriven;
-        }
-        set {
-            _kmDriven = value;
-            // Announce value changes
-        }
-    }
-  }
+ class Car {
+   private atomic int _kmDriven;
+   public int KmDriven {
+       get {
+           return _kmDriven;
+       }
+       set {
+           _kmDriven = value;
+           // Announce value changes
+       }
+   }
+ }
 \end{lstlisting}
 
-No additional restrictions are made on transactional properties marked \bscode{virtual.} Consequently the programmer can override a \bscode{virtual atomic} property supplying a non \bscode{atomic} implementation. Similarly the programmer is allowed to override an non \bscode{atomic}, \bscode{virtual} property with a \bscode{atomic} auto implemented property of the same type. This approach is flexible when supplying transactional implementations of existing non transactional base classes and allows non transactional implementations based on a transactional base class, raising the orthogonality of \stmname.
+No restrictions are made on transactional properties marked \bscode{virtual.} Consequently the programmer can override a \bscode{virtual atomic} property supplying a non-\bscode{atomic} implementation. Similarly the programmer is allowed to override a non-\bscode{atomic}, \bscode{virtual} property with an \bscode{atomic} auto implemented property of the same type. This approach is flexible when supplying transactional implementations of existing non-transactional base classes and allows non transactional implementations based on a transactional base class, raising the orthogonality of \stmname.
 
 \subsection{Transactional Local Variables}\label{subsec:local_variables}
 The declaration of transactional local variables follows the format:
@@ -109,127 +110,129 @@ The declaration of transactional local variables follows the format:
 \bscode{atomic} \bscode{var} \bscode{name} = $expr$;\\
 \bscode{atomic} $type$ \bscode{name} ( = $expr$ )? (, \bscode{name} ( = $expr$ )? )+ ;\\
 
-As with transactional fields $type$ can be any existing or user defined type including the \bscode{dynamic} keyword.
+As with transactional fields, $type$ can be any existing or user defined type including the \bscode{dynamic} keyword.
 \begin{lstlisting}[label=lst:local_variable,
-  caption={Local Transactional Variable},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
+ caption={Local Transactional Variable},
+ language=Java, 
+ showspaces=false,
+ showtabs=false,
+ breaklines=true,
+ showstringspaces=false,
+ breakatwhitespace=true,
+ commentstyle=\color{greencomments},
+ keywordstyle=\color{bluekeywords},
+ stringstyle=\color{redstrings},
+ morekeywords={atomic, retry, orElse, var, get, set}]  % Start your code-block
 
-  atomic var s = "abc";
-  atomic int i = 12;  
+ atomic var s = "abc";
+ atomic int i = 12; 
 \end{lstlisting}
 
 \section{Transactional Parameters}\label{sec:parameter_design}
-In C\# four different kinds of parameters exist: Value, Reference, Output, and Parameter Array. \bscode{atomic} Value, Reference and Output  parameters  are available in  \stmnamesp. This gives the programmer flexibility by enabling her to track variables without additional ceremonial code. The semantics and integration of the three parameter types in \stmnamesp will be discussed in the following sections. Why \bscode{atomic} parameter arrays are not supported is discussed in \bsref{sec:stm_design_paramter_array}.
+In C\# four different kinds of parameters exist: Value, Reference, Output, and Parameter Array of which \bscode{atomic} Value, Reference and Output parameters are available in  \stmnamesp. This gives the programmer the flexibility to track parameters without requiring additional ceremonial code. The semantics, syntax, and integration of the three parameter types in \stmnamesp will be discussed in the following sections. Why \bscode{atomic} parameter arrays are not supported is discussed in \bsref{sec:stm_design_paramter_array}.
 
 \subsection{Transactional Value Parameters}
 \label{subsec:stm_desgin_value_parameters}
 According to \cite[p. 97]{csharp2013specificaiton}: \textit{``A parameter declared without a ref or out modifier is a value parameter.''} If the parameter is a value type, call-by-value semantics is used, thus assignments to the argument have no effect outside the method scope. If the parameter is a reference type, it is also call-by-value semantics, however side-effects that change the referenced object, will persist outside the method scope. Due to the call-by-value semantics, assignments to an argument of reference type will have no effect outside the method scope\cite[p. 76]{sestoft2011c}.
 
-In \stmname, a value parameter can be marked as atomic, thus becoming a transactional value parameter. Semantically a a transactional value parameter is equivalent to a transactional local variable which is instantiated to the value of the parameter\cite[p. 76]{sestoft2011c}. However, the syntax provided by the transactional parameters eases the use by providing an orthogonal approach for tracking assignments to the parameters in transactions.
+In \stmname, a value parameter can be marked as atomic, thus becoming a transactional value parameter. Semantically a transactional value parameter is equivalent to a transactional local variable which is instantiated to the value of the parameter\cite[p. 76]{sestoft2011c}. However, the transactional parameters improve the usability by providing an orthogonal approach for tracking assignments to the parameters in transactions.
 
 For declaration of transactional parameters the format is as follows:
 
-\bscode{atomic} $param$-$modifier$? $type$ \bscode{name} (= value-initializer)
+\bscode{atomic} $param$-$modifier$? $type$ \bscode{name} (= $value-initializer$)
 
-where $param$-$modifier$ represents C\#'s \bscode{ref} and \bscode{out} keywords, and $type$ can be any existing or user defined type including the \bscode{dynamic} keyword, as previously stated. The \bscode{atomic} keyword can be combined with optional parameters, and follows the standard rules for optional parameters\cite[p. 46-47]{sestoft2011c}.
+where $param$-$modifier$ represents C\#'s \bscode{ref} and \bscode{out} keywords, and $type$ can be any existing or user defined type including the \bscode{dynamic} keyword, as previously stated. The \bscode{atomic} keyword can be combined with optional parameters. An optional parameter declared \bscode{atomic} follows the standard rules for optional parameters as defined in\cite[p. 46-47]{sestoft2011c}.
 
 \bsref{lst:design_value_parameter} presents an example of an atomic value parameter declaration.
 
 \begin{lstlisting}[label=lst:design_value_parameter,
-  caption={Transactional Value Parameter},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set, string}]  % Start your code-block
+ caption={Transactional Value Parameter},
+ language=Java, 
+ showspaces=false,
+ showtabs=false,
+ breaklines=true,
+ showstringspaces=false,
+ breakatwhitespace=true,
+ commentstyle=\color{greencomments},
+ keywordstyle=\color{bluekeywords},
+ stringstyle=\color{redstrings},
+ morekeywords={atomic, retry, orElse, var, get, set, string}]  % Start your code-block
 
-  public void Method(atomic int x, atomic string s)
-  {
-  	//Work with transactional parameters
-  }
-    
+ public void Method(atomic int x, atomic string s)
+ {
+ 	//Work with transactional parameters
+ }
+  
 \end{lstlisting}
 
 \subsection{Transactional Reference Parameters}
 \label{subsec:stm_desgin_ref_parameters}
-According to \cite[p. 97]{csharp2013specificaiton}: \textit{``A parameter declared with a ref modifier is a reference parameter.''} As opposed to a value parameter, a reference parameter uses call-by-reference semantics, therefore it is the actual reference used as argument, not a copy. Consequently, assignments to the parameter will take effect outside the method scope, regardless of the parameter being a value or reference type. Changes to the parameter will take effect immediately, both in and outside of the method scope\cite[p. 42]{sestoft2011c}. Additionally, a reference parameter is required to be a variable which has been definitely assigned before it is passed as a reference parameter\cite[p. 97]{csharp2013specificaiton}. Definitely assigned, meaning that the variable is sure to have been given a value at the point where it is used\cite[p. 96]{csharp2013specificaiton}, in this case passed as a reference parameter.
+According to \cite[p. 97]{csharp2013specificaiton}: \textit{``A parameter declared with a ref modifier is a reference parameter.''} As opposed to a value parameter, a reference parameter uses call-by-reference semantics, therefore it is the actual reference used as argument, not a copy. Consequently, assignments to the parameter will take effect outside the method scope, regardless of the parameter being a value or reference type. Assignments to the parameter take effect immediately, both in and outside of the method scope\cite[p. 42]{sestoft2011c}. Additionally, a reference parameter is required to be a variable which has been definitely assigned before it is passed as a reference argument\cite[p. 97]{csharp2013specificaiton}. Definitely assigned, meaning that the variable is sure to have been given a value at the point where it is used\cite[p. 96]{csharp2013specificaiton}, in this case passed as a reference parameter.
 
 In \stmname, a reference parameter can be marked as atomic, and become a \ac{TRP}. A \ac{TRP} differs from a reference parameter by being tracked in transactions. Assignments to a \ac{TRP} do not take effect outside of the transaction immediately, but when the transaction commits. This is a design choice made to enforce atomicity, as immediate changes to a \ac{TRP} would enable reading intermediate transaction states. A noteworthy detail is that changes made to a \ac{TRP} through side-effects will be immediate, since side-effects are not tracked by the \ac{STM} system, as discussed in \bsref{sec:tracking}.
 
 \bsref{lst:atomic_ref} presents an example of a \bscode{Point} class declaring two \ac{TRP}'s as parameters for the \bscode{ChangeMe} method.
 
 \begin{lstlisting}[label=lst:atomic_ref,
-  caption={Transactional Reference Parameter},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set, ref, out}]  % Start your code-block
+ caption={Transactional Reference Parameter},
+ language=Java, 
+ showspaces=false,
+ showtabs=false,
+ breaklines=true,
+ showstringspaces=false,
+ breakatwhitespace=true,
+ commentstyle=\color{greencomments},
+ keywordstyle=\color{bluekeywords},
+ stringstyle=\color{redstrings},
+ morekeywords={atomic, retry, orElse, var, get, set, ref, out}]  % Start your code-block
 
-  class Point {
-    public atomic int X { get; set; }
-    public atomic int Y { get; set; }
-    public void ChangeMe(atomic ref int x, atomic ref int y) {
-      atomic { 
-        x = this.X;
-        y = this.Y;
-      }
-    }    
-  }
+ class Point {
+   public atomic int X { get; set; }
+   public atomic int Y { get; set; }
+   public void CopyMe(atomic ref int x, atomic ref int y) {
+     atomic {
+       x = this.X;
+       y = this.Y;
+     }
+   }   
+ }
 \end{lstlisting}
 
 \subsection{Transactional Output Parameters}
 \label{subsec:stm_desgin_out_parameters}
-According to \cite[p. 97]{csharp2013specificaiton}: \textit{``A parameter declared with an out modifier is an output parameter.''} An output parameter behaves as a reference parameter, except that it does not need to be instantiated before being passed as an argument. Additionally, a output parameter must be definitely assigned whenever the method terminates\cite[p. 42]{sestoft2011c}. It is not required that a variable is definitely assigned before being passed as a output parameter, but it is allowed.
+According to \cite[p. 97]{csharp2013specificaiton}: \textit{``A parameter declared with an out modifier is an output parameter.''} An output parameter behaves as a reference parameter, except that it does not need to be instantiated before being passed as an argument. Additionally, an output parameter must be definitely assigned whenever the method terminates\cite[p. 42]{sestoft2011c}. It is not required that a variable is definitely assigned before being passed as an output parameter, but it is allowed.
 
-In \stmname, an output parameter can be marked as atomic, and it becomes a \ac{TOP}. Similar to \ac{TRP}, a \ac{TOP} is tracked in transactions, and assignments in transactions take effect outside of the transaction when it commits. The reason for this is the same as for \acp{TRP}.
+In \stmname, an output parameter can be marked as atomic, and it becomes a \ac{TOP}. Similar to \ac{TRP}, a \ac{TOP} is tracked in transactions, and assignments in transactions take effect outside of the transaction when the transaction commits. The reason for this is the same as for \acp{TRP}.
+
+\bsref{lst:atomic_out} presents a modified example of the \bscode{Point} class declaring two \ac{TOP}'s as parameters for the \bscode{ChangeMe} method.
 
 \begin{lstlisting}[label=lst:atomic_out,
-  caption={Transactional Output Parameter},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set, ref, out}]  % Start your code-block
+ caption={Transactional Output Parameter},
+ language=Java, 
+ showspaces=false,
+ showtabs=false,
+ breaklines=true,
+ showstringspaces=false,
+ breakatwhitespace=true,
+ commentstyle=\color{greencomments},
+ keywordstyle=\color{bluekeywords},
+ stringstyle=\color{redstrings},
+ morekeywords={atomic, retry, orElse, var, get, set, ref, out}]  % Start your code-block
 
-  class Point {
-    public atomic int X { get; set; }
-    public atomic int Y { get; set; }
-    public void AssignMe(atomic out int x, atomic out int y) {
-      atomic { 
-        x = this.X;
-        y = this.Y;
-      }
-    }    
-  }
+ class Point {
+   public atomic int X { get; set; }
+   public atomic int Y { get; set; }
+   public void CopyMe(atomic out int x, atomic out int y) {
+     atomic {
+       x = this.X;
+       y = this.Y;
+     }
+   }   
+ }
 \end{lstlisting}
 
 \subsection{Transactional Parameter Array}\label{sec:stm_design_paramter_array}
-According to \cite[p. 17]{csharp2013specificaiton}: \textit{``A parameter array permits a variable number of arguments to be passed to a method''}. A parameter array is declared using the \bscode{params} modifier. Inside the method, the arguments are are represented as a array of length equal to the number of arguments supplied to \bscode{params} modified parameter array. Assignments to the parameter array are possible but this possibility is in our experience rarely used. Additionally, as only assignments to the parameter array are tracked, adding or removing items from the array, would not be tracked in transactions. Thus, the estimated value of adding this feature is close to none. Therefore, a parameter array cannot be marked as atomic in \stmname.
+According to \cite[p. 17]{csharp2013specificaiton}: \textit{``A parameter array permits a variable number of arguments to be passed to a method''}. A parameter array is declared using the \bscode{params} modifier. Inside the method, the arguments are represented as an array of length equal to the number of arguments supplied to the \bscode{params} parameter. Assignments to the parameter array are possible but this possibility is in our experience rarely used. Additionally, as only assignments to the parameter array are tracked, adding or removing items from the array, would not be tracked in transactions. Thus, the estimated value of adding this feature is close to none. Therefore, a parameter array cannot be marked as atomic in \stmname.
 
 \subsection{Transactional Arguments}
 Invoking a method requires supplying arguments to match the parameters of the method. These arguments must be in the form of an expression, or variable references combined with the \bscode{ref} or \bscode{out} parameter-modifier \cite[p. 144]{csharp2013specificaiton}.
@@ -240,273 +243,265 @@ Four different cases exist for passing expressions, \bscode{ref} and \bscode{out
 	\item \bscode{atomic} $T$ $\quad \rightarrow\quad$ $T$
 	\item \bscode{atomic} $T$ $\quad \rightarrow\quad$ \bscode{atomic} $T$
 	\item $T$ $\quad \rightarrow \quad$ $T$
-\end{enumerate} 
-where $T$ is an argument of some type $T$, \bscode{atomic} $T$ is a \bscode{atomic} parameter of type $T$ and $T$ $\quad \rightarrow \quad$ \bscode{atomic} $T$ describes passing an argument of type $T$ into a \bscode{atomic} parameter of type $T$. When an expression is passed as an argument, it is by value as in C\#. Consequently, in the first case, assignments to the parameter will be tracked inside the method. In the second case, the atomic variable will not be tracked inside the method as the value of the \bscode{atomic} $T$ variable supplied as the argument is passed to the parameter and not the variable itself. In the third case assignments to the \bscode{atomic} parameter is tracked inside the method. The tracking is however separated from that of the \bscode{atomic} $T$ variable supplied as the argument, since the value of that variable is passed to the parameter and not the variable itself. Thus assignments to the parameter and argument variable are tracked separately. 
+\end{enumerate}
+where $T$ is an argument of some type $T$, \bscode{atomic} $T$ is an \bscode{atomic} parameter of type $T$ and $T$ $\quad \rightarrow \quad$ \bscode{atomic} $T$ describes passing an argument of type $T$ into an \bscode{atomic} parameter of type $T$. When an expression is passed as an argument, it is by value as in C\#. Consequently, in the first case, assignments to the parameter will be tracked inside the method. In the second case, the atomic variable will not be tracked inside the method as the value of the \bscode{atomic} $T$ variable supplied as the argument is passed to the parameter and not the variable itself. In the third case assignments to the \bscode{atomic} parameter is tracked inside the method. The tracking is however separated from that of the \bscode{atomic} $T$ variable supplied as the argument, since the value of that variable is passed to the parameter and not the variable itself. Thus assignments to the parameter and argument variable are tracked separately.
 
 Transactional arguments adhere to the standard rules in regards to named parameters\cite[p. 145]{csharp2013specificaiton}. Just as with the parameter modifiers \bscode{ref} and \bscode{out}, an overloaded method cannot only differ on the atomic modifier, as it does not change its type. Thus, it follows the rules defined in the specification\cite[p. 153-157]{csharp2013specificaiton}.
 
 \subsubsection{Transactional Reference \& Output Arguments}\label{subsubsec:trans_ref_out_args}
-When a variable is passed as \bscode{ref} or \bscode{out}, it follows the call-by-reference semantics described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters}. In the first case, a variable reference passed in to an atomic reference will result in the variable being tracked inside of the method, and assignments to it will take effect outside of the method. In the second case, assignments to the parameter are tracked as assignments to the variable passed as \bscode{ref} or \bscode{out}. In the third case, the variable passed by \bscode{ref} or \bscode{out} will continue to be tracked inside the method. That is assignments to the parameter are tracked as assignments to the variable passed by \bscode{ref} or \bscode{out}. The fourth case follows the standard rules defined in\cite[p. 145]{csharp2013specificaiton}. 
+When a variable is passed as \bscode{ref} or \bscode{out}, it follows the call-by-reference semantics described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters}. In the first case, a variable reference passed in to an atomic reference will result in the variable being tracked inside of the method, and assignments to it will take effect outside of the method. In the second case, assignments to the parameter are tracked as if they were assignments to the variable which was passed as \bscode{ref} or \bscode{out}. In the third case, the variable passed by \bscode{ref} or \bscode{out} will continue to be tracked inside the method. That is assignments to the parameter are tracked as assignments to the variable passed by \ bscode{ref} or \bscode{out}. The fourth case follows the standard rules defined in\cite[p. 145]{csharp2013specificaiton}.
 
 \section{Example of \stmnamesp}\label{sec:example_design}
-\bsref{lst:stm_atomic_syntax}, which is a modified version of the race condition example from our previous study\cite[p. 23]{dpt907e14trending}, presents an example of the syntax extensions \stmnamesp brings to C\#. On line 6 the transactional field \bscode{number} is defined and assigned an initial value of 10. The main method defines and starts two threads. \bscode{t1} checks if the value of \bscode{number} is equal to 10 and assigns \bscode{number} times 3 to the field if the condition is true. These operations are executed as a transaction defined by the \bscode{atomic} keyword and associated block on line 11. \bscode{t2} assigns 20 to \bscode{number} inside a transaction defined on line 17. In this example \stmnamesp removes the race conditions associated with \bscode{t2}, changing the value of \bscode{number} between the read on line 12 and the read on line 13. In the case that such a change occurs, the \ac{STM} system of \stmnamesp will abort and re-execute one of the implicated transactions in order to resolve the conflict, as described in \bsref{chap:implementation}
- 
-\begin{lstlisting}[label=lst:stm_atomic_syntax,
-  caption={Transaction Syntax},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set, using}]  % Start your code-block
+\bsref{lst:stm_atomic_syntax}, which is a modified version of the race condition example from our previous study\cite[p. 23]{dpt907e14trending}, presents an example of the syntax extensions \stmnamesp brings to C\#. On line 6 the transactional field \bscode{number} is defined and assigned an initial value of 10. The main method defines and starts two threads. \bscode{t1} checks if the value of \bscode{number} is equal to 10 and assigns \bscode{number} times 3 to the field if the condition is true. These operations are executed as a transaction defined by the \bscode{atomic} keyword and associated block on line 11. \bscode{t2} assigns 20 to \bscode{number} inside a transaction defined on line 17. In this example \stmnamesp removes the race conditions associated with \bscode{t2} changing the value of \bscode{number} between the read on line 12 and the read and write on line 13. In the case that such a change occurs, the \ac{STM} system of \stmnamesp will abort and re-execute one of the implicated transactions in order to resolve the conflict.
 
-  using System;
-  using System.Threading;
-  
+\begin{lstlisting}[label=lst:stm_atomic_syntax,
+ caption={Transaction Syntax},
+ language=Java, 
+ showspaces=false,
+ showtabs=false,
+ breaklines=true,
+ showstringspaces=false,
+ breakatwhitespace=true,
+ commentstyle=\color{greencomments},
+ keywordstyle=\color{bluekeywords},
+ stringstyle=\color{redstrings},
+ morekeywords={atomic, retry, orElse, var, get, set, using}]  % Start your code-block
+
+ using System;
+ using System.Threading;
   public class RaceCondition
-  {
-      public static atomic int number = 10;
-  
+ {
+     public static atomic int number = 10;
       public static void Main(string[] args)
-      {
-          Thread t1 = new Thread ( () => {
-              atomic {
-                  if (number == 10 )           
-                      number = number * 3;
-              }
-           });
-          Thread t2 = new Thread( () => {
-              atomic {
-                  number = 20;
-              }
+     {
+         Thread t1 = new Thread ( () => {
+             atomic {
+                 if (number == 10 )          
+                     number = number * 3;
+             }
           });
-          t1.Start(); t2.Start();
-          t1.Join(); t2.Join();
-          int result;
-          atomic {
-              result = number;          
-          }
-          Console.WriteLine("Result is: " + result);
-      }
-  }
+         Thread t2 = new Thread( () => {
+             atomic {
+                 number = 20;
+             }
+         });
+         t1.Start(); t2.Start();
+         t1.Join(); t2.Join();
+         int result;
+         atomic {
+             result = number;         
+         }
+         Console.WriteLine("Result is: " + result);
+     }
+ }
 \end{lstlisting}
 
-As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_strong_weak_atomicity} \stmnamesp must provide strong atomicity as well as allowing reads and writes to occur from outside atomic blocks. As a result, reads and writes occurring from outside transactions will be accounted for when validating transactions. With that in mind, the previous example can be slightly simplified to the example in \bsref{lst:stm_atomic_syntax_simplified}. The atomic block on line 17 of \bsref{lst:stm_atomic_syntax} has been removed. As the atomic block only contains a single write it serves no purpose because the write is still tracked by the \ac{STM} system without need for enclosing it within an atomic block. The atomic block on line 24 of \bsref{lst:stm_atomic_syntax} can also be removed as the read can safely be performed from outside a transactions.
+As described in \bsref{subsec:rec_transactions_variables} and \bsref{sec:design_strong_weak_atomicity} \stmnamesp must provide strong atomicity as well as allowing reads and writes to occur from outside atomic blocks. As a result, reads and writes occurring from outside transactions will be accounted for when validating transactions. With that in mind, the previous example can be slightly simplified to the example in \bsref{lst:stm_atomic_syntax_simplified}. The atomic block on line 17 of \bsref{lst:stm_atomic_syntax} has been removed, since the \bscode{atomic} block contains only a single write. The atomic block on line 24 of \bsref{lst:stm_atomic_syntax} can also be removed as the read can safely be performed from outside a transaction.
 
 \begin{lstlisting}[label=lst:stm_atomic_syntax_simplified,
-  caption={Transaction Syntax Simplified},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set, using}]  % Start your code-block
+ caption={Transaction Syntax Simplified},
+ language=Java, 
+ showspaces=false,
+ showtabs=false,
+ breaklines=true,
+ showstringspaces=false,
+ breakatwhitespace=true,
+ commentstyle=\color{greencomments},
+ keywordstyle=\color{bluekeywords},
+ stringstyle=\color{redstrings},
+ morekeywords={atomic, retry, orElse, var, get, set, using}]  % Start your code-block
 
-  using System;
-  using System.Threading;
-  
+ using System;
+ using System.Threading;
   public class RaceConditionSimple
-  {
-      public static atomic int number = 10;
-  
+ {
+     public static atomic int number = 10;
       public static void Main(string[] args)
-      {
-          Thread t1 = new Thread ( () => {
-              atomic {
-                  if (number == 10)           
-                      number = number * 3;
-              }
-           });
-          Thread t2 = new Thread( () => {
-                  number = 20;
+     {
+         Thread t1 = new Thread ( () => {
+             atomic {
+                 if (number == 10)          
+                     number = number * 3;
+             }
           });
-          t1.Start(); t2.Start();
-          t1.Join(); t2.Join();
-          Console.WriteLine("Result is: " + number);
-      }
-  }
+         Thread t2 = new Thread( () => {
+                 number = 20;
+         });
+         t1.Start(); t2.Start();
+         t1.Join(); t2.Join();
+         Console.WriteLine("Result is: " + number);
+     }
+ }
 \end{lstlisting}
 Allowing access to transactional variables from outside transactions dispenses the need for defining a transaction whenever only a single read or write is to be performed. The atomic block then serves the purpose of combining multiple operations to be executed as a single atomic step.
 
 \section{Conditional Synchronization}\label{sec:sync_design}
-As described in \bsref{sec:req_conditional} \stmnamesp supports conditional synchronization via the \bscode{retry} and \bscode{orElse} constructs. \stmnamesp extends C\# with a \bscode{retry} statement that can only be used inside atomic blocks. A retry statement takes the format: \bscode{retry}. That is, the keyword is employed as a statement, much like C\#'s \bscode{break} and \bscode{continue} statements\cite[p. 102]{sestoft2011c}. \bsref{lst:stm_atomic_syntax_retry} presents the \bscode{Dequeue} method from a transactional queue. The queue is defined over a singly linked list from which items are dequeued from the front and enqueued in the back. If \bscode{Dequeue} is called on an empty queue the thread is blocked until the queue is no longer empty. The \bscode{Dequeue} method consists of an atomic block, defined on line 11, performing the dequeue operation as a single atomic step. On line 13 the transaction checks if the queue is empty in which case it executes the retry statement on line 14, blocking the transaction to be retried when the \bscode{\_size} variable changes. If the queue is not empty the head of the queue is removed and the next item in the linked list becomes the new head. Finally the size of the queue is decreased and the value associated with the previous head is returned. 
+As described in \bsref{sec:req_conditional} \stmnamesp supports conditional synchronization via the \bscode{retry} and \bscode{orElse} constructs. \stmnamesp extends C\# with a \bscode{retry} statement that can only be used inside atomic blocks. A retry statement takes the format: \bscode{retry}. That is, the keyword is employed as a statement, much like C\#'s \bscode{break} and \bscode{continue} statements\cite[p. 102]{sestoft2011c}. \bsref{lst:stm_atomic_syntax_retry} presents the \bscode{Dequeue} method from a transactional queue. The queue is defined over a singly linked list from which items are dequeued from the front and enqueued in the back. If \bscode{Dequeue} is called on an empty queue the thread is blocked until the queue is no longer empty. The \bscode{Dequeue} method consists of an atomic block, defined on line 11, performing the dequeue operation as a single atomic step. On line 13 the transaction checks if the queue is empty in which case it executes the retry statement on line 14, blocking the transaction to be retried when the \bscode{\_size} variable changes. If the queue is not empty the head of the queue is removed and the next item in the linked list becomes the new head. Finally the size of the queue is decreased and the value associated with the previous head is returned.
 
 \begin{lstlisting}[label=lst:stm_atomic_syntax_retry,
-  caption={Retry Syntax},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var, get, set, using}]  % Start your code-block
+ caption={Retry Syntax},
+ language=Java, 
+ showspaces=false,
+ showtabs=false,
+ breaklines=true,
+ showstringspaces=false,
+ breakatwhitespace=true,
+ commentstyle=\color{greencomments},
+ keywordstyle=\color{bluekeywords},
+ stringstyle=\color{redstrings},
+ morekeywords={atomic, retry, orElse, var, get, set, using}]  % Start your code-block
 
-  using System;
-  
+ using System;
   public class Queue<T>
-  {
-  	private atomic Node _head = null;
-  	private atomic Node _tail = null;
-  	private atomic int _size = 0;
+ {
+ 	private atomic Node _head = null;
+ 	private atomic Node _tail = null;
+ 	private atomic int _size = 0;
 
-  	public T Dequeue()
-  	{
-  		atomic{
-  		
-  			if (_size == 0)
-  				retry;
+ 	public T Dequeue()
+ 	{
+ 		atomic{
+ 		
+ 			if (_size == 0)
+ 				retry;
 
-  			var oldHead = _head;
+ 			var oldHead = _head;
 
-  			_head = _head.Next;
-  			if (_head == null)
-  				_tail = null;
-  			
-  			_size--;
+ 			_head = _head.Next;
+ 			if (_head == null)
+ 				_tail = null;
+ 			
+ 			_size--;
 
-  			return oldHead.Value;
-  		}
-  	}
-  	
-  	...
-  }
+ 			return oldHead.Value;
+ 		}
+ 	}
+ 	
+ 	...
+ }
 \end{lstlisting}
 
-\stmnamesp supports an \bscode{orelse} keyword allowing zero to many \bscode{orElse} blocks to be associated with an atomic block, much like catch clauses are associated with a \bscode{try} statement in many C like languages, including C\#\cite[p. 96]{sestoft2011c}. The  format of the \bscode{atomic} block is therefore extended to:
+Furthermore \stmnamesp supports an \bscode{orelse} keyword allowing zero to many \bscode{orElse} blocks to be associated with an atomic block, much like catch clauses are associated with a \bscode{try} statement in many C like languages, including C\#\cite[p. 96]{sestoft2011c}. The  format of the \bscode{atomic} block is therefore extended to:
 
 \bscode{atomic} \{ $S$ \} ( \bscode{orelse} \{ $S$ \} )+
 
-where $S$ is the general class of C\# statements. As an example of the \bscode{orelse} construct  \bsref{lst:stm_atomic_syntax_orelse} depicts a consumer which extracts an item from one of two buffers via the \bscode{ConsumeItem} method. On line 10 the \bscode{ConsumeItem} method defines a transaction. If \bscode{buffer1} is empty the transaction executes the retry statement on line 12, if not an item from \bscode{buffer} is returned. If \bscode{buffer1} is empty and the retry statement is executed, control flows to the \bscode{orelse} block defined on line 15. The \bscode{orelse} then executes its own transaction returning an item from \bscode{buffer2} in case it is not empty. If \bscode{buffer2} is empty the retry statement on line 17 is executed, resulting in the entire atomic block blocking until one of the previously read transactional variables change, at which point the transaction is restarted.
+where $S$ is the general class of C\# statements. As an example of the \bscode{orelse} construct  \bsref{lst:stm_atomic_syntax_orelse} depicts a consumer which extracts an item from one of two buffers via the \bscode{ConsumeItem} method. On line 10 the \bscode{ConsumeItem} method defines a transaction. If \bscode{buffer1} is empty the transaction executes the retry statement on line 12, if not, an item from \bscode{buffer} is returned. If \bscode{buffer1} is empty and the retry statement is executed, control flows to the \bscode{orelse} block defined on line 15. The \bscode{orelse} then executes its own transaction returning an item from \bscode{buffer2} in case it is not empty. If \bscode{buffer2} is empty the retry statement on line 17 is executed, resulting in the entire atomic block blocking until one of the previously read transactional variables change, at which point the transaction is restarted.
 
 \begin{lstlisting}[label=lst:stm_atomic_syntax_orelse,
-  caption={OrElse Syntax},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orelse, var, get, set, using}]  % Start your code-block
+ caption={OrElse Syntax},
+ language=Java, 
+ showspaces=false,
+ showtabs=false,
+ breaklines=true,
+ showstringspaces=false,
+ breakatwhitespace=true,
+ commentstyle=\color{greencomments},
+ keywordstyle=\color{bluekeywords},
+ stringstyle=\color{redstrings},
+ morekeywords={atomic, retry, orelse, var, get, set, using}]  % Start your code-block
 
-  using System;
-  
+ using System;
   public class Consumer<T>
-  {
-      private Buffer<T> _buffer1;
-      private Buffer<T> _buffer2;
+ {
+     private Buffer<T> _buffer1;
+     private Buffer<T> _buffer2;
 
-      public T ConsumeItem()
-      {
-          atomic {
-              if(_buffer1.Count == 0)
-                  retry;
+     public T ConsumeItem()
+     {
+         atomic {
+             if(_buffer1.Count == 0)
+                 retry;
 
-              return _buffer1.Get();
-          } orelse {
-              if(_buffer2.Count == 0)
-                  retry;
+             return _buffer1.Get();
+         } orelse {
+             if(_buffer2.Count == 0)
+                 retry;
 
-              return _buffer2.Get();
-          }
-      }
-  }
+             return _buffer2.Get();
+         }
+     }
+ }
 \end{lstlisting}
 
 \section{Nesting}\label{sec:nesting_design}
-As described in \bsref{sec:stm_req_nesting} \stmnamesp supports nesting of transactions under closed nesting semantics. For this purpose \stmnamesp allows lexical nesting of atomic blocks as shown in \bsref{lst:stm_syntax_lexical_nesting}, where a small program reads two integers from the console. The string arguments are parsed to integers on line 12 to 16. The program then defines two transactions, one starting on line 18 and the other, which is nested inside the first transaction, starting at line 20. The first transaction initiates a nested transaction which sets the transactional variables \bscode{X} and \bscode{Y} based on the input. Due to the semantics with closed nesting these changes only become visible to the outer transaction when the nested transaction commits. As a result, the outer transaction uses the updated values when it computes the new value of \bscode{Z} on line 26, but the remaining system cannot yet see these updated values. When the outer transaction commits, the assignments to \bscode{X}, \bscode{Y} and \bscode{Z} become visible to the rest of the system as a single atomic step.
+As described in \bsref{sec:stm_req_nesting} \stmnamesp supports nesting of transactions under closed nesting semantics. For this purpose \stmnamesp allows lexical nesting of atomic blocks as shown in \bsref{lst:stm_syntax_lexical_nesting}, where a small program reads two integers from the console. The string arguments are parsed to integers on line 12 to 16. The program then defines two transactions, one starting on line 18 and the other, which is nested inside the first transaction, starting at line 20. The first transaction initiates a nested transaction which sets the transactional variables \bscode{X} and \bscode{Y} based on the input. Due to the semantics of closed nesting these changes only become visible to the outer transaction when the nested transaction commits. As a result, the outer transaction uses the updated values when it computes the new value of \bscode{Z} on line 26, but the remaining system cannot yet see these updated values. When the outer transaction commits, the assignments to \bscode{X}, \bscode{Y} and \bscode{Z} become visible to the rest of the system as a single atomic step.
 
 \begin{lstlisting}[label=lst:stm_syntax_lexical_nesting,
-  caption={Lexical Nesting},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orelse, var, get, set, using}]  % Start your code-block
+ caption={Lexical Nesting},
+ language=Java, 
+ showspaces=false,
+ showtabs=false,
+ breaklines=true,
+ showstringspaces=false,
+ breakatwhitespace=true,
+ commentstyle=\color{greencomments},
+ keywordstyle=\color{bluekeywords},
+ stringstyle=\color{redstrings},
+ morekeywords={atomic, retry, orelse, var, get, set, using}]  % Start your code-block
 
-  public class LexicalNesting
-  {
-      private atomic static int X = 0;
-      private atomic static int Y = 0;
-      private atomic static int Z = 0;
+ public class LexicalNesting
+ {
+     private atomic static int X = 0;
+     private atomic static int Y = 0;
+     private atomic static int Z = 0;
 
-      public void Main(string[] args)
-      {
-          if (args.Length != 2)
-              return;
+     public void Main(string[] args)
+     {
+         if (args.Length != 2)
+             return;
 
-          int tmpx;
-          int tmpy;
-          if (!int.TryParse(args[0], out tmpx) 
-              || !int.TryParse(args[1], out tmpy))
-              return;
+         int tmpx;
+         int tmpy;
+         if (!int.TryParse(args[0], out tmpx)
+             || !int.TryParse(args[1], out tmpy))
+             return;
 
-          atomic
-          {
-              atomic
-              {
-                  X = tmpx;
-                  Y = tmpy;
-              }
+         atomic
+         {
+             atomic
+             {
+                 X = tmpx;
+                 Y = tmpy;
+             }
 
-              Z = X * Y;
-          }
-          System.Console.WriteLine(Z);
-      }
-  }
+             Z = X * Y;
+         }
+         System.Console.WriteLine(Z);
+     }
+ }
 \end{lstlisting}
 
-To increase the evaluated characteristics\cite[p. 15-21]{dpt907e14trending} of \stmname, specifically writability and orthogonality, dynamic nesting of transactions is allowed. As an example, consider \bsref{lst:stm_nested_transactions_real} where a transaction is defined on line 1. The transaction transfers funds from \bscode{account1} to \bscode{account2} by using the \bscode{withdraw} and \bscode{deposit} methods, which are themselves defined using transactions. Because of the closed nested semantics the transfer is executed as single atomic step.
-
-% Put kilde ind! 
+To increase the usability of \stmname, specifically its writability and orthogonality, dynamic nesting of transactions is allowed. As an example, consider \bsref{lst:stm_nested_transactions_real} where a transaction is defined on line 1. The transaction transfers funds from \bscode{account1} to \bscode{account2} by using the \bscode{withdraw} and \bscode{deposit} methods, which are themselves defined using transactions. Because of the semantics of closed nesting, the transfer is executed as single atomic step.
 
 \begin{lstlisting}[label=lst:stm_nested_transactions_real,
-  caption={Dynamically nested transactions},
-  language=Java,  
-  showspaces=false,
-  showtabs=false,
-  breaklines=true,
-  showstringspaces=false,
-  breakatwhitespace=true,
-  commentstyle=\color{greencomments},
-  keywordstyle=\color{bluekeywords},
-  stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orElse, var}]  % Start your code-block
+ caption={Dynamically nested transactions},
+ language=Java, 
+ showspaces=false,
+ showtabs=false,
+ breaklines=true,
+ showstringspaces=false,
+ breakatwhitespace=true,
+ commentstyle=\color{greencomments},
+ keywordstyle=\color{bluekeywords},
+ stringstyle=\color{redstrings},
+ morekeywords={atomic, retry, orElse, var}]  % Start your code-block
 
 	atomic{
 		var amount = 200;
 		account1.withdraw(amount);
 		account2.deposit(amount);
 	}
-       
+     
 \end{lstlisting}
 
 \section{Summary of Design}\label{sec:summary_design}
-A transactional block can be declared by using the \bscode{atomic} statement, to denote a scope for a transaction. Within such a transaction, any assignments to transactional variables, parameters, fields, or properties, will be perceived as executed in one atomic step, by other transactions and non-transactional code. 
+A transactional block can be declared by using the \bscode{atomic} statement, to denote a scope for a transaction. Within such a transaction, any assignments to transactional variables, parameters, fields, or properties, will be perceived as executed in one atomic step, by other transactions and non-transactional code.
 
-To increase the orthogonality of \stmname the \bscode{atomic} keyword can be used for making a variable, field, property, or parameter trackable in transactions. This enables continued use of these common C\# features, within a transactional context, including reference and output parameters.
+\stmname allows the use of common C\# features within a transactional context, including reference and output parameters. To increase the orthogonality of \stmname the \bscode{atomic} keyword can be used for making a variable, field, property, or parameter as trackable in transactions.
 
-\stmnamesp also introduces the keywords \bscode{retry} and \bscode{orelse}, which can be used for conditional synchronization. \bscode{retry} will block the executing thread until a transactional variable previously read by the transactions is changed. The \bscode{orelse} keyword associates an \bscode{orElse} block, with an \bscode{atomic} block containing a \bscode{retry} statement. The \bscode{orElse} block will change the initial behavior of the \bscode{retry} statement in the \bscode{atomic} block. Instead of blocking execution when encountering a \bscode{retry} statement, the \bscode{orElse} block will be executed. Execution will in that case only block if the bscode{retry} statement of the last \bscode{OrElse} block associated with an \bscode{atomic} block is reached.
+\stmnamesp also introduces the keywords \bscode{retry} and \bscode{orelse}, which can be used for conditional synchronization. \bscode{retry} will block the executing thread until a transactional variable previously read by the transactions is changed. The \bscode{orelse} keyword associates an \bscode{orElse} block, with an \bscode{atomic} block containing a \bscode{retry} statement. The \bscode{orElse} block will change the initial behavior of the \bscode{retry} statement in the \bscode{atomic} block. Instead of blocking execution when encountering a \bscode{retry} statement, the \bscode{orElse} block will be executed. If the last \bscode{orElse} block encounters a \bscode{retry} the \bscode{atomic} block as a whole blocks until one of the previously read values is changed by another transaction.
 
-Additionally, \stmnamesp allows nesting of transactions, both lexically and dynamically. Nesting uses closed-nesting semantics, thus inner transactions commits into the outer transaction. The inner and outer transactions are not isolated from each other, thus changes made inside the transaction are visible. They are however isolated to all other transactions and non-transactional code.
+Additionally, \stmnamesp allows nesting of transactions, both lexically and dynamically. Nesting uses closed-nesting semantics, thus inner transactions commits into the outer transaction. The inner and outer transactions are not isolated from each other, thus changes made by the inner transaction are visible to the outer transaction. They are however isolated from all other transactions and non-transactional code.
 
 %Transactional Block
 %Transactional Field
@@ -540,7 +535,7 @@ Additionally, \stmnamesp allows nesting of transactions, both lexically and dyna
 %        retry;
 %      return _queue3.Dequeue();
 %    }
-%    
+%   
 %vs
 %
 %    atomic (_queue.IsEmpty()){
@@ -550,7 +545,7 @@ Additionally, \stmnamesp allows nesting of transactions, both lexically and dyna
 %    } orElse (_queue3.IsEmpty()){
 %      return _queue3.Dequeue();
 %    }
-%    
+%   
 %vs
 %    atomic {
 %      match (_queue.size()) with
@@ -558,12 +553,10 @@ Additionally, \stmnamesp allows nesting of transactions, both lexically and dyna
 %      | 2 -> _queue.peek();
 %      | default -> retry;
 %      }
-         
-         
+       
+       
 %	atomic keyword for methods and properties
 % public atomic void drive (int km) { ... }
 % public atomic int wheels { get; set; }
-
-
 
 \worksheetend
