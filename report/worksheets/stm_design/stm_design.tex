@@ -44,16 +44,14 @@ The $type$ can be any existing or user-defined type including \bscode{dynamic}. 
 \end{lstlisting}
 
 \subsection{Transactional Properties}\label{subsec:design_properties}
-C\# facilitates a language feature which eases the encapsulation of fields typically used in \ac{OOP}. The feature is known as properties, and can appear in an automatic or a manual form. The formats of transactional properties in mentioned order are\cite[p. 52]{sestoft2011c}:
+C\# facilitates a language feature which eases the encapsulation of fields typically used in \ac{OOP}. The feature is known as properties, and can appear in an automatic or a manual form\cite[p. 52]{sestoft2011c}. Only the automatic form of properties can be declared as transactional. The format of a transactional property is:
 
 \bscode{atomic} $method$-$modifiers$ $type$ \bscode{name} \{ $access$-$modifier$? \bscode{get}\bscode{;} \\ $access$-$modifier$? \bscode{set}\bscode{;} \}
 \\\\
-$method$-$modifiers$ $type$ \bscode{name} $\{$ $access$-$modifier$? \bscode{get} $get$-$body$ \\ $access$-$modifier$? \bscode{set} $set$-$body$ $\}$
 
-$method$-$modifiers$ include the: \bscode{static,} \bscode{new,} \bscode{virtual,} \bscode{override,} \bscode{sealed,} and \bscode{abstract} keywords.
-Only the automatic form of properties can be declared as transactional. This is the only change to properties in C\#, and the normal rules of property usage still applies, as defined in \cite[p. 52]{sestoft2011c}.
+$method$-$modifiers$ include the: \bscode{static,} \bscode{new,} \bscode{virtual,} \bscode{override,} \bscode{sealed,} and \bscode{abstract} keywords. This is the only change to properties in C\#, and the normal rules of property usage still applies, as defined in \cite[p. 52]{sestoft2011c}.
 
-The manual property lets the programmer specify a backing field manually, allowing him to specialize the functionality of the getter and setter. The automatic properties generate a backing field automatically, but the getter and setter cannot have specialized functionality.
+The manual property lets the programmer specify a backing field manually, allowing him to specialize the functionality of the getter and setter. As a consequence, specifying an \bscode{atomic} backing field enables the programmer to implement a transactional property with a specialized getter and setter. The automatic properties generate a backing field automatically, but the getter and setter cannot have specialized functionality. 
 
 Atomic automatic properties simplifies the implementation whenever the property serves as a simple getter and setter. An example of such a property is shown in \bsref{lst:auto_atomic_property}. If the programmer wishes to supply additional logic for the get and set operations the manual property can be made atomic by accessing an atomic backing field as demonstrated in \bsref{lst:atomic_property}. Both cases are frequently used in C\#, thus supplying an \bscode{atomic} version makes the feature usable in transactions in an orthogonal manner.
 

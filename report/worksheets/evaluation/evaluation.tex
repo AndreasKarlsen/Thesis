@@ -61,7 +61,6 @@ The need to define an array of transactional types was experienced during the de
   
   public class StmHashMap<K,V> : BaseHashMap<K,V>
   {
-    //TMVar to (array of TMVars to (ImmutableList of nodes) )
     private readonly TMVar<TMVar<Node>[]> _buckets =~\label{line:lib_bucket}~
     new TMVar<TMVar<Node>[]>();
   
