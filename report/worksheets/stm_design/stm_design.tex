@@ -110,7 +110,7 @@ The declaration of transactional local variables follows the format:
 \bscode{atomic} \bscode{var} \bscode{name} = $expr$;\\
 \bscode{atomic} $type$ \bscode{name} ( = $expr$ )? (, \bscode{name} ( = $expr$ )? )+ ;\\
 
-As with transactional fields, $type$ can be any existing or user defined type including the \bscode{dynamic} keyword.
+As with transactional fields, $type$ can be any existing or user defined type including the \bscode{dynamic} keyword. The deceleration of \bscode{atomic const} local variables are not allowed in \stmname as const variables cannot be the target of assignments. \bsref{lst:local_variable} depicts the declaration of two \bscode{atomic} local variable in \stmname.
 \begin{lstlisting}[label=lst:local_variable,
  caption={Local Transactional Variable},
  language=Java, 
