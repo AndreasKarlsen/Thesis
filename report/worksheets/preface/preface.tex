@@ -2,51 +2,22 @@
 \worksheetstart{Preface}{1}{Februar 10, 2015}{Andreas}{../../}
 This report documents the master thesis done by group dpt109f15 at the Department of Computer Science at Aalborg University. The thesis was written as part of the Computer Science (IT) study program in the spring of 2015 at the 10th semester.
 
-The first time an acronym is used it will appear in the format: Threads \& Locks (TL). Inline quotations and names will appear in \textit{italics}. The work presented in this report is based on work or results described in books, articles, video lectures and research papers from outside sources. The full list of acronyms along with the bibliography and appendix, can be found at the end of the report.
+The first time an acronym is used it will appear in the format: Software Transactional Memory (STM). Inline quotations and names will appear in \textit{italics}. The work presented in this report is based on work or results described in books, articles, video lectures, and research papers from outside sources. The full list of acronyms along with the bibliography, appendix, and summary can be found at the end of the report.
 
-We would like to give a special thanks to our supervisor Lone Leth Thomsen, from the Department of Computer Science, for excellent guidance and immaculate attention to detail. She supplied invaluable help throughout the project with professionalism and black humour. Her constructive criticism helped us to narrow down the subject and kept us motivated and enthusiastic about the project.
+We would like to give a special thanks to our supervisor Lone Leth Thomsen, from the Department of Computer Science, for her excellent guidance and immaculate attention to details. She supplied invaluable help throughout the project with professionalism and black humour. Her feedback has been indispensable and has significantly raised the quality of the final result. Her constructive criticism helped us to narrow down the subject and kept us motivated and enthusiastic about the project.
 
 The report is structured with dependencies between the chapters, and the following can be used as a reading guide:
 \begin{itemize}
-	\item \bsnameref{chap:introduction} presents the motivation for choosing this topic, the related work, the scope, and the hypothesis. Lastly the method of evaluation is presented.
-	\item \bsnameref{chap:prelim} establishes the ``locking'' term, and the key concepts of \ac{STM}. This knowledge is required in order to understand the remaining work.
-	\item \bsnameref{chap:roslyn} outlines the structure of the Roslyn compiler, which enables an integration of \ac{STM} into C\#.
-	\item \bsnameref{sec:stm_requirements} analyses the requirements to the \ac{STM} system which powers \stmname.
-	\item \bsnameref{chap:stm_design} describes the decisions of designing and integrating \stmname based on the requirements.
+	\item \bsnameref{chap:introduction} presents the motivation for choosing the topic, the related work, the scope, and the hypothesis. Lastly the method of evaluation is presented.
+	\item \bsnameref{chap:prelim} establishes the term ``locking'', and the key concepts of \ac{STM}. This knowledge is required in order to understand the remaining work. If the reader is familiar with these areas, this chapter can be skipped.
+	\item \bsnameref{chap:roslyn} outlines the structure of the Roslyn compiler, which enables the integration of \ac{STM} into C\#.
+	\item \bsnameref{sec:stm_requirements} analyze the requirements to the \ac{STM} system which executes transactions in \stmname.
+	\item \bsnameref{chap:stm_design} describes the decisions related to designing and integrating \stmname based on the requirements.
 	\item \bsnameref{chap:implementation} describes the implementation of the \ac{STM} system that powers \stmname, and is based on the requirements and design choices.
 	\item \bsnameref{chap:roslyn_extension} describes how Roslyn is extended to encompass language integrated \ac{STM}, thus being a compiler for \stmname.
-	\item \bsnameref{chap:evaluation} evaluates \stmname, its associated \ac{STM} library and locking in C\# according to the evaluation method described in \bsref{sec:eval_approach}, which identifies key differences in the concurrency approaches.
+	\item \bsnameref{chap:evaluation} evaluates \stmname, its associated \ac{STM} library and locking in C\# according to the evaluation method described in \bsref{sec:eval_approach}.
 	\item Based on this evaluation, a conclusion on the hypothesis is made in \bsnameref{chap:conclusion}.
 	 \item To reflect on the decisions made throughout the report, \bsnameref{chap:reflection} discusses the choices made and their consequences.
 	 \item Continuation of the work in the future and its potential is discussed in \bsnameref{chap:future_work}.
-\end{itemize}\toby{Evt. få de sidste tre punkter til at starte med Chapter X, for consistency}
+\end{itemize}
 
-The description of C\# locking constructs and the key concepts of \ac{STM} presented in \bsref{chap:prelim} can be skipped if the reader is familiar with these concepts. If the reader is unfamiliar with terminology related to implementation of \ac{STM} system a description  can be found in our previous study\cite[p. 53]{dpt907e14trending}.
-
-\newpage
-\vspace*{30 mm}
-%\vspace*{\fill}
-\begin{vplace}
-
-\begin{minipage}[b]{0.45\textwidth}
- \centering
- \rule{\textwidth}{0.5pt}\\
-  Tobias Ugleholdt Hansen\\
- {\footnotesize tuha13@student.aau.dk}
-\end{minipage}
-\begin{minipage}[b]{0.45\textwidth}
- \centering
- \rule{\textwidth}{0.5pt}\\
-  Andreas Pørtner Karlsen\\
- {\footnotesize akarls13@student.aau.dk}
-\end{minipage}\\\\
-\begin{minipage}[b]{0.45\textwidth}
- \centering
- \rule{\textwidth}{0.5pt}\\
-  Kasper Breinholt Laurberg\\
- {\footnotesize klaurb13@student.aau.dk}
-\end{minipage}\\\\
-
-
-\end{vplace}
-\worksheetend
