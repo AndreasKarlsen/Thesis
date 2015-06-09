@@ -12,11 +12,23 @@ namespace STM.Implementation.JVSTM
 {
     internal class ActiveTxnRecord
     {
+        private static readonly int STATUS_COMMITTED = 1; 
+        private static readonly int STATUS_VALID = 0;
+
+
         public readonly int TxNumber;
         public BaseVBoxBody[] BodiesToClean;
         public int Running = 0;
         public volatile ActiveTxnRecord Next = null;
         public static volatile ActiveTxnRecord First = new ActiveTxnRecord(0);
+        public WriteMap WriteMap;
+        private volatile int _status;
+
+        public bool IsCommited { get { return _status == STATUS_COMMITTED; } }
+        public void SetCommitted()
+        {
+            _status = STATUS_COMMITTED;
+        }
 
         internal ActiveTxnRecord(int txNumber)
         {
@@ -28,6 +40,13 @@ namespace STM.Implementation.JVSTM
         {
             TxNumber = txNumber;
             BodiesToClean = bodies;
+            Running = 1;
+        }
+        
+        internal ActiveTxnRecord(int txNumber, WriteMap bodies)
+        {
+            TxNumber = txNumber;
+            WriteMap = bodies;
             Running = 1;
         }
 
@@ -43,7 +62,7 @@ namespace STM.Implementation.JVSTM
             while (true)
             {
                 Interlocked.Increment(ref rec.Running);
-                if (rec.Next == null)
+                if (rec.Next == null || !rec.Next.IsCommited)
                 {
                     // if there is no next yet, then it’s because the rec
                     // is the most recent one and we may return its number
@@ -108,6 +127,16 @@ namespace STM.Implementation.JVSTM
             {
                 return false;
             }
+        }
+
+        internal bool TrySetNext(ActiveTxnRecord record)
+        {
+            return Interlocked.CompareExchange<ActiveTxnRecord>(ref this.Next,record,null) == null;
+        }
+
+        internal static void FinishCommit(ActiveTxnRecord recToCommit) {
+            recToCommit.SetCommitted();
+            First = recToCommit;
         }
     }
 }

@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using STM.Implementation.Common;
 using STM.Implementation.Lockbased;
+using STM.Implementation.Exceptions;
 
 namespace STM.Implementation.JVSTM
 {
@@ -33,6 +34,7 @@ namespace STM.Implementation.JVSTM
         internal readonly IRetryLatch RetryLatch = new RetryLatch();
         public TransactionStatus Status { get; internal set; }
         private readonly ActiveTxnRecord _txnRecord;
+        private ActiveTxnRecord _commitTxnRecord;
 
         internal bool IsNested
         {
@@ -90,6 +92,9 @@ namespace STM.Implementation.JVSTM
 
         public bool Commit()
         {
+            return CommitLockFree();
+
+
             if (WriteMap.Count == 0)
             {
                 Status = TransactionStatus.Committed;
@@ -146,6 +151,98 @@ namespace STM.Implementation.JVSTM
             }
 
             return result;;
+        }
+
+        public bool CommitLockFree()
+        {
+            if (WriteMap.Count == 0)
+            {
+                Status = TransactionStatus.Committed;
+                _txnRecord.FinishTransaction();
+                return true;
+            }
+
+            if (IsNested)
+            {
+                Parent.ReadMap.Merge(ReadMap);
+                Parent.WriteMap.Merge(WriteMap);
+                Status = TransactionStatus.Committed;
+                return true;
+            }
+
+            try
+            {
+                WriteMap.PrepareCommit();
+                ValidateCommitAndEnqueue();
+                EnsureCommitStatus();
+                Status = TransactionStatus.Committed;
+
+                _txnRecord.FinishTransaction();
+                Interlocked.Decrement(ref _commitTxnRecord.Running);
+
+                return true;
+            }
+            catch (STMCommitException)
+            {
+                return false;
+            }
+
+        }
+
+        public void ValidateCommitAndEnqueue()
+        {
+            ActiveTxnRecord lastValid = _txnRecord;
+            do
+            {
+                lastValid = Validate(lastValid);
+                _commitTxnRecord = new ActiveTxnRecord(lastValid.TxNumber + 1,
+                this.WriteMap);
+            } while (!lastValid.TrySetNext(_commitTxnRecord));
+        }
+
+        private ActiveTxnRecord Validate(ActiveTxnRecord record)
+        {
+            var next = record.Next;
+            if (next != null)
+            {
+                return ValidateInternal(next);
+            }
+
+            return record;
+ 
+        }
+
+        private ActiveTxnRecord ValidateInternal(ActiveTxnRecord record)
+        {
+            var valid = record.WriteMap.Validate(this.ReadMap);
+            if (!valid)
+            {
+                throw new STMCommitException();
+            }
+
+            var next = record.Next;
+            if (next != null)
+            {
+                return Validate(next);
+            }
+
+            return record;
+        }
+
+        private void EnsureCommitStatus()
+        {
+            ActiveTxnRecord recToCommit = ActiveTxnRecord.First.Next;
+            while (recToCommit != null && recToCommit.TxNumber <=  _commitTxnRecord.TxNumber)
+            {
+                if (!recToCommit.IsCommited)
+                {
+                    var writeMap = recToCommit.WriteMap;
+                    writeMap.HelpWriteBack(recToCommit.TxNumber);
+                    ActiveTxnRecord.FinishCommit(recToCommit);
+                    //finishCommit(recToCommit);
+                }
+                recToCommit = recToCommit.Next;
+            }
         }
 
 

@@ -10,6 +10,7 @@ using Evaluation.Library;
 using Evaluation.Locking;
 using System.IO;
 using System.Diagnostics;
+using Evaluation.Library.Collections;
 
 namespace Evaluation
 {
@@ -18,7 +19,7 @@ namespace Evaluation
         static void Main(string[] args)
         {
             //DiningPhilosophers.Start();
-            LockingDiningPhilosophers.Start();
+            //LockingDiningPhilosophers.Start();
             //SantaClausProblem.Start();
             //LockingSantaClausProblem.Start();
             //HashMapTest();
@@ -27,6 +28,9 @@ namespace Evaluation
             
             //TestQueue();
             //TestLockingQueue();
+
+            var map = new JVSTMHashMapInternalList<int, int>();
+            MapTest(map);
 
             var nrThreads = 4;
             using(var s = new FileStream("output.txt",FileMode.Create))
@@ -61,12 +65,12 @@ namespace Evaluation
                         STMHashMapConcurrent(nrThreads, sw);
                     }
 
-                    Console.WriteLine("STM done");*/
+                    Console.WriteLine("STM done");
 
                     for (int i = 0; i < 10; i++)
                     {
                         JVSTMHashMapConcurrent(nrThreads, sw);
-                    }
+                    }*/
 
                     Console.WriteLine("JVSTM done");
                 }
@@ -352,7 +356,7 @@ namespace Evaluation
                 map.Add(i, i);
             }
             Console.WriteLine(map.Count);
-
+            
             for (var i = -50; i < 50; i++)
             {
                 map.AddIfAbsent(i, i);

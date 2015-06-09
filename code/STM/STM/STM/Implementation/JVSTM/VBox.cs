@@ -29,7 +29,7 @@ namespace STM.Implementation.JVSTM
         public T Read(JVTransaction transaction)
         {
 
-            if (transaction.WriteMap.Contains(this))
+            if (transaction.WriteMap.ContainsKey(this))
             {
                 return (T) transaction.WriteMap[this];
             }
@@ -48,7 +48,7 @@ namespace STM.Implementation.JVSTM
 
         public void Put(JVTransaction transaction, T value)
         {
-            transaction.WriteMap.Put(this,value);
+            transaction.WriteMap.Add(this,value);
         }
 
         internal override bool Validate(BaseVBoxBody readBody)
@@ -141,6 +141,21 @@ namespace STM.Implementation.JVSTM
             }
 
             return count;
+        }
+
+        internal override void Commit(object value, int version)
+        {
+            var currHead = _body;
+            var existingBody = currHead.GetBody(version);
+            if (existingBody == null) {
+                var newBody = new VBoxBody<T>((T)value,version,currHead);
+                CASBody(currHead, newBody);
+            }
+        }
+
+        internal void CASBody(VBoxBody<T> expected, VBoxBody<T> newBody)
+        {
+            Interlocked.CompareExchange<VBoxBody<T>>(ref _body, newBody, expected);
         }
     }
 }

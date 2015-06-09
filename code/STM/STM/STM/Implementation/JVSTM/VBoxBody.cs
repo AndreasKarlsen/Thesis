@@ -30,5 +30,21 @@ namespace STM.Implementation.JVSTM
         {
             Next = null;
         }
+
+        internal VBoxBody<T> GetBody(int version)
+        {
+            if (this.Version == version)
+            {
+                return this;
+            }
+            else if (this.Version < version)
+            {
+                return null;
+            }
+            else
+            {
+                return Next.GetBody(version);
+            }
+        }
     }
 }
