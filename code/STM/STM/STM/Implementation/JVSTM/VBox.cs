@@ -143,19 +143,28 @@ namespace STM.Implementation.JVSTM
             return count;
         }
 
-        internal override void Commit(object value, int version)
+        internal override BaseVBoxBody Commit(object value, int version)
         {
             var currHead = _body;
             var existingBody = currHead.GetBody(version);
             if (existingBody == null) {
                 var newBody = new VBoxBody<T>((T)value,version,currHead);
-                CASBody(currHead, newBody);
+                existingBody = CASBody(currHead, newBody);
             }
+
+            return existingBody;
         }
 
-        internal void CASBody(VBoxBody<T> expected, VBoxBody<T> newBody)
+        internal VBoxBody<T> CASBody(VBoxBody<T> expected, VBoxBody<T> newBody)
         {
-            Interlocked.CompareExchange<VBoxBody<T>>(ref _body, newBody, expected);
+            if (expected == Interlocked.CompareExchange<VBoxBody<T>>(ref _body, newBody, expected))
+            {
+                return newBody;
+            }
+            else
+            {
+                return _body.GetBody(newBody.Version);
+            }
         }
     }
 }

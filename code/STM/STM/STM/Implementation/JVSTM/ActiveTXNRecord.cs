@@ -92,7 +92,7 @@ namespace STM.Implementation.JVSTM
                     // do we have the guarantee that no transactions
                     // may start for this record
                     if ((rec.Next != null)
-                        && (BodiesToClean == null)
+                        && (WriteMap == null)
                         && (Running == 0))
                     {
                         if (rec.Next.Clean())
@@ -110,17 +110,14 @@ namespace STM.Implementation.JVSTM
 
         internal bool Clean()
         {
-            var toClean = Interlocked.Exchange(ref BodiesToClean, null);
+            var toClean = Interlocked.Exchange(ref WriteMap, null);
             // the toClean may be null because more
             // than one thread may race into this method
             // yet, because of the atomic getAndSet above,
             // only one will actually clean the bodies
             if (toClean != null)
             {
-                foreach (var body in toClean)
-                {
-                    body.Clean();
-                }
+                toClean.Clean();
                 return true;
             }
             else

@@ -15,7 +15,7 @@ namespace STM.Implementation.JVSTM
 
         internal abstract void RegisterRetryLatch(IRetryLatch latch, BaseVBoxBody expectedBody, int expectedEra);
 
-        internal abstract void Commit(object value, int version);
+        internal abstract BaseVBoxBody Commit(object value, int version);
 
     }
 }

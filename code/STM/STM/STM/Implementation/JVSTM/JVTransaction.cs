@@ -239,7 +239,6 @@ namespace STM.Implementation.JVSTM
                     var writeMap = recToCommit.WriteMap;
                     writeMap.HelpWriteBack(recToCommit.TxNumber);
                     ActiveTxnRecord.FinishCommit(recToCommit);
-                    //finishCommit(recToCommit);
                 }
                 recToCommit = recToCommit.Next;
             }

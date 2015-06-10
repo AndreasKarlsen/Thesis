@@ -11,6 +11,7 @@ namespace STM.Implementation.JVSTM
     public class WriteMap : HashMap<BaseVBox, object>
     {
         protected AtomicBool[] _bucketsDone;
+        protected LinkedList<BaseVBoxBody>[] _commitedBodies;
 
         public WriteMap()
         {
@@ -54,6 +55,8 @@ namespace STM.Implementation.JVSTM
             {
                 _bucketsDone[i] = new AtomicBool();
             }
+
+            _commitedBodies = new LinkedList<BaseVBoxBody>[_buckets.Length];
         }
 
         public void HelpWriteBack(int newTxNumber)
@@ -64,22 +67,36 @@ namespace STM.Implementation.JVSTM
             {
                 if (!_bucketsDone[currBucket].Value)
                 {
-                    //this.bodiesPerBucket[currBucket] =
-                    WriteBackBucket(currBucket, newTxNumber);
+                    _commitedBodies[currBucket] = WriteBackBucket(currBucket, newTxNumber);
                     _bucketsDone[currBucket].Value = true;
                 }
                 currBucket = (currBucket + 1) % _buckets.Length;
             } while (currBucket != finalBucket);
         }
 
-        public void WriteBackBucket(int bucket, int newTxNumber) {
-
+        public LinkedList<BaseVBoxBody> WriteBackBucket(int bucket, int newTxNumber) {
+            var newBodies = new LinkedList<BaseVBoxBody>();
             var node = _buckets[bucket];
             while (node != null)
 	        {
-                node.Key.Commit(node.Value, newTxNumber);
+                var body = node.Key.Commit(node.Value, newTxNumber);
+                newBodies.AddFirst(body);
                 node = node.Next;
 	        }
+
+            return newBodies;
+        }
+
+        public void Clean()
+        {
+            for (int i = 0; i < _commitedBodies.Length; i++)
+            {
+                var list = _commitedBodies[i];
+                foreach (var item in list)
+                {
+                    item.Clean();
+                }
+            }
         }
     }
 }

@@ -29,37 +29,12 @@ namespace Evaluation
             //TestQueue();
             //TestLockingQueue();
 
-            var map = new JVSTMHashMapInternalList<int, int>();
-            MapTest(map);
-
             var nrThreads = 4;
             using(var s = new FileStream("output.txt",FileMode.Create))
             {
                 using(var sw = new StreamWriter(s))
                 {
-                    /*
-
-                    for (int i = 0; i < 10; i++)
-                    {
-                        LockingHashMapConcurrent(nrThreads, sw);
-                    }
-
-                    Console.WriteLine("Locking done");
-
-                    for (int i = 0; i < 10; i++)
-                    {
-                        NaiveLockingHashMapConcurrent(nrThreads, sw);
-                    }
-
-                    Console.WriteLine("Naive locking done");
-
-                    for (int i = 0; i < 10; i++)
-                    {
-                        STMHashMapRetryConcurrent(nrThreads, sw);
-                    }
-
-                    Console.WriteLine("STMRetry done");
-
+                    
                     for (int i = 0; i < 10; i++)
                     {
                         STMHashMapConcurrent(nrThreads, sw);
@@ -70,7 +45,7 @@ namespace Evaluation
                     for (int i = 0; i < 10; i++)
                     {
                         JVSTMHashMapConcurrent(nrThreads, sw);
-                    }*/
+                    }
 
                     Console.WriteLine("JVSTM done");
                 }
@@ -162,14 +137,14 @@ namespace Evaluation
         public static void STMHashMapConcurrent(int nrThreads, StreamWriter writer)
         {
             writer.WriteLine("STM hashmap");
-            var map = new StmHashMap<int, int>();
+            var map = new STMHashMapInternalList<int, int>();
             TestMapConcurrent(map, nrThreads, writer);
         }
 
         public static void JVSTMHashMapConcurrent(int nrThreads, StreamWriter writer)
         {
             writer.WriteLine("JVSTM hashmap");
-            var map = new JVSTMHashMap<int, int>();
+            var map = new JVSTMHashMapInternalList<int, int>();
             TestMapConcurrent(map, nrThreads, writer);
         }
 
