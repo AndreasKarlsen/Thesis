@@ -4,27 +4,31 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using PerformanceTestModel;
 
 namespace Evaluation.Locking
 {
-    public class LockingDiningPhilosophers
+    public class LockingDiningPhilosophers : Testable
     {
-        private const int MAX_EAT_COUNT = 1000;
+        private readonly int MAX_EAT_COUNT;
+        private Thread t1;
+        private Thread t2;
+        private Thread t3;
+        private Thread t4;
+        private Thread t5;
 
-        public static void Start()
+        public LockingDiningPhilosophers(int maxEatCount)
         {
-            var eatCounter = new LockCounter();
-            var fork1 = new object();
-            var fork2 = new object();
-            var fork3 = new object();
-            var fork4 = new object();
-            var fork5 = new object();
+            MAX_EAT_COUNT = maxEatCount;
+        }
 
-            var t1 = StartPhilosopher(eatCounter, fork1, fork2);
-            var t2 = StartPhilosopher(eatCounter, fork2, fork3);
-            var t3 = StartPhilosopher(eatCounter, fork3, fork4);
-            var t4 = StartPhilosopher(eatCounter, fork4, fork5);
-            var t5 = StartPhilosopher(eatCounter, fork5, fork1);
+        public void Start()
+        {
+            t1.Start();
+            t2.Start();
+            t3.Start();
+            t4.Start();
+            t5.Start();
 
             t1.Join();
             t2.Join();
@@ -33,7 +37,7 @@ namespace Evaluation.Locking
             t5.Join();
         }
 
-        private static Thread StartPhilosopher(LockCounter eatCounter, object left, object right)
+        private Thread CreatePhilosopher(LockCounter eatCounter, object left, object right)
         {
             var t1 = new Thread(() =>
             {
@@ -65,7 +69,6 @@ namespace Evaluation.Locking
                 }
             });
 
-            t1.Start();
 
             return t1;
         }
@@ -105,6 +108,28 @@ namespace Evaluation.Locking
                 return tmp;
             }
 
+        }
+
+        public override void Setup()
+        {
+            var eatCounter = new LockCounter();
+            var fork1 = new object();
+            var fork2 = new object();
+            var fork3 = new object();
+            var fork4 = new object();
+            var fork5 = new object();
+
+            t1 = CreatePhilosopher(eatCounter, fork1, fork2);
+            t2 = CreatePhilosopher(eatCounter, fork2, fork3);
+            t3 = CreatePhilosopher(eatCounter, fork3, fork4);
+            t4 = CreatePhilosopher(eatCounter, fork4, fork5);
+            t5 = CreatePhilosopher(eatCounter, fork5, fork1);
+        }
+
+        public override double Perform()
+        {
+            Start();
+            return 0;
         }
     }
 }

@@ -139,7 +139,7 @@ namespace STM.Implementation.JVSTM
                     result = true;
                 }
             }
-
+            /*
             if (result && !IsNested)
             {
                 _txnRecord.FinishTransaction();
@@ -148,7 +148,7 @@ namespace STM.Implementation.JVSTM
                 {
                     Interlocked.Decrement(ref commitRecord.Running);
                 }
-            }
+            }*/
 
             return result;;
         }
@@ -177,8 +177,8 @@ namespace STM.Implementation.JVSTM
                 EnsureCommitStatus();
                 Status = TransactionStatus.Committed;
 
-                _txnRecord.FinishTransaction();
-                Interlocked.Decrement(ref _commitTxnRecord.Running);
+                //_txnRecord.FinishTransaction();
+                //Interlocked.Decrement(ref _commitTxnRecord.Running);
 
                 return true;
             }
@@ -250,7 +250,7 @@ namespace STM.Implementation.JVSTM
             Status = TransactionStatus.Aborted;
             if (_txnRecord != null)
             {
-                Interlocked.Decrement(ref _txnRecord.Running);
+                //Interlocked.Decrement(ref _txnRecord.Running);
             } 
         }
 

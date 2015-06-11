@@ -5,34 +5,43 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using STM.Implementation.Lockbased;
+using PerformanceTestModel;
 
 namespace Evaluation.Library
 {
-    public class DiningPhilosophers
+    public class DiningPhilosophers : Testable
     {
-        private const int MAX_EAT_COUNT = 1000;
+        private readonly int MAX_EAT_COUNT;
+        private Thread t1;
+        private Thread t2;
+        private Thread t3;
+        private Thread t4;
+        private Thread t5;
 
-        public static void Start()
+
+        public DiningPhilosophers(int maxEats)
         {
-            var eatCounter = new TMInt(0);
-            var fork1 = new TMVar<bool>(true);
-            var fork2 = new TMVar<bool>(true);
-            var fork3 = new TMVar<bool>(true);
-            var fork4 = new TMVar<bool>(true);
-            var fork5 = new TMVar<bool>(true);
-
-            var t1 = StartPhilosopher(eatCounter, fork1, fork2);
-            var t2 = StartPhilosopher(eatCounter, fork2, fork3);
-            var t3 = StartPhilosopher(eatCounter, fork3, fork4);
-            var t4 = StartPhilosopher(eatCounter, fork4, fork5);
-            var t5 = StartPhilosopher(eatCounter, fork5, fork1);
-
-            Task.WaitAll(t1, t2, t3, t4, t5);
+            MAX_EAT_COUNT = maxEats;
         }
 
-        private static Task StartPhilosopher(TMInt eatCounter, TMVar<bool> left, TMVar<bool> right)
+        public void Start()
         {
-            var t1 = new Task(() =>
+            t1.Start();
+            t2.Start();
+            t3.Start();
+            t4.Start();
+            t5.Start();
+
+            t1.Join();
+            t2.Join();
+            t3.Join();
+            t4.Join();
+            t5.Join();
+        }
+
+        private Thread CreatePhilosopher(TMInt eatCounter, TMVar<bool> left, TMVar<bool> right)
+        {
+            var t1 = new Thread(() =>
             {
                 while (eatCounter < MAX_EAT_COUNT)
                 {
@@ -61,10 +70,31 @@ namespace Evaluation.Library
                 }
             });
 
-            t1.Start();
-
             return t1;
         }
 
+        
+        public override void Setup()
+        {
+ 	        var eatCounter = new TMInt(0);
+            var fork1 = new TMVar<bool>(true);
+            var fork2 = new TMVar<bool>(true);
+            var fork3 = new TMVar<bool>(true);
+            var fork4 = new TMVar<bool>(true);
+            var fork5 = new TMVar<bool>(true);
+
+            t1 = CreatePhilosopher(eatCounter, fork1, fork2);
+            t2 = CreatePhilosopher(eatCounter, fork2, fork3);
+            t3 = CreatePhilosopher(eatCounter, fork3, fork4);
+            t4 = CreatePhilosopher(eatCounter, fork4, fork5);
+            t5 = CreatePhilosopher(eatCounter, fork5, fork1);
+        }
+
+    
+        public override double Perform()
+        {
+            Start();
+ 	        return 0;
+        }
     }
 }

@@ -95,12 +95,12 @@ namespace STMUnitTest
 
         [TestMethod]
         public void JVRaceTest1()
-        {/*
+        {
             for (int i = 0; i < 10000; i++)
             {
                 var result = JVRaceTest1Internal();
                 Assert.IsTrue(result != 120);
-            }*/
+            }
         }
 
         private int JVRaceTest1Internal()
@@ -136,6 +136,52 @@ namespace STMUnitTest
             var res = JVSTMSystem.Atomic((transaction) => result.Read(transaction));
             return res;
         }
+
+        [TestMethod]
+        public void JVRaceTest2()
+        {
+            var result = new VBox<int>(0);
+
+            var t1 = new Thread(() =>
+            {
+                for (int i = 0; i < 1000; i++)
+                {
+                    JVSTMSystem.Atomic((transaction) =>
+                    {
+                        result.Put(transaction, result.Read(transaction) + 1);
+                    });
+                }
+                
+
+            });
+
+            var t2 = new Thread(() =>
+            {
+                for (int i = 0; i < 1000; i++)
+                {
+                    JVSTMSystem.Atomic((transaction) =>
+                    {
+                        result.Put(transaction, result.Read(transaction) + 1);
+                    });
+                }
+
+            });
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t2.Join();
+
+            var res = JVSTMSystem.Atomic((transaction) => result.Read(transaction));
+            if (res != 2000)
+            {
+                Assert.AreEqual(2000, res);
+            }
+            Assert.AreEqual(2000, res);
+
+        }
+
     }
 
 

@@ -92,6 +92,7 @@ namespace STM.Implementation.JVSTM
             for (int i = 0; i < _commitedBodies.Length; i++)
             {
                 var list = _commitedBodies[i];
+
                 foreach (var item in list)
                 {
                     item.Clean();

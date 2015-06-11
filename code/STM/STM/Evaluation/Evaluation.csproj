@@ -56,6 +56,7 @@
     <Compile Include="Library\Collections\JVSTMHashMapAtomic.cs" />
     <Compile Include="Library\Collections\JVSTMHashMapInternalList.cs" />
     <Compile Include="Library\Collections\Queue.cs" />
+    <Compile Include="Library\JVDining.cs" />
     <Compile Include="Library\JVSTMHashMap.cs" />
     <Compile Include="Library\STMHashMapInternalList.cs" />
     <Compile Include="Library\STMHashmapLinkedList.cs" />
@@ -84,6 +85,10 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <ProjectReference Include="..\PerformanceTestModel\PerformanceTestModel.csproj">
+      <Project>{ada7f998-eea6-41f6-bf88-f013597c7ff8}</Project>
+      <Name>PerformanceTestModel</Name>
+    </ProjectReference>
     <ProjectReference Include="..\STM\STM.csproj">
       <Project>{7f2c2267-8643-451a-b8c1-8552be152475}</Project>
       <Name>STM</Name>

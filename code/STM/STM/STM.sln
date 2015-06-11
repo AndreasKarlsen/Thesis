@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.22823.1
-MinimumVisualStudioVersion = 10.0.40219.1
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "STM", "STM\STM.csproj", "{7F2C2267-8643-451A-B8C1-8552BE152475}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "STMTester", "STMTester\STMTester.csproj", "{940BDB8C-E36B-4F1F-9601-1050C1805E85}"
@@ -16,7 +14,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Evaluation", "Evaluation\Ev
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DE6833AD-86C0-471D-91F5-1AA333D33F79}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Account", "Account\Account.csproj", "{86D88DE7-D440-4026-8DAE-F10CE72C9136}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerformanceTest", "PerformanceTest\PerformanceTest.csproj", "{268B7F9C-9300-4ACA-9F03-7430BC156576}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerformanceTestModel", "PerformanceTestModel\PerformanceTestModel.csproj", "{ADA7F998-EEA6-41F6-BF88-F013597C7FF8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,10 +40,14 @@ Global
 		{5A821C27-792A-44CF-B7CD-A6647BB65CC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5A821C27-792A-44CF-B7CD-A6647BB65CC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5A821C27-792A-44CF-B7CD-A6647BB65CC0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{86D88DE7-D440-4026-8DAE-F10CE72C9136}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{86D88DE7-D440-4026-8DAE-F10CE72C9136}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{86D88DE7-D440-4026-8DAE-F10CE72C9136}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{86D88DE7-D440-4026-8DAE-F10CE72C9136}.Release|Any CPU.Build.0 = Release|Any CPU
+		{268B7F9C-9300-4ACA-9F03-7430BC156576}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{268B7F9C-9300-4ACA-9F03-7430BC156576}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{268B7F9C-9300-4ACA-9F03-7430BC156576}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{268B7F9C-9300-4ACA-9F03-7430BC156576}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADA7F998-EEA6-41F6-BF88-F013597C7FF8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADA7F998-EEA6-41F6-BF88-F013597C7FF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADA7F998-EEA6-41F6-BF88-F013597C7FF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADA7F998-EEA6-41F6-BF88-F013597C7FF8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -159,6 +159,20 @@ namespace STM.Implementation.JVSTM
         {
             if (expected == Interlocked.CompareExchange<VBoxBody<T>>(ref _body, newBody, expected))
             {
+                if (_listeners.Count == 0) return newBody;
+
+                var temp = _listeners;
+                foreach (var retryLatch in temp)
+                {
+                    retryLatch.Open(retryLatch.Era);
+                }
+
+                ImmutableList<IRetryLatch> initial;
+                do
+                {
+                    initial = _listeners;
+                } while (initial != Interlocked.CompareExchange(ref _listeners, ImmutableList<IRetryLatch>.Empty, initial));
+
                 return newBody;
             }
             else

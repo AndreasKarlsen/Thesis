@@ -28,7 +28,7 @@ namespace Evaluation
             
             //TestQueue();
             //TestLockingQueue();
-
+            /*
             var nrThreads = 4;
             using(var s = new FileStream("output.txt",FileMode.Create))
             {
@@ -49,8 +49,11 @@ namespace Evaluation
 
                     Console.WriteLine("JVSTM done");
                 }
-            }
-            
+            }*/
+
+
+
+            Console.WriteLine("Done");
             Console.ReadKey();
         }
 
