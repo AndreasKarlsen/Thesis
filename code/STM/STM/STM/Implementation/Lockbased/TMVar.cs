@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using STM.Implementation.Common;
 using STM.Interfaces;
 using STM.Implementation.Exceptions;
 
@@ -35,9 +36,9 @@ namespace STM.Implementation.Lockbased
             var me = Transaction.LocalTransaction;
             switch (me.Status)
             {
-                case Transaction.TransactionStatus.Committed:
+                case TransactionStatus.Committed:
                     return base.GetValue();
-                case Transaction.TransactionStatus.Active:
+                case TransactionStatus.Active:
                     T value;
                     if (!me.WriteSet.Contains(this))
                     {
@@ -58,9 +59,9 @@ namespace STM.Implementation.Lockbased
                         Console.WriteLine("Transaction: " + me.ID + " read:" + value);
                     #endif
 
-                    me.ReadSet.Add(this);
+                    me.ReadSet.Add(this,me.ReadStamp);
                     return value;
-                case Transaction.TransactionStatus.Aborted:
+                case TransactionStatus.Aborted:
                     throw new STMException("Aborted transaction attempted to read.");
                 default:
                     throw new Exception("Shits on fire yo!");
@@ -77,16 +78,16 @@ namespace STM.Implementation.Lockbased
             var me = Transaction.LocalTransaction;
             switch (me.Status)
             {
-                case Transaction.TransactionStatus.Committed:
+                case TransactionStatus.Committed:
                     SetValueNonTransactional(value);
                     break;
-                case Transaction.TransactionStatus.Active:
+                case TransactionStatus.Active:
                     me.WriteSet.Put(this, value);
                     #if DEBUG
                         Console.WriteLine("Transaction: " + me.ID + " wrote:" + value);
                     #endif
                     break;
-                case Transaction.TransactionStatus.Aborted:
+                case TransactionStatus.Aborted:
                     throw new STMException("Aborted transaction attempted to write.");
                 default:
                     throw new Exception("Unkown transaction state!");

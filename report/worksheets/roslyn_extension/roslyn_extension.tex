@@ -1,37 +1,36 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Roslyn Extension}{0}{Februar 10, 2015}{}{../../}
-The chapter describes how the Roslyn C\# compiler is extended to support the constructs of \stmnamesp described in \bsref{chap:stm_design}. \bsref{sec:roslyn_extension_strategy} describes the overall strategy, \bsref{sec:roslyn_lexer_parser_changes} describes the changes made to the lexer and parser while \bsref{sec:syntax_tree_transformations} presents examples of the transformations made on the syntax tree by the extension.
+This chapter describes how the Roslyn C\# compiler is extended to support the constructs of \stmnamesp described in \bsref{chap:stm_design}. \bsref{sec:roslyn_extension_strategy} describes the overall extension strategy. In \bsref{sec:roslyn_lexer_parser_changes} the changes made to the lexer and parser are described. Following this, \bsref{sec:syntax_tree_transformations} presents examples of the transformations made on the syntax tree by the extension while \bsref{sec:roslyn_extension_testing} describes the testing approach employed to test the Roslyn extension. Finally, \bsref{sec:design_and_int_revisited} describes areas where the initial prototype implementation, described in this chapter, conflicts with the intended \ac{STM} design described in \bsref{chap:stm_design}.
+
 \label{chap:roslyn_extension}
 \section{Extension Strategy}
 \label{sec:roslyn_extension_strategy}
-The Roslyn C\# compiler is extended by modifying the lexing and parsing phases with support for the language constructs described in \bsref{chap:stm_design}. The extended parsing phase outputs an extended syntax tree containing direct representations of the language features provided by \stmname. The syntax tree is then analyzed by identifying \stmnamesp constructs, followed by a transformation where the language extension of \stmnamesp is transformed into equivalent C\# code utilizing the \ac{STM} library described in \bsref{chap:implementation}. 
-
-The transformation phase outputs a syntax tree containing only standard C\# code, executing the described \ac{STM} operations. This syntax tree is then passed to the remaining C\# compiler phases, utilizing the compilers semantic analysis and code generation implementations. The approach is visualized in \bsref{fig:compiler_pipeline_extension}. The parser is extended to output an extended syntax tree and transformation of this tree occurs before the binding and IL emission phases. The transformation phase utilizes both the extended syntax tree and symbol information gathered through the Roslyn \ac{API}. By doing modifications in the early phases, the amount of changes required is minimized, as the rest of the phases can be reused without modifications. Furthermore, modifications are done on the stable syntax tree, rather than the unstable binding tree, as described in \bsref{sec:compile_phases}.
+The Roslyn C\# compiler is extended by modifying the lexing and parsing phases with support for the language constructs described in \bsref{chap:stm_design}. The extended parsing phase outputs an extended syntax tree containing direct representations of the language features provided by \stmname. The syntax tree is then analyzed to identify \stmnamesp constructs, followed by a transformation where the language extension of \stmnamesp is transformed into equivalent C\# code which utilizes the \ac{STM} library described in \bsref{chap:implementation}. This syntax tree is then passed to the remaining C\# compiler phases, utilizing the compilers semantic analysis and code generation implementations. The approach is visualized in \bsref{fig:compiler_pipeline_extension}, which is a modified version of \bsref{fig:api_vs_compiler_pipeline}. The transformation phase utilizes both the extended syntax tree and symbol information gathered through the Roslyn \ac{API}. By doing modifications in the early phases, the amount of changes required is minimized, as the rest of the phases can be reused without modifications. Furthermore, modifications are done on the stable syntax tree, rather than the unstable bound tree, as described in \bsref{sec:compile_phases}.
 \begin{figure}[htbp]
 \centering
- \includegraphics[width=1\textwidth]{\rootpath/worksheets/roslyn_extension/figures/compiler_pipeline_extension} 
- \caption{Extension occurs at the syntax tree and symbol level.}
+\includegraphics[width=1\textwidth]{\rootpath/worksheets/roslyn_extension/figures/compiler_pipeline_extension}
+\caption{Extension occurs at the syntax tree and symbol level. The parser is extended to output an extended syntax tree and transformation of this tree occurs before the binding and IL emission phases.}
 \label{fig:compiler_pipeline_extension}
 \end{figure}
 
 The described approach was selected due to the following reasons:
 \begin{enumerate}
-\item As described in \bsref{subsec:roslyn_first_phase} the C\# lexer uses a simple \bscode{switch} case to identify tokens by choosing the type of token to identify based on the first character of the token, while the parser uses a recursive descent technique, both of which are implemented by hand. Such techniques have a low degree of complexity, as one method corresponds to parsing one non-terminal, compared to strategies such as \ac{LALR}\cite{nunes2003cps}. Thus modifying the lexer and parser is simpler than if more complex techniques had been employed.
+\item As described in \bsref{subsec:roslyn_first_phase} the C\# lexer uses a simple \bscode{switch} case to identify tokens, which chooses the type of token to identify based on the first character of the token, while the parser uses a recursive descent technique. Both the lexer and parser are implemented by hand. The techniques employed have a low degree of complexity, as the first method uses a simple \bscode{switch} and the latter method corresponds to parsing one non-terminal at a time. Thus modifying the lexer and parser is simpler than if more complex techniques had been employed, such as \ac{LALR} parsing\cite{nunes2003cps}.
 
-\item The Roslyn compiler generates the nodes composing its syntax trees along with factory methods and a visitor pattern implementation based on the content of an \ac{XML} file. Therefore adding new nodes to represent the extended language constructs, such as the \bscode{atomic} block and \bscode{retry} statement, simply amounts to adding definitions for these nodes to the \ac{XML}, allowing the employed tool to generate source code for the new nodes. 
+\item The Roslyn compiler generates the nodes composing its syntax trees along with factory methods and a visitor pattern implementation based on the content of an \ac{XML} file. Therefore adding new nodes to represent the extended language constructs, such as the \bscode{atomic} block and \bscode{retry} statement, simply amounts to adding definitions for these nodes to the \ac{XML}, allowing the employed tool to generate source code for the new nodes.
 
 \item As described in \bsref{sec:syntax_trees} Roslyn's syntax trees are designed to be fast to modify by reusing underlying green nodes instead of creating complete copies\cite[p. 6]{ng2012roslyn}. This speaks for conducting transformation on the level of the syntax tree despite its immutable implementation.
 
-\item The Roslyn project has been designed to allow programmers to utilize the information gathered during the compilation phases, by analyzing the syntax tree, the information in the symbol table and the results of semantics analysis. These parts of the compiler are exposed as a public \ac{API} allowing access to both syntactic and semantic information. Utilizing this \ac{API} during the transformation phases allows the transformation to draw on the existing semantic analysis to answer questions such as, what method is the target of a method invocation, without the need for implementing complex analysis.
+\item The Roslyn project has been designed to allow programmers to utilize the information gathered during the compilation phases by analyzing the syntax tree, the information in the symbol table, and the results of semantics analysis. These parts of the compiler are exposed as a public \ac{API} allowing access to both syntactic and semantic information. Utilizing this \ac{API} during the transformation phase allows the transformation to draw on the existing semantic analysis to answer questions such as, what method is the target of a method invocation, without the need for implementing complex analysis.
 
 \item By parsing an extended syntax tree and transforming it into a regular C\# syntax tree, the existing semantic analysis and code emission implementations can be utilized.
 \end{enumerate}
 
-Despite of the many advantages of the selected approach, a number of disadvantages also exists. The following disadvantages were identified:
+Despite of the many advantages of the selected approach, a number of disadvantages also exists. The following disadvantages has been identified:
 \begin{enumerate}
-	\item By modifying the syntax tree, the roundtripable property is lost, as the syntax tree no longer represents the original source code. Consequently, it is not possible to inform the programmer of the placement of errors in generated code. This requires our own code analysis, to give meaningful errors attached to the original source code. Ultimately, the ability to rely on the existing code analysis provided by the Roslyn compiler is lost. Alternatively, we could perform the transformation at a later compilation phase, e.g. modifying the bound tree in the binding phase or do changes before emitting code in the emit phase. This would preserve the roundtripable property, but also limit the reuse of the existing compiler. 
+	\item By modifying the syntax tree, the roundtripable property, described in \bsref{sec:syntax_trees}, is lost, as the syntax tree no longer represents the original source code. Consequently, any error or warning generated by the compiler refers to the transformed source code, which the programmer does not see, as opposed to the original \stmname source code. This requires our own code analysis, to give meaningful errors attached to the original source code. Alternatively, the transformation could be performed at a later compilation phase, e.g. modifying the bound tree in the binding phase or do changes before emitting code in the emit phase. This would preserve the roundtripable property, but also limit the reuse of the existing compiler.
 	
-	\item As \bscode{atomic} fields, properties and local variables are translated into a corresponding \ac{STM} type, the types need to be known. As C\# allows the programmer to utilize type inference for local variables, the type can be unknown at this point of compilation, thus making it impossible to identify which type the local variables should be translated to. To remedy this, we must infer the type before translation. Roslyn offers the possibility to evaluate the type of an expression, which we use to infer the type of \bscode{atomic} local variables of no type. Consequently, we must perform some of the work, that the Roslyn compiler does at later stages of the compilation, reducing the reuse of the later compilation phases.
+	\item As \bscode{atomic} local variables are translated into variables of a corresponding \ac{STM} type, the types of these need to be known. C\# allows the programmer to utilize type inference for local variables using the \bscode{var} keyword. Consequently the type of a local variable is not required to be defined in the source code. To remedy this, the extension must infer the type before translation. Roslyn offers the possibility to evaluate the type of an expression, which is used to infer the type of \bscode{atomic} local variables with unknown types. Consequently, the extension must perform some of the work that the Roslyn compiler does at later stages of the compilation, reducing the reuse of the later compilation phases.
 \end{enumerate}
 
 \section{Lexing \& Parsing Phases}
@@ -39,14 +38,14 @@ This section describes the changes conducted in order to extend the lexing and p
 \label{sec:roslyn_lexer_parser_changes}
 
 \subsection{Lexer Changes}
-As described in \bsref{chap:stm_design}, \stmnamesp introduces three new keywords: \bscode{atomic,} \bscode{orelse} and \bscode{retry}. As a result the lexer component has been extended to identify these keyword as tokens of the correct kind. The C\# lexer initially lexes keyword tokens as if they were identifiers. If an identified token corresponds to a keyword, a keyword token with the correct kind is used instead. 
+As described in \bsref{chap:stm_design}, \stmnamesp introduces three new keywords: \bscode{atomic,} \bscode{orelse} and \bscode{retry}. Consequently the lexer has been extended to identify these keywords as tokens of the correct kind. The C\# lexer initially lexes keyword tokens as if they are identifiers. If an identifier token corresponds to a keyword, a keyword token with the correct kind is returned instead.
 
-Allowing the lexer to identify the new keywords required adding their definition to the lookup methods of the \bscode{SyntaxKindFacts} class. This class defines the \bscode{GetKeywordKind} which the lexer uses to identify the keyword kind of an identifier, if the identifier represents a keyword. Additionally, the \bscode{SyntaxKindFacts} class defines the \bscode{GetText} method for determining the string representation of a keyword based on its kind. A definition of the new keywords was added to this class.
+In order to identify the new keywords, their definition has been added to the lookup methods of the \bscode{SyntaxKindFacts} class. This class defines the \bscode{GetKeywordKind} which the lexer uses to identify the keyword kind of an identifier, if the identifier represents a keyword. Additionally, the \bscode{SyntaxKindFacts} class defines the \bscode{GetText} method for determining the string representation of a keyword based on its kind.
 
-To allow a token to represent the new keywords, the \bscode{AtomicKeyword}, \bscode{OrelseKeyword} and \bscode{RetryKeyword} entries were added to the \bscode{SyntaxKind} enumeration. As described in \bsref{subsubsec:roslyn_kinds}, the \bscode{SyntaxKind} enumeration contains an entry for each type of node, token, or trivia in C\#. Whenever the lexer identifies an occurrence of one of the new keywords, the corresponding kind is  returned. For example an occurrence of the \bscode{atomic} keyword results in a token with the kind \bscode{AtomicKeyword} returned.
+To allow tokens to represent the new keywords, the \bscode{AtomicKeyword,} \bscode{OrelseKeyword,} and \bscode{RetryKeyword} entries has been added to the \bscode{SyntaxKind} enumeration. As described in \bsref{subsubsec:roslyn_kinds}, the \bscode{SyntaxKind} enumeration contains an entry for each type of node, token, or trivia in C\#. Whenever the lexer identifies an occurrence of one of the new keywords, a token with the corresponding kind is returned. For example an occurrence of the \bscode{atomic} keyword results in a token with the kind \bscode{AtomicKeyword} being returned.
 
 \subsection{Syntax Tree Extension}
-The design described in \bsref{chap:stm_design} adds the \bscode{atomic}, \bscode{orelse} and \bscode{retry} constructs which the existing syntax tree cannot express. Therefore the syntax tree must be extended to support these language constructs. As described in \bsref{subsec:roslyn_syntax_tree_generation} nodes composing the syntax tree, along with factory methods and the visitor pattern implementation, are generated on the basis of an \ac{XML} file. Adding additional nodes to the syntax tree therefore amounts to defining them in the \ac{XML} notation, which has been done for the three previously mentioned constructs. \bsref{lst:roslyn_extension_tre_xml} shows the \ac{XML} code defining the \bscode{AtomicStatementSyntax} node which represents an \bscode{atomic} block in the syntax tree. Line 1 defines the name and base class of the node while line 2 defines its kind. The \bscode{AtomicStatement} kind has been added to the \bscode{SyntaxKind} enumeration as described previously. Line 3 defines a property on the node which holds the token representing the \bscode{AtomicKeyword} which starts the definition of the atomic blocks. The property has a constraint specifying the kind of the token, that can be associated with the property which is defined on line 4 as well as a comment given on lines 5-9. Line 11 defines a statement property which holds the block of statements associated with the defined \bscode{atomic} block. Line 18 defines a property containing a \bscode{SyntaxList} of \bscode{orelse} blocks associated with the \bscode{atomic} block. This relationship has been modeled after the relationship between a C\# \bscode{try} statement and its \bscode{catch} clauses, as both have a zero to many association. Finally lines 25-27 defines a comment for the \bscode{AtomicStatementSyntax}, while line 28-30 defines a comment for the factory method.
+The design described in \bsref{chap:stm_design} adds the \bscode{atomic,} \bscode{orelse} and \bscode{retry} constructs which the existing syntax tree cannot express. Therefore the syntax tree must be extended to support these language constructs. As described in \bsref{subsec:roslyn_syntax_tree_generation} nodes composing the syntax tree, along with factory methods and the visitor pattern implementation, are generated on the basis of an \ac{XML} file. Adding additional nodes to the syntax tree therefore amounts to defining them in the \ac{XML} notation, which has been done for the three previously mentioned constructs. \bsref{lst:roslyn_extension_tre_xml} shows the \ac{XML} code defining the \bscode{AtomicStatementSyntax} node which represents an \bscode{atomic} block in the syntax tree. Line 1 defines the name and base class of the node while line 2 defines its kind. The \bscode{AtomicStatement} kind has been added to the \bscode{SyntaxKind} enumeration as described previously. Line 3 defines a property on the node which holds the token representing the \bscode{AtomicKeyword} which starts the definition of the atomic block. The property has a constraint specifying the kind of the token, that can be associated with the property which is defined on line 4 as well as a comment given on lines 5-9. Line 11 defines a statement property which holds the block of statements associated with the defined \bscode{atomic} block. Line 18 defines a property containing a \bscode{SyntaxList} of \bscode{orelse} blocks associated with the \bscode{atomic} block. This relationship has been modeled after the relationship between a C\# \bscode{try} statement and its \bscode{catch} clauses, as both have a zero to many association. Finally lines 25-27 defines a comment for the \bscode{AtomicStatementSyntax}, while line 28-30 defines a comment for the factory method.
 
 \begin{lstlisting}[label=lst:roslyn_extension_tre_xml,
   caption={AtomicStatement \ac{XML} definition},
@@ -92,13 +91,12 @@ The design described in \bsref{chap:stm_design} adds the \bscode{atomic}, \bscod
   </Node>
 \end{lstlisting}
 
-Declaration of transactional local variables, fields and parameters does not require modifications to the syntax tree as the standard nodes for these constructs allow a collection of modifiers to be associated with the declaration. Any atomic modifiers are simply added to the collection along with any other modifiers. 
-
+Declaration of transactional local variables, fields and parameters does not require modifications to the syntax tree as the standard nodes for these constructs allow a collection of modifiers to be associated with the declaration. Any atomic modifiers are simply added to the collection along with any other modifiers.
 
 \subsection{Parser Changes}
-As described in \bsref{subsec:roslyn_first_phase} the C\# parser uses a recursive descent strategy implemented by hand. As it is customary for recursive descent implementations, each construct has a method responsible for parsing that particular construct. For the new \bscode{atomic}, \bscode{orelse} and \bscode{retry} such a method has been added, while the methods for parsing local variables, fields, parameters and properties have been modified to allow for an atomic modifier, as well as generating error messages for any unsupported modifier combinations such as \bscode{atomic const} and \bscode{readonly const}. Errors are associated with the erroneous nodes as it is customary for the compiler. A later compilation phase generates error messages and cancels code emission if any errors were present.
+As described in \bsref{subsec:roslyn_first_phase} the C\# parser uses a recursive descent strategy implemented by hand. As customary for recursive descent implementations, each non-terminal has a method responsible for parsing that particular non-terminal. For the new \bscode{atomic}, \bscode{orelse} and \bscode{retry} such a method has been added.  Furthermore, the methods for parsing local variables, fields, parameters, and properties have been modified to allow for an atomic modifier, as well as generating error messages for any unsupported modifier combinations such as \bscode{atomic const} and \bscode{readonly const}, as defined in \bsref{subsec:design_trans_field}. Errors are associated with the erroneous nodes as is customary for the Roslyn compiler. A later compilation phase generates error messages and cancels code emission if any errors are present in the syntax tree.
 
-\bsref{lst:parse_atomic_block} shows the \bscode{ParseAtomicBlock} method responsible for parsing an \bscode{atomic} block. Line \ref{line:ab_keyword} parses an \bscode{atomic} keyword returning a token representing the keyword. Line \ref{line:ab_block} parses the block of statements representing the transaction body. Lines \ref{line:ab_orelse_start} to line \ref{line:ab_orelse_end} parses any \bscode{orelse} blocks associated with the \bscode{atomic} statement, if any are present. Line \ref{line:ab_allocate} allocates a \bscode{SyntaxListBuilder}. The \bscode{Allocate} method reuses existing space if possible, in order to limit the overhead of allocation. Line \ref{line:ab_parse_orelse} delegates the parsing of the actual \bscode{orelse} block to its corresponding method. Line \ref{line:ab_free} frees the space allocated by the call on line \ref{line:ab_allocate}. The \bscode{try finally} construct ensures that the space is freed in case of an exception. Finally on line \ref{line:ab_return} the syntax factory is used to create the \bscode{AtomicStatementSyntax} that is returned.
+\bsref{lst:parse_atomic_block} shows the \bscode{ParseAtomicBlock} method responsible for parsing an \bscode{atomic} block. Line \ref{line:ab_keyword} parses an \bscode{atomic} keyword by returning a token representing the keyword while line \ref{line:ab_block} parses the block of statements representing the transaction body. On line \ref{line:ab_orelse_start} to \ref{line:ab_orelse_end} any \bscode{orelse} blocks associated with the \bscode{atomic} statement are parsed , if any are present. Line \ref{line:ab_allocate} allocates a \bscode{SyntaxListBuilder}. The \bscode{Allocate} method reuses existing space if possible, in order to limit the overhead of allocation.  As seen on line \ref{line:ab_parse_orelse} the parsing of the actual \bscode{orelse} block is delegated to its corresponding method. On line \ref{line:ab_free} the space allocated by the call on line \ref{line:ab_allocate} is freed. The \bscode{try finally} construct ensures that the space is freed in case of an exception. Finally on line \ref{line:ab_return} the syntax factory is used to create the \bscode{AtomicStatementSyntax} that is returned.
 
 \begin{lstlisting}[label=lst:parse_atomic_block,
   caption={Method for parsing \bscode{atomic} block},
@@ -142,16 +140,25 @@ As described in \bsref{subsec:roslyn_first_phase} the C\# parser uses a recursiv
 %error codes, const atomic, readonly atomic
 
 \subsection{Symbol Changes}
-The symbols representing fields, local variables, and parameters have been modified with a new \bscode{IsAtomic} property of type \bscode{bool}, indicating if they represent an atomic variation of these constructs. The logic which creates the symbol table has further been modified to, for each of these constructs, determine whether the declaration is atomic and set the \bscode{IsAtomic} to the appropriate value.
+The symbols representing fields, local variables, and parameters have been modified with a new \bscode{IsAtomic} property of type \bscode{bool}, indicating if the symbol represent an atomic variation of these constructs. The logic which creates the symbol table has further been modified to, for each of these constructs, determine whether the declaration is atomic and set the \bscode{IsAtomic} to the appropriate value.
 
-For each usage of a field, local variable or parameter, the semantic model allows for the retrieval of a symbol, representing the corresponding declaration. Based on the added \bscode{IsAtomic} property this symbol can be used to determine whether the usage represents the usage of an atomic variable. For cases where only access to atomic variables has be modified, the symbol extension allows easy access to the required information.
+For each usage of a field, local variable or parameter, the semantic model allows for the retrieval of a symbol, representing the corresponding declaration. Based on the added \bscode{IsAtomic} property this symbol can be used to determine whether the usage represents the usage of an atomic variable. For cases where only access to atomic variables are of interest, in relation to the \ac{STM} system, the symbol extension allows for easy distinguishing between access to atomic variables or non-atomic variables.
 
 \section{Syntax Tree Transformations}
 \label{sec:syntax_tree_transformations}
-This section presents examples of the syntax tree transformations performed during the compilation process. In order to prevent errors due to ambiguity between type names, the transformation process uses fully qualified names\cite[p. 73]{csharp2013specificaiton}  for any types in the \ac{STM} library. In the examples presented in this section the simple names have been used, in order to improve readability. 
+This section presents the syntax tree transformations performed during the compilation process. In order to prevent errors due to ambiguity between type names, the transformation process uses fully qualified names\cite[p. 73]{csharp2013specificaiton}  for any types in the \ac{STM} library. In the examples presented in this section the simple names have been used, in order to improve readability.
 
 \subsection{Atomic Block}
-In \bsref{subsec:design_atomic_block} the design for the \bscode{atomic} block is described. \bsref{lst:before_atomic_block} depicts the syntax of the atomic block before transformation. 
+In \bsref{subsec:design_atomic_block} the design for the \bscode{atomic} block is described. \bsref{lst:before_atomic_block} depicts the syntax of the atomic block before transformation.
+
+The transformation of an atomic block is done using the following four steps:
+\begin{enumerate}
+	\item Construct a lambda expression with a body equal to that of the \bscode{atomic} block.
+	\item Construct lambda expressions for any \bscode{orelse} blocks associated with the \bscode{atomic} block, with bodies equal to that of their respective original definition.
+	\item Construct a syntax node for the invocation of the \bscode{STMSystem.Atomic} method, supplied with the created lambda expressions as arguments.
+	\item Replace the \bscode{atomic} block with the invocation of the \bscode{STMSystem.Atomic} method.
+\end{enumerate}
+For syntax shown in \bsref{lst:before_atomic_block} the transformation produces the output shown in \bsref{lst:after_atomic_block}.
 
 \begin{lstlisting}[label=lst:before_atomic_block,
   caption={\bscode{atomic} Block Before Transformation},
@@ -175,14 +182,6 @@ In \bsref{subsec:design_atomic_block} the design for the \bscode{atomic} block i
     //Orelse block
   }
 \end{lstlisting}
-The transformation of an atomic block is done over the following four steps:
-\begin{enumerate}
-	\item Construct a syntax node for a lambda expression (anonymous function) with a body equal to that of the atomic block.
-	\item Construct lambda expressions for any \bscode{orelse} blocks associated with the \bscode{atomic} blocks, preserving their bodies as with the \bscode{atomic} block.
-	\item Construct a syntax node for the invocation of the \bscode{STMSystem.Atomic} method, giving the created lambda expressions as arguments.
-	\item Replace the \bscode{atomic} block with the invocation of the \bscode{STMSystem.Atomic} method.
-\end{enumerate}
-For syntax shown in \bsref{lst:before_atomic_block} the transformation produces the output shown in \bsref{lst:after_atomic_block}.
 
 \begin{lstlisting}[label=lst:after_atomic_block,
   caption={\bscode{atomic} Block After Transformation},
@@ -204,21 +203,22 @@ For syntax shown in \bsref{lst:before_atomic_block} the transformation produces 
     //Orelse block
   });
 \end{lstlisting}
-As a consequence of translating an atomic block into a lambda, return statements inside the lambda do not return out of the atomic block as described in \bsref{subsec:design_atomic_block}. In order to ensure the wanted semantics, an analysis is performed to identify all atomic blocks containing return statements. In such a case, a return statement is added before the method invocation. Return statements inside nested transactions must return out of the entire transaction. To accommodate this, the analysis also identifies nested transactions.
+
+As a consequence of translating an atomic block into a lambda expression, return statements inside the lambda expression do not return out of the atomic block as described in \bsref{subsec:design_atomic_block}. In order to ensure the wanted semantics, an analysis is performed to identify all atomic blocks containing return statements. In such a case, a return statement is added before the method invocation. Return statements inside nested transactions must return out of the enclosing method. To accommodate this, the analysis also identifies nested transactions.
 
 \subsection{Field Types}\label{subsec:extension_field}
-In \bsref{subsec:design_trans_field} we described the design of transactional fields. Any field declared \bscode{atomic} must have its type substituted to the corresponding \ac{STM} type in order for the \ac{STM} system to track any changes to the variable. If a specialized type exist, such as \bscode{TMInt} for \bscode{int}, then that type is used. Otherwise the generic \bscode{TMVar} is used.  As the \ac{STM} types act as a wrapper object allowing the \ac{STM} system to track how the wrapped value is access, all atomic fields must be initialized to an instance of a \bscode{STM} type as accessing the wrapped value will otherwise cause a \bscode{NullReferenceException}. If an initializer expression is given as part of the field declaration the constructor of the wrapping \ac{STM} object is given the expression as an argument, initializing the wrapped value to the value computed by the initializer expression. If no initializer expression is given the wrapped value is initialized to the default value for the wrapped type by instantiating the \ac{STM} object using its parameterless constructor. The transformation of a atomic field declaration follows the steps described below:
+In \bsref{subsec:design_trans_field} the design of transactional fields are described. Any field declared \bscode{atomic} must have its type substituted to the corresponding \ac{STM} type in order for the \ac{STM} system to track any changes to the variable. If a specialized type exist, such as \bscode{TMInt} for \bscode{int}, then that type is used. Otherwise the generic \bscode{TMVar} is used.  As the \ac{STM} types act as wrapper objects that allows the \ac{STM} system to track how the wrapped values are accessed, all atomic fields must be initialized to an instance of a \bscode{STM} type, as accessing the wrapped value will otherwise cause a \bscode{NullReferenceException}. If an initializer expression is given as part of the field declaration, the constructor of the wrapping \ac{STM} object is given the expression as an argument, initializing the wrapped value to the value computed by the initializer expression. If no initializer expression is given, the wrapped value is initialized to the default value for the wrapped type by instantiating the \ac{STM} object using its parameterless constructor. The transformation of an atomic field declaration follows the steps described below:
 
 \begin{enumerate}
-	\item Determine the type of the wrapping \ac{STM} objects based on the type of the field declaration.
+	\item Determine the type of the wrapping \ac{STM} object, based on the type of the field declaration.
 	\item For each variable declared as part of the field declaration, construct an object instantiation expression following the approach described above. This expression serves as the new initializer for the particular variable it was created for.
-	\item Construct a new field declaration with the same access modifier and variable names as the original declaration, but substituting the type with the \ac{STM} object type and initializer expressions with the created object instantiation expressions.
-	\item Replace the original field declaration with the newly the constructed field declaration. 
+	\item Construct a new field declaration with the same access modifiers and variable names as the original declaration, but substituting the type with the \ac{STM} object type, and initializer expressions with the created object instantiation expressions.
+	\item Replace the original field declaration with the constructed field declaration.
 \end{enumerate}
 
-\bsref{lst:before_atomic_field} presents a example of two \bscode{atomic} field declarations before transformation while \bsref{lst:after_atomic_field} shows the result of applying the transformation. Line \ref{line:af_field1_before} of \bsref{lst:before_atomic_field} is transformed to line \ref{line:af_field1_after} of \bsref{lst:after_atomic_field}. The type of the field is changed to the specialized integer \ac{STM} type \bscode{TMInt} and the initializer expression is used to initialized the value of the created \bscode{TMInt} object. Line \ref{line:af_field2_before} of \bsref{lst:before_atomic_field} is transformed to line \ref{line:af_field2_after} of \bsref{lst:after_atomic_field}. The type is transformed to \bscode{TMVar<string>}. For \bscode{field3}, which original definition does not contain an initializer expression, a initializer expression has been created following the previously described procedure.
- 
-\begin{lstlisting}[label=lst:before_atomic_field,
+\bsref{lst:before_atomic_field} presents an example of two \bscode{atomic} field declarations before transformation while \bsref{lst:after_atomic_field} shows the result of applying the transformation. Line \ref{line:af_field1_before} of \bsref{lst:before_atomic_field} is transformed to line \ref{line:af_field1_after} of \bsref{lst:after_atomic_field}. The type of the field is changed to the specialized integer \ac{STM} type \bscode{TMInt} and the initializer expression is used to initialize the value of the created \bscode{TMInt} object. Line \ref{line:af_field2_before} of \bsref{lst:before_atomic_field} is transformed to line \ref{line:af_field2_after} of \bsref{lst:after_atomic_field}. The type is transformed to \bscode{TMVar<string>}. For \bscode{field3}, which original definition does not contain an initializer expression, an initializer expression has been created following the previously described procedure.
+
+\begin{lstlisting}[ label=lst:before_atomic_field,
   caption={\bscode{atomic} Field Before Transformation},
   language=Java,  
   showspaces=false,
@@ -259,23 +259,22 @@ In \bsref{subsec:design_trans_field} we described the design of transactional fi
     public TMVar<string> field2 = new TMVar<string>("Hello world!"), field3 = new TMVar<string>();~\label{line:af_field2_after}~
   }
 \end{lstlisting}
- 
 
-\subsection{Properties}
-In \bsref{subsec:design_properties} we described the design for transactional properties. In order to provide the wanted semantics, we transform it into two parts: an atomic backing field, and a manual property. The transformation takes the following approach for each transactional property identified in the syntax tree:
+\subsection{Properties}\label{sec:roslyn_extension_properties}
+In \bsref{subsec:design_properties} the design for transactional properties was described. In order to provide the wanted semantics for the automatic form, the transformation involves two parts: an atomic backing field, and a manual property. The transformation takes the following approach for each transactional property identified in the syntax tree:
 
 \begin{enumerate}
-	\item Constructs a get-body with the access-modifier of the original property's get. The get-body contains a block in which a return to the backing field are. The backing field is not yet constructed, but a method is used to determine its future identifier to ensure a correct reference.
-	\item Constructs a set-body with the access-modifier of the original property's set. The set-body contains a block in which an assignment of \bscode{value} is made to the backing field.
-	\item Constructs a manual property with the access modifier of the original property, the get-body and set-body constructed earlier.
-	\item Constructs a private transactional field of the same type as the original property, used as backing field.
+	\item Construct a get-body with the access-modifier of the original property's get. The get-body contains a block that returns the value of the backing field. The backing field is not yet constructed, but a method is used to determine its future identifier to ensure a correct reference.
+	\item Construct a set-body with the access-modifiers of the original property's set-body. The set-body contains a block where an assignment of \bscode{value} is made to the backing field.
+	\item Construct a manual property with the access modifier of the original property and the get-body and set-body constructed earlier.
+	\item Construct a private transactional field of the same type as the original property, used as backing field.
+	\item Insert the new property after the original property and replace the original property with the private transactional field.
 \end{enumerate}
-\andreas{The code performing the transformation can be found in: STM.cs - ReplaceProperties(SyntaxNode root)}
 
-The transactional properties are transformed before the transactional fields, thus enabling reuse of the transformation done for atomic fields, as the backing field can be constructed as a transactional field instead of fully transforming it. Additionally, no transformation has to be done for the manual form, as the transactional field used for backing the property is processed as described in \bsref{subsec:extension_field}. The automatic form before translation is exemplified in \bsref{lst:before_atomic_property}:
+Transactional properties are transformed before transactional fields. This enables the transformation of transactional properties to simply generate a backing field which is declared atomic and rely on the transformation of transactional fields to transform the type of the field to the correct \ac{STM} type. No transformation has to be done for the manual form, as the transactional field used for backing the property is processed as described in \bsref{subsec:extension_field}. The automatic form before transformation is exemplified in \bsref{lst:before_atomic_property}, where the transformation result is shown in \bsref{lst:after_atomic_property}.
 
-\begin{lstlisting}[label=lst:before_atomic_property,
-  caption={Before Transformation},
+\begin{lstlisting}[ label=lst:before_atomic_property,
+  caption={\bscode{atomic} Property Before Transformation},
   language=Java,  
   showspaces=false,
   showtabs=false,
@@ -292,9 +291,8 @@ The transactional properties are transformed before the transactional fields, th
   }
 \end{lstlisting}
 
-The result of transforming the example in \bsref{lst:before_atomic_property} is shown in \bsref{after_atomic_property}.
-\begin{lstlisting}[label=lst:after_atomic_property,
-  caption={After Transformation},
+\begin{lstlisting}[ label=lst:after_atomic_property,
+  caption={\bscode{atomic} Property After Transformation},
   language=Java,  
   showspaces=false,
   showtabs=false,
@@ -314,19 +312,17 @@ The result of transforming the example in \bsref{lst:before_atomic_property} is 
         }
         set {
             _kmDriven = value;
-            // Announce value changes
         }
     }
   }
 \end{lstlisting}
 
-\andreas[inline]{We dont protect against a naming conflict of the generated backing field and an existing field.}
-
 \subsection{Local Variables}
-In \bsref{subsec:local_variables} we described the wanted design for transactional local variables. 
-Just like fields annotated with atomic, annotated local variables must have its type substituted to a corresponding \ac{STM} type. Thus, the approach is similar to the one described in \bsref{subsec:extension_field}, with the exception that a local variable can be declared without specifying the type by using the \bscode{var} keyword, relying on compile-time type inference to determine the type. Since the type is not determined at this point, we utilize Roslyn's \ac{API} to infer the type, and replace the \bscode{var} keyword with the type. This is done by identifying all local declaration statements with the type \bscode{var} and annotated \bscode{atomic}. The transformation is exemplified with an example of before on \bsref{lst:before_atomic_variable} on line \ref{line:av_variable1_before}, a local variable is declared by using the \bscode{var} keyword. The entire r-value of the statement is an expression, which can be evaluated to a type, by utilizing the Roslyn compiler \ac{API}. In \bsref{lst:after_atomic_variable} on line  \ref{line:av_variable1_after} the result shows that the type was infered to a \bscode{string}, thus the \bscode{var} is replace by a \bscode{TMVar<string>}.
+In \bsref{subsec:local_variables} the design for transactional local variables is described. Similar to fields modified with the \bscode{atomic} keyword, \bscode{atomic} local variables must have its type substituted to a corresponding \ac{STM} type. Thus, the approach is similar to the one described in \bsref{subsec:extension_field}, with the exception that a local variable can be declared without specifying the type by using the \bscode{var} keyword, relying on compile-time type inference to determine the type. Since the type has not yet been determined at the point of the transformation, Roslyn's \ac{API} is utilized to infer the type, and replace the \bscode{var} keyword with the type. This is done by identifying all local declaration statements with the type \bscode{var} and the \bscode{atomic} modifier.
 
-\begin{lstlisting}[label=lst:before_atomic_variable,
+The transformation is exemplified with a before example on \bsref{lst:before_atomic_variable}, where on line \ref{line:av_variable1_before} a local variable is declared by using the \bscode{var} keyword. The r-value of the statement is an expression, which type can be identified using the Roslyn compiler’s \ac{API}. In \bsref{lst:after_atomic_variable} on line  \ref{line:av_variable1_after} the result shows that the type was infered to a \bscode{string}, thus the \bscode{var} is replaced by a \bscode{TMVar<string>}.
+
+\begin{lstlisting}[ label=lst:before_atomic_variable,
   caption={\bscode{atomic} Local Variables Before Transformation},
   language=Java,  
   showspaces=false,
@@ -350,7 +346,7 @@ Just like fields annotated with atomic, annotated local variables must have its 
   }
 \end{lstlisting}
 
-\begin{lstlisting}[label=lst:after_atomic_variable,
+\begin{lstlisting}[ label=lst:after_atomic_variable,
   caption={\bscode{atomic} Local Variables After Transformation},
   language=Java,  
   showspaces=false,
@@ -374,21 +370,22 @@ Just like fields annotated with atomic, annotated local variables must have its 
   }
 \end{lstlisting}
 
+
 \subsection{Accessing Transactional Variables}
 \label{subsec:roslyn_extension_accessing_variables}
-As described in \bsref{subsec:stm_impl_transactional_variables} setting the value of a transactional variable is done through the \bscode{Value} property of the supplied \ac{STM} types. As the type of any field, local variable or property declared \bscode{atomic} in \stmnamesp is changed to the corresponding \ac{STM} type, any assignment must go through the \bscode{Value} property. As described in \bsref{subsec:stm_impl_transactional_variables} the \ac{STM} types supply support for implicit conversion to the wrapped value, when appearing as r-values. The transformation can however not rely on implicit conversion in all cases as, for example the comparison of two \bscode{TMInt} objects results in reference comparison instead of the expected integer comparison. As such, also the r-value appearances of any transactional field, local variable and parameter must be transformed to access the \bscode{Value} property ensuring that the wrapped object is accessed instead of the \ac{STM} object. Special handling is given to the \bscode{++} and \bscode{--} operators as the numeric \bscode{STM} types supply transactional implementations of these operators. The transformation ensures that these operators access the \ac{STM} object directly instead of access the \bscode{Value} property.
+As described in \bsref{subsec:stm_impl_transactional_variables} setting the value of a transactional variable is done through the \bscode{Value} property of the supplied \ac{STM} types. As the type of any field, local variable or parameter declared \bscode{atomic} in \stmnamesp is changed to the corresponding \ac{STM} type, any assignment must go through the \bscode{Value} property. Additionally, the \ac{STM} types supply support for implicit conversion to the wrapped value, when appearing as r-values. The transformation can however not rely on implicit conversion in all cases as, for example the comparison of two \bscode{TMInt} objects results in reference comparison instead of the expected integer comparison. As such, also the r-value appearances of any transactional field, local variable and parameter must be transformed to access the \bscode{Value} property, which ensures that the wrapped object is accessed instead of the \ac{STM} object. Special handling is given to the \bscode{++} and \bscode{--} operators as the numeric \ac{STM} types supply transactional implementations of these operators. The transformation ensures that these operators can be used on a transactional variable directly, instead of on its \bscode{Value} property.
 
-The implementations for the transformation of access to transactional variables are divided into two parts. The first dealing with the usage of a transactional variable occurring as a single identifier such as \bscode{someTMVar}. The second part handles member access expressions such as \bscode{object.tmfield1.tmfield2}. While these two implementations differ in the syntactic constructs they work on, their overall approach both follow the steps described below:
+The transformation of access to transactional variables is divided into two parts. The first deals with the usage of a transactional variable occurring as a single identifier such as \bscode{someTMVar}. The second part handles member access expressions such as \bscode{object.tmfield1.tmfield2}. While these two implementations differ in the syntactic constructs they work on, their overall approach both follow the steps described below:
 
 \begin{enumerate}
 	\item Identify each usage of a transactional field, local variable, or parameter including both r- and l-value occurrences.
-	\item Construct a member access expression accessing the \bscode{Value} property of the identified variable.
-	\item Replace the usage of the variable with the constructed member access expression. 
+	\item Construct a member access expression that accesses the \bscode{Value} property of the identified variable.
+	\item Replace the usage of the variable with the constructed member access expression.
 \end{enumerate}
 
-\bsref{lst:before_atomic_usage} presents an example accessing both a transactional field, local variable and parameter. \bsref{lst:after_atomic_usage} shows the result of applying the transformation to the example presented in \bsref{lst:before_atomic_usage}. The assignment on line \ref{line:au_assigment} of \bsref{lst:before_atomic_usage} is transformed to access the \bscode{Value} property of both its left and right sides, as both of the variable involved are transactional. The result of the transformation is shown on line \ref{line:au_assigment_after} of \bsref{lst:after_atomic_usage}. The member access expression on line \ref{line:au_member_access} of \bsref{lst:before_atomic_usage} is likewise transformed to access the \bscode{Value} property of both transactional fields involved. The resulting code is shown on line \ref{line:au_member_access_after} of \bsref{lst:after_atomic_usage}.
+\bsref{lst:before_atomic_usage} presents an example of accessing both a transactional field, local variable and parameter. \bsref{lst:after_atomic_usage} shows the result of applying the transformation. The assignment on line \ref{line:au_assigment} of \bsref{lst:before_atomic_usage} is transformed to access the \bscode{Value} property of both its left and right side, as both of the variables involved are transactional. The result of the transformation is shown on line \ref{line:au_assigment_after} of \bsref{lst:after_atomic_usage}. The member access expression on line \ref{line:au_member_access} of \bsref{lst:before_atomic_usage} is likewise transformed to access the \bscode{Value} property of both transactional fields involved. The resulting code is shown on line \ref{line:au_member_access_after} of \bsref{lst:after_atomic_usage}.
 
-\begin{lstlisting}[label=lst:before_atomic_usage,
+\begin{lstlisting}[ label=lst:before_atomic_usage,
   caption={Usage of \bscode{atomic} Variables Before Transformation},
   language=Java,  
   showspaces=false,
@@ -416,7 +413,7 @@ The implementations for the transformation of access to transactional variables 
   }
 \end{lstlisting}
 
-\begin{lstlisting}[label=lst:after_atomic_usage,
+\begin{lstlisting}[ label=lst:after_atomic_usage,
   caption={Usage of \bscode{atomic} Variables After Transformation},
   language=Java,  
   showspaces=false,
@@ -444,11 +441,12 @@ The implementations for the transformation of access to transactional variables 
   }
 \end{lstlisting}
 
+
 \subsection{Parameters}
 \label{subsec:roslyn_extension_parameters}
 As with transactional local variables and transactional fields, the type of a parameter declared atomic must be changed to the corresponding \ac{STM} type in order for the \ac{STM} system to track assignments to it. \bsref{lst:before_atomic_parameter} presents a method taking two \bscode{atomic} parameters while \bsref{lst:after_atomic_parameter} presents the result of applying the parameter transformation. Each atomic parameter is transformed individually and any \bscode{ref} or \bscode{out} modifiers are preserved.
 
-\begin{lstlisting}[label=lst:before_atomic_parameter,
+\begin{lstlisting}[ label=lst:before_atomic_parameter,
   caption={\bscode{atomic} Parameters Before Transformation},
   language=Java,  
   showspaces=false,
@@ -460,7 +458,7 @@ As with transactional local variables and transactional fields, the type of a pa
   commentstyle=\color{greencomments},
   keywordstyle=\color{bluekeywords},
   stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orelse, var, get, set}]  % Start your code-block
+  morekeywords={atomic, retry, orelse, var, get, set, bool, ref, string}]  % Start your code-block
 
   public class AtomicParameterExample
   {
@@ -471,7 +469,7 @@ As with transactional local variables and transactional fields, the type of a pa
   }
 \end{lstlisting}
 
-\begin{lstlisting}[label=lst:after_atomic_parameter,
+\begin{lstlisting}[ label=lst:after_atomic_parameter,
   caption={\bscode{atomic} Parameters After Transformation},
   language=Java,  
   showspaces=false,
@@ -483,7 +481,7 @@ As with transactional local variables and transactional fields, the type of a pa
   commentstyle=\color{greencomments},
   keywordstyle=\color{bluekeywords},
   stringstyle=\color{redstrings},
-  morekeywords={atomic, retry, orelse, var, get, set, ref}]  % Start your code-block
+  morekeywords={atomic, retry, orelse, var, get, set, ref, bool, string}]  % Start your code-block
 
   public class AtomicParameterExample
   {
@@ -494,19 +492,20 @@ As with transactional local variables and transactional fields, the type of a pa
   }
 \end{lstlisting}
 
+
 \subsubsection{Transactional Output Parameters}
-Transactional output parameters described in \bsref{subsec:stm_desgin_out_parameters} require additional handling as C\# requires every execution path in the method body to assign a value to the parameter\cite[p. 42]{sestoft2011c}. As described in \bsref{subsec:roslyn_extension_accessing_variables}, any assignment to the variable is replaced with an assignment to its \bscode{Value} property. As a consequence no assignments occur to the variable itself resulting in an error in the generated code. To rectify this error, an assignment, assigning a new \ac{STM} object with the same type as the parameter, is generated in the top method body for every \bscode{atomic out} parameter of that particular method. For each \bscode{atomic out} the \stmnamesp transformation contains the following steps:
+Transactional output parameters described in \bsref{subsec:stm_desgin_out_parameters} require additional handling as C\# requires every execution path in the method body to assign a value to the parameter\cite[p. 42]{sestoft2011c}. As described in \bsref{subsec:roslyn_extension_accessing_variables}, any assignment to a variable is replaced with an assignment to its \bscode{Value} property. As a consequence no assignments occur to the transactional parameter itself, which results in an error in the generated code. To rectify this error, an assignment, assigning a new \ac{STM} object with the same type as the parameter, is generated in the top of the method body for every \bscode{atomic out} parameter of that particular method. For each \bscode{atomic out} parameter the \stmnamesp transformation contains the following steps:
 
 \begin{enumerate}
-	\item Construct an object initialization expression creating a new \ac{STM} object of the same type as the parameter.
-	\item Construct a assignment statement assigning the newly constructed object initialization expression to the \bscode{atomic out} parameter.
+	\item Construct an object initialization expression that creates a new \ac{STM} object of the same type as the parameter.
+	\item Construct an assignment statement that assigns the newly constructed object initialization expression to the \bscode{atomic out} parameter.
 	\item Insert the assignment statement as the first statement in the body of the enclosing method declaration.
 \end{enumerate}
 
 \bsref{lst:before_atomic_out_parameter} shows a method with an \bscode{atomic out} parameter while \bsref{lst:after_atomic_out_parameter} shows the result of applying the transformation.
 Based on the \bscode{atomic out} parameter declared on line \ref{line:aout_before} of \bsref{lst:before_atomic_out_parameter} the assignment on line \ref{line:aout_after} of \bsref{lst:after_atomic_out_parameter} is generated.
 
-\begin{lstlisting}[label=lst:before_atomic_out_parameter,
+\begin{lstlisting}[ label=lst:before_atomic_out_parameter,
   caption={\bscode{atomic out} Parameter Before Transformation},
   language=Java,  
   showspaces=false,
@@ -530,7 +529,7 @@ Based on the \bscode{atomic out} parameter declared on line \ref{line:aout_befor
   }
 \end{lstlisting}
 
-\begin{lstlisting}[label=lst:after_atomic_out_parameter,
+\begin{lstlisting}[ label=lst:after_atomic_out_parameter,
   caption={\bscode{atomic out} Parameter After Transformation},
   language=Java,  
   showspaces=false,
@@ -555,21 +554,20 @@ Based on the \bscode{atomic out} parameter declared on line \ref{line:aout_befor
   }
 \end{lstlisting}
 
-While the generated assignment solves the problem of assignments to \bscode{atomic out} parameters being translated to a assignment to the \ac{STM} objects \bscode{Value} property, it introduces two new problems. Firstly, C\# requires that every \bscode{out} parameter is assigned a value before a method exists, generating a compile time error if that is not the case\cite[p. 94]{csharp2013specificaiton}. This error message is lost for transactional output parameters due to the generated assignment. Secondly, C\# requires that a out parameter is assigned to before reading from it\cite[p. 94]{csharp2013specificaiton}, generating a compile time error if a read occurs before a \bscode{out} parameter is assigned a value. If a read occurs before any assignment in the original source code, no error is given due to the generated assignment. In both cases an meaningful error can be generated by applying analysis to a transactional output parameters \bscode{Value} following the rules defined in\cite[p. 95]{csharp2013specificaiton}. No such analysis has however been implemented in the initial prototype of \stmname.
-
+While the generated assignment solves the problem of assignments to \bscode{atomic out} parameters it introduces two new problems. Firstly, C\# requires that every \bscode{out} parameter is assigned a value before a method exits, generating a compile time error if that is not the case\cite[p. 94]{csharp2013specificaiton}. This error message is lost for transactional output parameters due to the generated assignment. Secondly, C\# requires that an \bscode{out} parameter is assigned to before reading from it\cite[p. 94]{csharp2013specificaiton}, generating a compile time error if a read occurs before an \bscode{out} parameter is assigned a value. If a read occurs before any assignment in the original source code, no error is given due to the generated assignment. In both cases a meaningful error can be generated by applying analysis to a transactional output parameters \bscode{Value} property by following the rules defined in\cite[p. 95]{csharp2013specificaiton}. No such analysis has however been implemented in the initial prototype of \stmname.
 
 \subsection{Arguments}
-As described in \bsref{subsec:stm_desgin_value_parameters} \stmnamesp support value parameters. Replacing the type of atomic parameters with the corresponding \ac{STM} type, as described in \bsref{subsec:roslyn_extension_parameters}, results in a type mismatch when calling a method with an \bscode{atomic} parameter of some type $T$ as the parameter is no longer of type $T$, but of $T$'s corresponding \ac{STM} type. As a result transformation must be applied to arguments passed to an \bscode{atomic} parameter, ensuring that the argument represents an object of the required \ac{STM} type. The transformation of an argument to an \bscode{atomic} parameter goes through the following steps:
+As described in \bsref{subsec:stm_desgin_value_parameters} \stmnamesp support value parameters. Replacing the type of an atomic parameter with the corresponding \ac{STM} type, as described in \bsref{subsec:roslyn_extension_parameters}, results in a type mismatch when calling a method with an \bscode{atomic} parameter of some type $T$, as the parameter is no longer of type $T$, but of $T$'s corresponding \ac{STM} type. As a result transformation must be applied to arguments passed to an \bscode{atomic} parameter, ensuring that the argument represents an object of the required \ac{STM} type. The transformation applied when an argument is passed to an \bscode{atomic} parameter goes through the following steps:
 
 \begin{enumerate}
 	\item Determine the \ac{STM} type of the formal parameter to which the argument corresponds.
-	\item Construct an object initialization expression creating an object of the previously determined \ac{STM} type, giving the argument expression as an argument to the constructor of the object.
+	\item Construct an object initialization expression, which creates an object of the previously determined \ac{STM} type, where the argument expression is given as argument to the constructor of the object.
 	\item Replace the argument with the constructed object initialization expression.
 \end{enumerate}
 
-\bsref{lst:before_atomic_argument} presents an example of calling a method with an \bscode{atomic} parameter, while \bsref{lst:after_atomic_argument} shows the result of the transformation. Line \ref{line:aa_param_before} is transformed as described in \bsref{subsec:roslyn_extension_parameters}. Line \ref{line:aa_before} in \bsref{lst:before_atomic_argument} is transformed to line \ref{line:aa_after} in \bsref{lst:after_atomic_argument}. The argument to the \bscode{atomic} parameter is replaced with an object initialization expression creating a new \bscode{TMInt} object which is initialized using the original argument.
+\bsref{lst:before_atomic_argument} presents an example of calling a method with an \bscode{atomic} parameter, while \bsref{lst:after_atomic_argument} shows the result of the transformation. Line \ref{line:aa_param_before} is transformed as described in \bsref{subsec:roslyn_extension_parameters}. Line \ref{line:aa_before} in \bsref{lst:before_atomic_argument} is transformed to line \ref{line:aa_after} in \bsref{lst:after_atomic_argument}. The argument to the \bscode{atomic} parameter is replaced with an object initialization expression that creates a new \bscode{TMInt} object which is initialized using the original argument.
 
-\begin{lstlisting}[label=lst:before_atomic_argument,
+\begin{lstlisting}[ label=lst:before_atomic_argument,
   caption={\bscode{atomic} Argument Before Transformation},
   language=Java,  
   showspaces=false,
@@ -597,7 +595,7 @@ As described in \bsref{subsec:stm_desgin_value_parameters} \stmnamesp support va
   }
 \end{lstlisting}
 
-\begin{lstlisting}[label=lst:after_atomic_argument,
+\begin{lstlisting}[ label=lst:after_atomic_argument,
   caption={\bscode{atomic} Argument After Transformation},
   language=Java,  
   showspaces=false,
@@ -626,29 +624,31 @@ As described in \bsref{subsec:stm_desgin_value_parameters} \stmnamesp support va
 \end{lstlisting}
 
 \subsubsection{Ref/Out Arguments}
-Supporting \bscode{atomic} \bscode{ref} and \bscode{out} parameters, as described in \bsref{subsubsec:trans_ref_out_args}, presents a problem due to the type mismatch as a result of transforming the parameters. \bscode{ref} and \bscode{out} parameters require the argument to be an assignable variable of the same type as the parameter. As the type of the parameter is transformed, a variable of type $T$ can not be passed directly as \bscode{ref} or \bscode{out} to an \bscode{atomic} parameter of type $T$.
+Supporting \bscode{atomic} \bscode{ref} and \bscode{out} parameters, as described in \bsref{subsubsec:trans_ref_out_args}, presents a problem due to the type mismatch as a result of transforming \bscode{atomic} variables. \bscode{ref} and \bscode{out} parameters require the argument to be an assignable variable of the same type as the parameter. However as the type of the parameter is transformed, a variable of type $T$ cannot be passed directly as \bscode{ref} or \bscode{out} to an \bscode{atomic} parameter of type $T$.
 
-Four different cases exist for passing \bscode{ref} and \bscode{out} parameters. These are:
+Four different cases exist for passing \bscode{ref} and \bscode{out} arguments. These are:
 \begin{enumerate}
 	\item $T$ $\quad \rightarrow \quad$ \bscode{atomic} $T$
 	\item \bscode{atomic} $T$ $\quad \rightarrow\quad$ $T$
 	\item \bscode{atomic} $T$ $\quad \rightarrow\quad$ \bscode{atomic} $T$
 	\item $T$ $\quad \rightarrow \quad$ $T$
-\end{enumerate} 
-where $T$ is some arbitrary type, $\text{ } \bscode{atomic} \quad  T$ is $T$'s corresponding \ac{STM} type and $\text{ } \bscode{atomic} \quad T \quad \rightarrow \quad T$ describes passing an argument of type $T$ into a parameter of the \ac{STM} type corresponding to $T$. The third and fourth cases are handled by the C\# compiler so transformation must only be applied in cases one and two.
+\end{enumerate}
+where $T$ is some arbitrary type, $\text{ } \bscode{atomic} \quad  T$ is $T$'s corresponding \ac{STM} type and $\text{ } \bscode{atomic} \quad T \quad \rightarrow \quad T$ represents passing an argument of type $T$ into a parameter of the \ac{STM} type corresponding to $T$. The third and fourth cases are handled by the C\# compiler so transformation must only be applied in the first and second cases.
 For each argument node in the syntax tree the transformation goes through the following steps:
 \begin{enumerate}
 	\item Determine whether the argument represents one of the two previously described cases. If so, the remaining transformation steps are applied.
-	\item Construct a syntax node for a local variable with a type definition equal to that of the parameter, initializing it using the original argument and insert it just before the method call
-	\item Replace the original argument with an identifier equal to the name of the previously generated intermediate local variable passed using the same modifier as the original argument
-	\item Construct an assignment syntax node assigning the value of the intermediate local variable to the original argument and insert it just after the method call
+	\item Construct a local variable with a type definition equal to that of the parameter, initialized using the original argument, and insert it just before the method call.
+	\item Replace the original argument with an identifier equal to the name of the previously generated intermediate local variable, passed using the same modifier as the original argument
+	\item Construct an assignment syntax node that assigns the value of the intermediate local variable to the original argument and insert it just after the method call
 \end{enumerate}
 
-\bsref{lst:before_atomic_ref} shows an example containing three method calls, where the first and third call falls in one of the categories which require transformation. Applying the transformation to the example presented in \bsref{lst:after_atomic_ref} produces a syntax tree representing the code shown in \bsref{lst:after_atomic_ref}. Line \ref{line:aref1} of \bsref{lst:before_atomic_ref} is transformed to lines \ref{line:aref1_after_1} to \ref{line:aref1_after_3} of \bsref{lst:after_atomic_ref}. As the parameter is \bscode{atomic} the local variable inserted on line \ref{line:aref1_after_1} is of the parameters corresponding \ac{STM} type. The argument to the method call has been replaced as seen on line \ref{line:aref1_after_2}. The assignment on line \ref{line:aref1_after_3} assigns the value computed by the called method to the original argument. Line \ref{line:aref2} of \bsref{lst:before_atomic_ref} is not transformed as it represents the case \bscode{atomic} $T$ $\quad \rightarrow \quad$ \bscode{atomic} $T$. Line \ref{line:aref3} of \bsref{lst:before_atomic_ref} is transformed much like \ref{line:aref1}, except the generated local field is of type \bscode{int} instead of a \ac{STM} type, as the parameter is not declared \bscode{atomic}. C\# requires the argument for a \bscode{ref} or \bscode{out} parameter to be a variable. For the case $T$ $\quad \rightarrow \quad$ \bscode{atomic} $T$ and \bscode{atomic} $T$ $\quad \rightarrow \quad$ $T$,  compile time analysis has been implemented to generate an error if the original argument does not correspond to a variable, as this would otherwise always be the case.
+\bsref{lst:before_atomic_ref} shows an example containing three method calls, where the first and third call falls in one of the categories which require transformation. Applying the transformation to the example presented in \bsref{lst:before_atomic_ref} produces a syntax tree representing the code shown in \bsref{lst:after_atomic_ref}. Line \ref{line:aref1} of \bsref{lst:before_atomic_ref} is transformed to lines \ref{line:aref1_after_1} to \ref{line:aref1_after_3} of \bsref{lst:after_atomic_ref}. As the parameter is \bscode{atomic}, the local variable inserted on line \ref{line:aref1_after_1} is of the parameters corresponding \ac{STM} type. The argument to the method call has been replaced as seen on line \ref{line:aref1_after_2}. The assignment on line \ref{line:aref1_after_3} assigns the value computed by the called method to the original argument. Line \ref{line:aref2} of \bsref{lst:before_atomic_ref} is not transformed as it represents the case \bscode{atomic} $T$ $\quad \rightarrow \quad$ \bscode{atomic} $T$. Line \ref{line:aref3} of \bsref{lst:before_atomic_ref} is transformed much like \ref{line:aref1}, except the generated local field is of type \bscode{int} instead of an \ac{STM} type, as the parameter is not declared \bscode{atomic}. 
+
+C\# requires the argument for a \bscode{ref} or \bscode{out} parameter to be a variable. For the case $T$ $\quad \rightarrow \quad$ \bscode{atomic} $T$ and \bscode{atomic} $T$ $\quad \rightarrow \quad$ $T$,  compile time analysis has been implemented to generate an error if the original argument does not correspond to a variable, as this is always the case in the generated code.
 
 %In order simplify the language and maintain the same semantics whenever a atomic parameter or variable is passed as an argument or 
 
-\begin{lstlisting}[label=lst:before_atomic_ref,
+\begin{lstlisting}[ label=lst:before_atomic_ref,
   caption={\bscode{ref} Arguments Before Transformation},
   language=Java,  
   showspaces=false,
@@ -686,7 +686,7 @@ For each argument node in the syntax tree the transformation goes through the fo
   }
 \end{lstlisting}
 
-\begin{lstlisting}[label=lst:after_atomic_ref,
+\begin{lstlisting}[ label=lst:after_atomic_ref,
   caption={\bscode{ref} Arguments After Transformation},
   language=Java,  
   showspaces=false,
@@ -730,19 +730,20 @@ For each argument node in the syntax tree the transformation goes through the fo
   }
 \end{lstlisting}
 
-\subsection{Retry}
-In \bsref{sec:sync_design} the design of conditional synchronization through the use of \bscode{retry} is described. As \bscode{retry} is a keyword used as a statement, much like the \bscode{break} and \bscode{continue} statements in C\#, the transformation need to identify all \bscode{retry} keywords and replace them with a method invocation to the static method \bscode{STMSystem.Retry} defined in the \ac{STM} library, described in \bsref{subsec:impl_retry}. The library then carries out the effect of the \bscode{retry} statement. To inform programmers of unintended behavior, analysis generating a warning if the retry statement is used outside of an \bscode{atomic} or \bscode{orelse} block, has has been implemented. 
 
-\section{Testing}
+\subsection{Retry}
+In \bsref{sec:sync_design} the design of conditional synchronization through the use of \bscode{retry} is described. As \bscode{retry} is a keyword used as a statement, much like the \bscode{break} and \bscode{continue} statements in C\#, the transformation need to identify all \bscode{retry} keywords and replace them with a method invocation to the static method \bscode{STMSystem.Retry} defined in the \ac{STM} library, described in \bsref{subsec:impl_retry}. The library then carries out the effect of the \bscode{retry} statement. To inform programmers of unintended behavior, analysis generating an error if the retry statement is used outside of an \bscode{atomic} or \bscode{orelse} block, has been implemented. 
+
+\section{Testing}\label{sec:roslyn_extension_testing}
 Testing is employed to ensure the Roslyn extension fulfills the design decisions of \stmnamesp and the integration with existing language features described in \bsref{chap:stm_design}.
 
-For the reasons described in \bsref{sec:stm_impl_testing}, unit testing is chosen for testing the Roslyn extension. Unit testing is valuable in relation to the maintenance and further development of the Roslyn extension. Furthermore, Roslyn is still under heavy development, which means radical changes will happen. The unit test suite is beneficial to test if the extension still works, whenever new changes are made to Roslyn. The disadvantage of unit testing being more time consuming than ad hoc testing is outweighed by the many advantages which is gained. Additionally, each unit test is built using a black-box testing strategy\cite[p. 87]{graham2008foundations}, where the program is viewed as a black box and focus is only on the input and output. This is done as the focus of the unit tests is on the functionality of the compiler. That is, the tests focus on what it does, and not on how it does it. Additionally it fits well with how a compiler is normally treated, as it is treated as a black-box where the input and output is only available.\toby{er grunden til black-box fin nok?}
+For the reasons described in \bsref{sec:stm_impl_testing}, unit testing is chosen for testing the Roslyn extension. Unit testing is valuable in relation to the maintenance and further development of the Roslyn extension. Furthermore, Roslyn is still under heavy development, which means radical changes will happen. The unit test suite is beneficial to test if the extension still works, whenever new changes are made to Roslyn. The disadvantage of unit testing being more time consuming than ad hoc testing is outweighed by the many advantages which is gained. Additionally, each unit test is built using a black-box testing strategy\cite[p. 87]{graham2008foundations}, where the program is viewed as a black box and focus is only on the input and output. This is done as the focus of the unit tests is on the functionality of the compiler. That is, the tests focus on what it does, and not on how it does it. Additionally it fits well with how a compiler is normally treated, as it is treated as a black-box where the input and output is only available.
 
-Each \ac{STM} construct and each integration with an existing language feature is covered by at least a single unit test. Furthermore, integration with disallowed existing language features is tested, e.g. there is a unit test that ensures an error is produced if the programmer tries to declare a method with an atomic optional parameter. This results in a rather extensive test suite, which is valuable in relation to the correctness of the \ac{STM} constructs and integration with language features of \stmname.\toby{Er sidste sætning fin nok?}
+Each \ac{STM} construct and each integration with an existing language feature is covered by at least a single unit test. Furthermore, integration with disallowed existing language features is tested, e.g. there is a unit test that ensures an error is produced if the programmer tries to use the \bscode{retry} statement outside of an \bscode{atomic} or \bscode{orelse} block. This results in a rather extensive test suite, which is valuable in relation to the correctness of the \ac{STM} constructs and integration with language features of \stmname.
 
-In \bsref{lst:empty_atomic_block} is shown an example of a unit test for an empty atomic block. On line \ref{line:ab_finalstr} the string \bscode{finalStr} to be compiled is generated using the \bscode{MakeSkeletonWithMain} method, which generates a test namespace, class and main method, with the supplied string arguments \bscode{strInClass} and \bscode{strInMain} included. Afterwards the string is written to a test file, which is used as argument in the method on line \ref{line:ab_runcsc}, which executes \bscode{csc.exe} (C\# command line compiler) and returns a \bscode{CmdRes} object that contains the command line output. On line \ref{line:ab_assertcsc} it is checked that the command line output does not contain any warning, error or invalid exitcode. For unit tests that check error generations, e.g. an illegal existing language feature used with an \ac{STM} construct, this step is not present, instead \bscode{CmdRes} can be checked if it contains the expected error or warning. On line \ref{line:ab_expecstr} the expected result of compilation string \bscode{expecStr} is generated and on line \ref{line:ab_compiledstr} the actual compilation string \bscode{compiledStr} is fetched. In order to retrieve the actual compilation string, csc.exe is extended with an additional argument called \bscode{stmiout}, which writes the source code after \ac{STM} transformation to the specified path. This argument is used in the method on line \ref{line:ab_runcsc}. Finally on line \ref{line:ab_asserteq} the expected string and the compiled string is checked for equality, if equal the test passes and otherwise it fails. Before checking for equality, the \bscode{AssertEqualStrings} method removes formatting from the strings.
+\bsref{lst:empty_atomic_block} shows an example of a unit test for an empty atomic block. On line \ref{line:ab_finalstr} the string \bscode{finalStr} to be compiled is generated using the \bscode{MakeSkeletonWithMain} method, which generates a test namespace, class and main method, with the supplied string arguments \bscode{strInClass} and \bscode{strInMain} included. Afterwards the string is written to a test file, which is used as argument in the method on line \ref{line:ab_runcsc}, which executes \bscode{csc.exe} (C\# command line compiler) and returns a \bscode{CmdRes} object that contains the command line output. On line \ref{line:ab_assertcsc} it is checked that the command line output does not contain any warning, error or invalid exitcode. For unit tests that check error generations, e.g. an illegal existing language feature used with an \ac{STM} construct, this step is not present, instead \bscode{CmdRes} can be checked if it contains the expected error or warning. On line \ref{line:ab_expecstr} the expected result of the compilation string \bscode{expecStr} is generated and on line \ref{line:ab_compiledstr} the actual compilation string \bscode{compiledStr} is fetched. In order to retrieve the actual compilation string, csc.exe is extended with an additional argument called \bscode{stmiout}, which writes the source code after \ac{STM} transformation to the specified path. This argument is used in the method on line \ref{line:ab_runcsc}. Finally on line \ref{line:ab_asserteq} the expected string and the compiled string is checked for equality, if equal the test passes and otherwise it fails. Before checking for equality, the \bscode{AssertEqualStrings} method removes formatting from the strings.
 
-\begin{lstlisting}[label=lst:empty_atomic_block,
+\begin{lstlisting}[float, label=lst:empty_atomic_block,
   caption={Empty Atomic Block Unit Test},
   language=Java,  
   showspaces=false,
@@ -777,20 +778,20 @@ In \bsref{lst:empty_atomic_block} is shown an example of a unit test for an empt
   }
 \end{lstlisting}
 
-\toby[i]{Hvad med errors? Errorcode og stm diagnostics bag?}
+%\toby[i]{Hvad med errors? Errorcode og stm diagnostics bag?}
 %ERRORS: (hvordan smides de) - er det her det skal besrkives?
 	%STM diagnostic for semantic errors
 	%errors i paraser, kan bruge ErrorCode Enum osv.
 
-\section{Design \& Integration Revisited}
+\section{Design and Integration Revisited}\label{sec:design_and_int_revisited}
 This section describes areas in which the initial prototype implementation described in this chapter, conflicts with the intended design and language integration described in \bsref{chap:stm_design}. Ideally no conflicts would happen, as the analysis in the design and language integration chapter would foresee them. However, implementing the design gave an insight and knowledge into unforeseen areas.
 
 \subsection{Transactional Local Variables and Fields}
-As described in \bsref{subsec:extension_field} and \bsref{subsec:local_variables} local variables and fields of type $T$ declared \bscode{atomic} are transformed to declarations with a type equal to $T$'s corresponding \ac{STM} type. As part of this process the local variable or field is initialized to \ac{STM} object of the correct type, using any initializer expression if present. If not, the default value of the variable is initialized to the default value of type $T$ through the \ac{STM} object's parameter less constructor. 
+As described in \bsref{subsec:extension_field} and \bsref{subsec:local_variables} local variables and fields of type $T$ declared \bscode{atomic} are transformed to declarations with a type equal to $T$'s corresponding \ac{STM} type. As part of this process the local variable or field is initialized to an \ac{STM} object of the correct type, using any initializer expression if present. If not, the value of the variable is initialized to the default value of type $T$ through the \ac{STM} object's parameter less constructor.
 
 For fields this presents no issue as fields are always initialized to the default value of their type if no initializer expression is present\cite[p. 93]{csharp2013specificaiton}. This is however not the case for local variables. The C\# compiler generates an error if a local variable is accessed before it has been assigned a value\cite[p. 96]{csharp2013specificaiton}. As \bscode{atomic} local variables are always initialized, this error will never occur for such variables, which can lead to unintended behavior in cases where the programmer forgets to assign an \bscode{atomic} local variable. In such cases the default value of the \bscode{atomic} local variables original type will be the value accessed, potentially leading to some confusion.
 
-In order to provide similar error messages for \bscode{atomic} local variables as for regular C\# local variables, the flow analysis detecting whether a given local variable has been assigned a value when it is accessed, must be extended to track both initial assignment as part of the declaration, as well as assignment to \bscode{STM} objects \bscode{Value} as opposed to assignments directly to the variable. Such analysis has however not been included in the initial prototype described in this chapter.\lone{Why not?}
+In order to provide similar error messages for \bscode{atomic} local variables and regular C\# local variables, the Roslyn flow analysis which detects whether a given accessed local variable has been definitely assigned, must be extended. It must be extended to track both initial assignment, as part of the variable declaration, and assignment to the \bscode{STM} objects \bscode{Value} property, as opposed to assignments directly to the variable. Such analysis has however not been included in the initial prototype described in this chapter.
 
 \subsection{Transactional Optional Parameters}
 C\# requires that the default value given when declaring an optional parameter is one of the following\cite[p. 309]{csharp2013specificaiton}:
@@ -799,11 +800,10 @@ C\# requires that the default value given when declaring an optional parameter i
 	\item An expression of the form \bscode{new S()} where \bscode{S} is a value type
 	\item An expression of the form \bscode{default(S)} where \bscode{S} is a value type
 \end{enumerate}
-As described in \bsref{subsec:roslyn_extension_parameters} the transformation of an \bscode{atomic} parameter transforms the type of the parameter to one of the \ac{STM} types. Providing a default value to an \bscode{atomic} parameter therefore amounts to initializing a new \ac{STM} object with the same type as the parameter supplying the defined default value to its constructor. All \ac{STM} types are however reference types and the creation of a new \ac{STM} object can therefore, per the three rules described above, not be supplied as the replacement default value as this would result in a compile time error. As such default values for transactional value parameters are not implemented in the initial prototype described in this chapter. Analysis has been implemented to produce an error if an \bscode{atomic} value parameter is given a default value. This is done in the parsing phase, by checking if a parameter is declared with the \bscode{atomic} modifier and has an optional value.
+As described in \bsref{subsec:roslyn_extension_parameters} the transformation of an \bscode{atomic} parameter transforms the type of the parameter to one of the \ac{STM} types. Providing a default value to an \bscode{atomic} parameter therefore amounts to initializing a new \ac{STM} object with the same type as the parameter, supplied with the defined default value to its constructor. All \ac{STM} types are however reference types and the creation of a new \ac{STM} object can therefore, per the three rules described above, not be supplied as the replacement default value, as this would result in a compile time error. As a result default values for transactional value parameters are not implemented in the initial prototype described in this chapter. Analysis has been implemented to produce an error if an \bscode{atomic} value parameter is given a default value. This is done in the parsing phase, by checking if a parameter is declared with the \bscode{atomic} modifier and has an optional value.
 
-
-\subsection{Transactional Ref/Out Parameters \& Arguments}
-As described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters} the intended design was that assignment to transactional \bscode{ref/out} parameters takes effect when the transaction in which the assignment takes place, commits. This behavior holds true for the case:
+\subsection{Transactional Ref/Out Parameters \& Arguments}\label{subsec:roslyn_extension_ref_out_revisited}
+As described in \bsref{subsec:stm_desgin_ref_parameters} and \bsref{subsec:stm_desgin_out_parameters} the intended design was that assignments to transactional \bscode{ref/out} parameters would take effect when the transaction in which the assignment takes place commits. This behavior holds true for the case:
 \begin{itemize}
 	\item $\bscode{atomic} \quad T \quad \rightarrow \quad \bscode{atomic} \quad T$
 \end{itemize}
@@ -812,22 +812,18 @@ That is, the case involving an \bscode{atomic} argument and parameter. For the c
 	\item $T \quad \rightarrow \quad \bscode{atomic} \quad T$
 	\item $\bscode{atomic} \quad T \quad \rightarrow \quad T$
 \end{itemize}
-the behavior is however different. Due to the type mismatch between the argument and parameter, an intermediate local variable is passed as the actual argument, and the original argument is assigned as the first thing after the call finishes. This conflicts with traditional C\#, where any assignment to a \bscode{ref/out} parameter takes effect immediately\cite[p. 76]{sestoft2011c}. If the parameter is declared \bscode{atomic} and the method call is wrapped in an \bscode{atomic} block, there will be no difference in timing as any assignments to atomic variables take effect when the transaction commits. However, if the call is not wrapped in a atomic block the difference in timing can have unintended consequences, especially when considering concurrent execution. Due to this issue a number of ways for handling \bscode{atomic ref/out} parameters and arguments were investigated:
+the behavior is however different. Due to the type mismatch between the argument and parameter, an intermediate local variable is passed as the actual argument, and the original argument is assigned as the first thing after the call finishes. This conflicts with traditional C\#, where any assignment to a \bscode{ref/out} parameter takes effect immediately\cite[p. 76]{sestoft2011c}. If the parameter is declared \bscode{atomic} and the method call is wrapped in an \bscode{atomic} block, there will be no difference in timing as any assignments to atomic variables take effect when the transaction commits. However, if the call is not wrapped in an \bscode{atomic} block the difference in timing can have unintended consequences, especially when considering concurrent execution. Due to this issue a number of ways for handling \bscode{atomic ref/out} parameters and arguments were investigated:
 \begin{enumerate}
-	\item Warning the programmer if one of the two problematic cases is used
-	\item Disallowing the two problematic cases described above
-	\item Disallowing \bscode{atomic ref/out} parameters
+	\item Warn the programmer if one of the two problematic cases is used.
+	\item Disallow the two problematic cases described above.
+	\item Disallow \bscode{atomic ref/out} parameters.
 \end{enumerate}
-In C\#, passing a volatile field as \bscode{ref/out} results in the field being treated as non volatile within the method body\cite{csharpVolatileRef}. If such an operation is detected the compiler creates a warning informing the programmer of the change in semantics. The same approach could be taken whenever one of the two problematic cases described earlier is detected.
+In C\#, passing a volatile field as \bscode{ref/out} results in the field being treated as non-volatile within the method body\cite{csharpVolatileRef}. If such an operation is detected the compiler creates a warning informing the programmer of the change in semantics. The same approach could be taken whenever one of the two problematic cases described earlier is detected.
 
-Disallowing \bscode{atomic ref/out} parameters, preventing the programmer from declaring \bscode{atomic ref/out} parameters, removes the timing issues present in the cases where an intermediate \bscode{atomic} variable is required. However, the ability to pass an \bscode{atomic} variable by reference is lost and the case of passing a variable of type \bscode{atomic} $T$ into a parameter of type $T$ is still unsolved. Consequently, this would limit the orthogonality of the \bscode{atomic} construct.
+Disallowing the \bscode{ref/out} cases where both an \bscode{atomic} and non-\bscode{atomic} variable/parameter are involved removes the cases where the desired timing cannot be provided. However, it will, for example, no longer be possible to pass an \bscode{atomic} integer into an \bscode{out} integer parameter such as that of \bscode{Int32.TryParse.} Such restrictions limits the flexibility when using \bscode{atomic} variables, and the programmer needs to circumvent this, by the use of intermediate variables which clutters the code, and reduces the readability.
 
-Disallowing \bscode{ref/out} the cases where both an \bscode{atomic} and non \bscode{atomic} variable/parameter are involved removes the cases where the desired timing cannot be provided. However, it will, for example, no longer be possible to pass an \bscode{atomic} integer into an \bscode{out} integer parameter such as that of \bscode{Int32.TryParse.} Such restrictions limits the flexibility when using \bscode{atomic} variables, and the programmer needs to circumvent this,  by the use of intermediate variables which clutters the intention of the code, and reduces the readability.
+Disallowing \bscode{atomic ref/out} parameters, prevents the programmer from declaring \bscode{atomic ref/out} parameters, which removes the timing issues present in the cases where an intermediate \bscode{atomic} variable is required. However, the ability to pass an \bscode{atomic} variable by reference is lost and the case of passing a variable of type \bscode{atomic} $T$ into a parameter of type $T$ is still unsolved. Consequently, this would limit the orthogonality of the \bscode{atomic} construct.
 
-For the initial prototype presented in this chapter the first option of warning the programmer of the change in semantics has been selected. This ensures that the change in semantics is not hidden from the programmer thereby allowing her to adapt the program. This choice follows the approach taken by C\# in the case of a \bscode{volatile} field is passed by ref into a method. As the C\# compiler cannot guarantee the volatile property, it gives the programmer the warning: ``A reference to a volatile field will not be treated as volatile''.
-
-The impact of the feature will be closely observed throughout the evaluation with the aim of determining the final form of the feature, or even if the feature should be part of the language at all.\andreas{We MUST follow up on this in the evaluation}
-
-\toby[i]{Fejl med variable \bscode{i} ikke er initialiseret, hvis man prøver at returnere \bscode{i}, hvor \bscode{i} bliver assigned i en indre nested atomic.}
+For the initial prototype presented in this chapter the first option of warning the programmer of the change in semantics has been selected. This ensures that the change in semantics is not hidden from the programmer thereby allowing her to adapt the program. This choice follows the approach taken by C\# in the case of a \bscode{volatile} field passed by ref into a method as described above.
 
 \worksheetend

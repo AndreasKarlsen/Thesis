@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using STM.Implementation.Lockbased;
 using System.Threading;
 using System.Threading.Tasks;
+using STM.Implementation.JVSTM;
 
 namespace STMUnitTest
 {
@@ -12,7 +13,7 @@ namespace STMUnitTest
         [TestMethod]
         public void RaceTest1()
         {
-            for (int i = 0; i < 10000; i++)
+            for (var i = 0; i < 10000; i++)
             {
                 var result = RaceTest1Internal();
                 Assert.IsTrue(result != 120);
@@ -25,7 +26,7 @@ namespace STMUnitTest
 
             var t1 =  new Task(() =>
             {
-                var r1 = STMSystem.Atomic(() =>
+                STMSystem.Atomic(() =>
                 {
                     if (result.Value == 10)
                     {
@@ -55,7 +56,7 @@ namespace STMUnitTest
         [TestMethod]
         public void NonTransactionalWriteTest()
         {
-            for (int i = 0; i < 10000; i++)
+            for (var i = 0; i < 10000; i++)
             {
                 var result = NonTransactionalWriteTestInternal();
                 Assert.IsTrue(result != 120);
@@ -90,6 +91,50 @@ namespace STMUnitTest
             t2.Join();
 
             return result.Value;
+        }
+
+        [TestMethod]
+        public void JVRaceTest1()
+        {/*
+            for (int i = 0; i < 10000; i++)
+            {
+                var result = JVRaceTest1Internal();
+                Assert.IsTrue(result != 120);
+            }*/
+        }
+
+        private int JVRaceTest1Internal()
+        {
+            var result = new VBox<int>(10);
+
+            var t1 = new Task(() =>
+            {
+                JVSTMSystem.Atomic((transaction) =>
+                {
+                    if (result.Read(transaction) == 10)
+                    {
+                        Thread.Yield();
+                        result.Put(transaction, result.Read(transaction) * 10);
+                    }
+
+                    return result.Read(transaction);
+                });
+
+            });
+
+            var t2 = new Task(() => JVSTMSystem.Atomic((transaction) =>
+            {
+                result.Put(transaction,12);
+            }));
+
+            t1.Start();
+            t2.Start();
+
+            t1.Wait();
+            t2.Wait();
+
+            var res = JVSTMSystem.Atomic((transaction) => result.Read(transaction));
+            return res;
         }
     }
 

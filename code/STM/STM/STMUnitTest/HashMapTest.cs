@@ -4,6 +4,7 @@ using Evaluation.Library;
 using Evaluation.Locking;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Evaluation.Common;
+using Evaluation.Library.Collections;
 
 namespace STMUnitTest
 {
@@ -152,6 +153,44 @@ namespace STMUnitTest
         {
             var map = new NaiveLockingHashMap<int, int>();
             TestMapConcurrent(map);
+        }
+
+        [TestMethod]
+        public void JVSTMHashMapConcurrent()
+        {
+            var map = new JVSTMHashMapAtomic<int, int>();
+            TestMapConcurrent(map);
+        }
+
+        [TestMethod]
+        public void JVSTMHashMapTestAll()
+        {
+            TestMap(new JVSTMHashMapAtomic<int, int>());
+        }
+
+        [TestMethod]
+        public void STMHashMapInternalListTestAll()
+        {
+            TestMap(new STMHashMapInternalList<int, int>());
+        }
+
+        [TestMethod]
+        public void STMHashMapInternalListConcurrent()
+        {
+            TestMapConcurrent(new STMHashMapInternalList<int, int>());
+        }
+
+        [TestMethod]
+        public void JVSTMHashMapInternalListConcurrent()
+        {
+            var map = new JVSTMHashMapInternalList<int, int>();
+            TestMapConcurrent(map);
+        }
+
+        [TestMethod]
+        public void JVSTMHashMapInternalListTestAll()
+        {
+            TestMap(new JVSTMHashMapInternalList<int, int>());
         }
     }
 }

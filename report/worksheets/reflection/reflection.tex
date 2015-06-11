@@ -1,17 +1,133 @@
 \makeatletter \@ifundefined{rootpath}{\input{../../setup/preamble.tex}}\makeatother
 \worksheetstart{Reflection}{1}{Marts 2, 2015}{Andreas}{../../}
 \label{chap:reflection}
-\kasper[inline]{Design}
-\kasper[inline]{Requirements}
-\kasper[inline]{STM algorithm}
-\kasper[inline]{Roslyn integration}
-\kasper[inline]{Bound Tree vs Syntax tree integration}
-\kasper[inline]{Clojures vs pre and post modifications for ref/out}
-\kasper[inline]{Follow up on atomic ref/out}
-\section{Preliminary Investigation}
-In order to mitigate the risk bound with uncertainty of implementing an \ac{STM} system and the Roslyn compiler, a preliminary investigation was conducted. 
+This chapter presents a reflection on the decisions made throughout the report. \bsref{sec:reflection_preliminary} presents a reflection on the findings of the preliminary analysis. \bsref{sec:reflection_design} describes reflections related to transactional local variables and parameters as well as \bscode{ref/out} arguments and parameters. Reflections related to the \ac{STM} library, described in \bsref{chap:roslyn_extension}, are presented in \bsref{sec:reflection_stm_implementation}. Finally, the reflections related to the Roslyn extension and C\# 6.0 are covered in \bsref{sec:reflection_roslyn_extension} and \bsref{sec:reflection_csharpsix} respectively.
 
-A number of papers describing \ac{STM} system implementations were investigated. This gave us a better understanding of the known approaches for implementing \ac{STM} systems. To get some hands on experience, a prototype \ac{STM} system based on the two implementations described in \cite{herlihy2012art}[p. 424] was developed\andreas{Should we include those on the CD?}. Developing such a prototype system furthered our understanding of the different implementation strategies.
+\section{Preliminary Investigation}\label{sec:reflection_preliminary}
+A preliminary investigation was conducted, in order to reduce the risk associated with the Roslyn compiler and the implementation of an \ac{STM} system.
 
-As the Roslyn compiler was only released 10 months prior to the time of writing, the amount of available literature on the subject is limited, consisting of mostly: a white paper\cite{ng2012roslyn}, documentation associated with the Roslyn Github repository\cite{roslynwiki}, sample implementations and walkthroughs\cite{roslynsamples}, as well as blog posts. Most of these sources describe the compiler \ac{API} as opposed to the structure of the compiler. To further our understanding of the Roslyn compiler we have investigated these sources. In addition, an exploratory modification of the compiler was done to investigating its structure. The lexer and parser of the compiler was modified to handle the syntax of an \bscode{atomic} block. The exploratory implementation furthered our knowledge of the compilers structure and \ac{API} design.
+A number of papers describing \ac{STM} system implementations were investigated. This gave us a deeper understanding of the known approaches for implementing \ac{STM} systems. To get some hands on experience, a prototype \ac{STM} system based on the two implementations described in \cite[p. 424]{herlihy2012art} was developed. Developing such a prototype system furthered our understanding of the different implementation strategies.
+
+As the Roslyn compiler was released 10 months prior to the start of the project, the amount of literature on the subject is limited, consisting of mostly: a white paper\cite{ng2012roslyn}, documentation associated with the Roslyn Github repository\cite{roslynwiki}, sample implementations and walkthroughs\cite{roslynsamples}, as well as blog posts. Most of these sources describe the compiler \ac{API} as opposed to the structure of the compiler. To further our understanding of the Roslyn compiler we have investigated these sources. In addition, an exploratory modification of the compiler was done to investigate its structure. The lexer and parser of the compiler were modified to handle the syntax of an \bscode{atomic} block. The exploratory implementation furthered our knowledge of the compilers structure and \ac{API} design, and served as an onset into the deeper exploration of the compiler documented in \bsref{chap:roslyn}.
+
+Getting preliminary hands on experience with the required technologies at an early stage of the project, helped ensure the feasibility for the implementations and provided the project group with confidence in the feasibility of the project. Bringing more information to the table at an early stage assisted in deciding on the implementation strategies for the \ac{STM} system and for the extension of the Roslyn compiler.
+
+\section{Design}\label{sec:reflection_design}
+These sections describes the project group’s reflections over areas related to the design of \stmname described in \bsref{chap:stm_design}.
+
+\subsection{Transactional Local Variables \& Parameters}
+In order to improve the orthogonality and flexibility of \stmname the design allows for the declaration of transactional local variables and parameters. Neither of these features have however been used in the implementations on which the evaluation is build, indicating that the features may not be required. The reason may be that the problems selected in this thesis, described in \bsref{sec:eval_selected_problems}, does not fit well with the use of transactional local variables and parameters, where other types of problems and applications may fit better. It may also be that the way we have implemented the selected problems did not present a reason to use transactional local variables and parameters, where other ways may have.
+
+The initial idea behind allowing transactional local variables was that local variables can be captured in a lambda expression which is executed by multiple threads, resulting in the need for synchronization. The option to do so was however not employed in the evaluation implementations. Allowing the programmer to declare \bscode{atomic} local variables instead of relying solely on \bscode{atomic} fields makes \stmnamesp more orthogonal but also less simple.
+
+A parameter is similar to a local variable which is initialized using its corresponding argument\cite[p. 76]{sestoft2011c}. Therefore the idea behind allowing transactional parameters is similar to that of transactional local variables. If transactional parameters were not allowed, the programmer would have to declare an \bscode{atomic} local variable and initialize it to the value of the parameter, if she wished to utilize the parameter as a variable in a transaction. As with transactional local variables, transactional parameters improve the orthogonality of \stmname but reduce the simplicity.
+
+C\# does not allow for the declaration of \bscode{volatile} local variables and parameters, but only \bscode{volatile} fields. Similarly allowing only \bscode{atomic} fields may be sufficient for \stmname. Determining whether these features are truly required, through further studies e.g. usability studies, could assist in furthering \stmname as well as aid others seeking to supply language integrated \ac{STM}.
+
+%usability
+
+\subsection{Transactional Ref/Out Parameters \& Arguments}\label{subse:reflection_ref_out}
+The initial idea behind including transactional ref/out parameters was to preserve the functionality provided by C\# with regards to transactional arguments and parameters, thereby providing an integration with existing language features. As with transactional local variables and parameters, transactional ref/out parameters were however not used in the implementations for the evaluation, suggesting that further work is required to determine whether the feature is required or if it simply complicates \stmname, reducing its simplicity.
+
+As described in \bsref{subsec:roslyn_extension_ref_out_revisited}, providing the intended semantics for transactional ref/out parameters \& arguments proved problematic due to the types of transactional variables being substituted with their corresponding \ac{STM} types. As a result the simplicity of \stmname is reduced due to the programmer having to reason about the changed semantics.
+
+To remove the problem, a library with an interface based on central metadata and applying functions to variables in order to read/modify could be adopted. Such an interface will remove the need for transforming the types during compilation, allowing transactional variables to be passed directly into non-transactional parameters and vice versa. If a transactional variable is passed by ref/out into a method, transactional access will however still be lost, as the body of the method does not treat the variable as transactional. As described in \bsref{subsec:roslyn_extension_ref_out_revisited} C\# utilizes a similar approach for \bscode{volatile} variables passed by ref/out.
+
+\bsref{lst:lib_function_interface} presents an example of how an \bscode{STM} interface based on applying functions to variables could be designed. The \bscode{STMSystem.TMRead} and \bscode{STMSystem.TMWrite} are applied to the \bscode{\_balance} variables in order to read and write their associated value.
+
+\begin{lstlisting}[float,label=lst:lib_function_interface,
+  caption={\ac{STM} library interfaced based on applying functions},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out}]  % Start your code-block
+
+  public class Account
+  {
+  	private double _balance;
+  	
+    public void AtomicTransfer(Account other, double amount)
+    {
+      STMSystem.Atomic(() =>
+      {
+      	var newBalance = STMSystem.TMRead(ref _balance)+amount;
+      	STMSystem.TMWrite(ref _balance, newBalance);
+      	newBalance = STMSystem.TMRead(ref other._balance)-amount;
+      	STMSystem.TMWrite(ref other._balance, newBalance);
+      });
+    }
+  }
+
+  
+\end{lstlisting}
+ 
+\section{STM Implementation}\label{sec:reflection_stm_implementation}
+This section describes the project groups reflections related to the implementation of the \ac{STM} system described in \bsref{chap:implementation}.
+
+\subsection{STM Algorithm}
+The implemented \ac{STM} system utilizes the TL\rom{2} algorithm\cite{dice2006transactional}. TL\rom{2} uses commit time locking to ensure that any values written by a transaction becomes visible to the remaining system as a single atomic step. The TL\rom{2} algorithm is well documented \cite{dice2006transactional}\cite[p. 438]{herlihy2012art}\cite[p. 106]{harris2010transactional}, which allowed us to gain deep insight into the workings of the algorithm, easing the implementation of more advanced features such as orelse, retry and nesting, which are not described in the reference materials.
+
+Due to the utilization of locking the TL\rom{2} algorithm is unable to supply any of the progress guarantees described in \bsref{subsec:stm_impl_progress_guarantee}. Selecting an algorithm which could supply one of these progress guarantees would have positively affected the simplicity of the \ac{STM} library and of \stmname. In case of Wait-freedom the programmer would know that all transactions would eventually commit allowing her to utilize this knowledge in the implementation. Alternatively the inclusion of a contention manager, dictating conflict resolution, into the existing implementation could be investigated. A contention manager may allow the existing implementation to provide similar guarantees in the absence of failures.
+
+\subsection{STM Library Interface}
+As described in \bsref{sec:eval_approach}, locking in C\#, library based \ac{STM} and \stmname is evaluated according to a set of characteristics. As the \ac{STM} library was evaluated according to its usability, its interface was required to be designed to maximize usability, while still satisfying the defined requirements. \stmname however does not impose such a requirement on its backing \ac{STM} library. The programmer does not see the transformed code, removing the need for an \ac{STM} library with high usability. In fact it may be advantageous for performance to utilize a backing \ac{STM} library with a high degree of flexibility, allowing the compiler to optimize the generated code. As described in \bsref{subse:reflection_ref_out} adopting a library interface based on central metadata and applying functions to a variable in order to read and modify, will remove the issues related to the types of transactional variables and \bscode{ref/out} parameters.
+
+\section{Roslyn Extension}\label{sec:reflection_roslyn_extension}
+As described in \bsref{sec:roslyn_extension_strategy} the Roslyn compiler was extended at the level of the syntax tree/symbol information. The lexer, parser, syntax tree, and symbol table were modified to support the constructs described in \bsref{chap:stm_design}, and transformations were applied to the modified syntax tree, producing a standard C\# syntax tree that represents the execution of transactions as calls to the \ac{STM} library. The transformed syntax tree is passed to the remaining compiler phases, utilizing the existing semantic analysis and code generation of the Roslyn compiler.
+
+Alternatively the transformation could be applied at the level of what in Roslyn is referred to as the bound tree. The bound tree is a semantic representation of the source code in the form of a tree structure. The bound tree is constructed based on the syntax tree and is the basis for the code generation phase. During the construction of the bound tree, semantic analysis and source code transformation is applied. As described in \bsref{sec:roslyn_extension_strategy} applying transformations to the syntax tree causes it to lose its roundtripable property, due to the syntax tree no longer representing the original \stmname source code. The transformations required for executing transactions could be applied along with the standard C\# transformations, as part of constructing the bound tree. This would cause the syntax tree to preserve its roundtripable property but will however require the implementation of the transformation to be mingled with the existing C\# transformation implementations and semantic analysis, making the implementations more complex. Alternatively the transformations could be applied after the bound tree has been constructed. However this approach requires that the logic which constructs the bound tree, as well as the semantic analysis, is modified to support the \ac{STM} constructs described in \bsref{chap:stm_design}. The bound tree and the associated transformation and analysis implementations are not part of the public \ac{API} provided by the Roslyn compiler due to it often undergoing significant changes\cite{roslynBinder}. Furthermore any documentation is limited to blog/forum post as well as the comments embedded in the source code. Due to these factors, applying transformations at the level of the bound tree is significantly more complex than the approach utilized in \bsref{sec:roslyn_extension_strategy}. Furthermore, it may require the transformation implementation to be rewritten if \stmname is moved to a newer version of C\# and the bound tree has undergone significant changes since the previously utilized implementation was created.
+
+\section{C\# 6.0}\label{sec:reflection_csharpsix}
+As described in \bsref{sec:scope}, the development of \stmname is based on C\# 5, which at the time of writing is the most recent version of C\#. C\# 6.0 is, as of May 2015, however under active development and a number of new features have been shown to the public. This section presents our reflections upon how the new features impact the findings of this project. The new features supplied by C\# 6.0 are listed in \cite{csharp6Features} and described in \cite{csharp6one}, \cite{csharp6two} and \cite{csharp6featureDescription}. Only new features relevant to locking in C\#, \stmname or the \ac{STM} library are described.
+
+\subsection{Static Using Statements}
+Static using statements allows the programmer to import the static methods of a particular class, giving her the ability to call these methods as if they were methods of the class in which the call takes place\cite{csharp6one}\cite{csharp6featureDescription}. This feature is of interest to programmers utilizing the \ac{STM} library as it will allow them to call the \bscode{atomic} and \bscode{retry} methods of the \bscode{STMSystem} class without having to specify the class for each call, thereby improving the writability of the library. \bsref{lst:static_using_example} shows how the \bscode{SleepUntilAwoken} method of the \ac{STM} library based Santa Claus problem implementation could look if the static methods of the \bscode{STMSystem} class were imported through a static using statement.
+
+\begin{lstlisting}[float,label=lst:static_using_example,
+  caption={\ac{STM} library with static using statement},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  escapechar=~,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out}]  % Start your code-block
+
+  private WakeState SleepUntilAwoken()
+  {
+    return Atomic(() =>
+    {
+      if (_rBuffer.Count != SCStats.NR_REINDEER)
+      {
+        Retry();
+      }
+      return WakeState.ReindeerBack;
+    },
+      () =>
+      {
+        if (_eBuffer.Count != SCStats.MAX_ELFS)
+        {
+          Retry();
+        }
+        return WakeState.ElfsIncompetent;
+      });
+  }
+\end{lstlisting}
+
+\subsection{Auto-Property Initializers}
+Auto-Property intializers allow the programmer to supply an initializer expression to the definition of an Auto-Property\cite{csharp6one}\cite{csharp6two}\cite{csharp6featureDescription}. This causes the property  to be initialized using the initializer expression. If the Auto-Property defines only a getter, the backing field is automatically declared readonly\cite{csharp6one}\cite{csharp6featureDescription}.
+
+The Roslyn extension will have to be modified to handle \bscode{atomic} Auto-properties with an initializer expression. The extension must transform an initializer expression to an object creation expression which creates a new \ac{STM} object of the \ac{STM} type corresponding to the type of the \bscode{atomic} property, and initialize it using the defined initializer expression. Instead of initializing the property directly, the initializer should be applied to the backing field generated as part of the transformation of \bscode{atomic} auto-properties described in \bsref{sec:roslyn_extension_properties}.
+
 \worksheetend

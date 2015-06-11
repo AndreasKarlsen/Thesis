@@ -11,6 +11,7 @@ using STM.Implementation.Obstructionfree;
 using STM.Implementation.Lockbased;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using STM.Implementation.JVSTM;
 
 namespace STMTester
 {
@@ -35,13 +36,201 @@ namespace STMTester
             //OrElseTest();
             //OrElseNestingTest2();
             //OrElseNestingTest3();
-            var dining = new DiningPhilosopher();
-            dining.Start();
+            //var dining = new DiningPhilosopher();
+            //dining.Start();
+            TestMSQueue();
+
+            JVSpeedTest();
+            JVSpeedTest();
+            var dinning = new JVDining();
+            dinning.Start();
+
+            //JVTest();
+            //JVConcurrentTest();
+            
             Console.ReadKey();
         }
 
+        public static void TestMSQueue()
+        {
+            var queue = new STM.Collections.MSQueue<int>();;
+
+            var t1 = new Thread(() =>
+            {
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Enqueue(i);
+                }
+
+                for (var i = 0; i < 1000; i++)
+                {
+                    int x;
+                    var res = queue.Dequeue(out x);
+                    Debug.Assert(res);
+                }
+            });
 
 
+            var t2 = new Thread(() =>
+            {
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Enqueue(i);
+                }
+
+                for (var i = 0; i < 1000; i++)
+                {
+                    int x;
+                    var res = queue.Dequeue(out x);
+                    Debug.Assert(res);
+                }
+            });
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t2.Join();
+        }
+
+        private static void JVSpeedTest()
+        {
+            var b = new VBox<bool>();
+            var tmb = new TMVar<bool>();
+
+            var sw = Stopwatch.StartNew();
+            for (int i = 0; i < 10000; i++)
+            {
+                bool notCommitted = true;
+                while (notCommitted)
+                {
+                    var t = JVTransaction.Start();
+                    b.Put(t, !b.Read(t));
+                    notCommitted = !t.Commit();
+                }
+            }
+
+            sw.Stop();
+
+            Console.WriteLine("Non system time: " + sw.ElapsedMilliseconds);
+
+
+            sw = Stopwatch.StartNew();
+            for (int i = 0; i < 10000; i++)
+            {
+                JVSTMSystem.Atomic((t) =>
+                {
+                    if (b.Read(t))
+                    {
+                        b.Put(t, false);
+                    }
+                    else
+                    {
+                        b.Put(t, true);
+                    }
+                });
+            }
+
+            sw.Stop();
+
+            Console.WriteLine("System time: " + sw.ElapsedMilliseconds);
+
+
+            sw = Stopwatch.StartNew();
+            for (int i = 0; i < 10000; i++)
+            {
+                STMSystem.Atomic(() =>
+                {
+                    if (tmb.Value)
+                    {
+                        tmb.Value = false;
+                    }
+                    else
+                    {
+                        tmb.Value = true;
+                    }
+                });
+            }
+            sw.Stop();
+
+            Console.WriteLine("TL2 time: " + sw.ElapsedMilliseconds);
+            
+            
+        }
+
+
+        private static void JVTest()
+        {
+            var box1 = new VBox<string>("a");
+            var box2 = new VBox<bool>(false);
+            var notCommited = true;
+            while (notCommited)
+            {
+                var transaction = JVTransaction.Start();
+                box1.Put(transaction, "Hello world");
+                var b2Value = box2.Read(transaction);
+                notCommited = !transaction.Commit();
+            }
+        }
+
+        private static void JVConcurrentTest()
+        {
+            for (int i = 0; i < 10000; i++)
+            {
+                var res = JVConcurrentTestInternal();
+                Console.WriteLine(res);
+                if (res == 120)
+                {
+                    throw new Exception("Res == 120");
+                }
+            }
+        }
+
+        private static int JVConcurrentTestInternal()
+        {
+            var box = new VBox<int>(10);
+
+            var t1 = new Thread(() =>
+            {
+                var notCommited = true;
+                while (notCommited)
+                {
+                    var transaction = JVTransaction.Start();
+                    if (box.Read(transaction) == 10)
+                    {
+                        box.Put(transaction, box.Read(transaction) * 10);
+                    }
+                    else
+                    {
+                        box.Put(transaction,5);
+                    }
+                    notCommited = !transaction.Commit();
+                }
+            });
+
+            var t2 = new Thread(() =>
+            {
+                var notCommited = true;
+                while (notCommited)
+                {
+                    var transaction = JVTransaction.Start();
+                    box.Put(transaction, 12);
+                    notCommited = !transaction.Commit();
+                }
+                
+            });
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t2.Join();
+            var t = JVTransaction.Start();
+            var result = box.Read(t);
+            t.Commit();
+
+            return result;
+        }
 
         private static void DinningPhilosophersTest()
         {

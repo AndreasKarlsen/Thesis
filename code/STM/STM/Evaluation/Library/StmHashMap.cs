@@ -74,7 +74,7 @@ namespace Evaluation.Library
 
         public override bool ContainsKey(K key)
         {
-            return FindNode(key) != null;
+            return STMSystem.Atomic(() => FindNode(key) != null);
         }
 
         public override V Get(K key)
@@ -159,7 +159,7 @@ namespace Evaluation.Library
                 foreach (var node in bucket.Value)
                 {
                     var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
-                    newBuckets[bucketIndex].Value = newBuckets[bucketIndex].Value.Add(node);
+                    newBuckets[bucketIndex].Value = newBuckets[bucketIndex].Value.Add(CreateNode(node.Key,node.Value));
                 }
             }
 

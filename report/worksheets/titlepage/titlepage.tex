@@ -3,7 +3,7 @@
 \begin{titlingpage}
 \aautitlepage{%
   \englishprojectinfo{
-    Language Integrated STM in C\# and the Roslyn Compiler - An alternative to locks. %title
+    Language Integrated STM in C\# Using the Roslyn Compiler - An Alternative to Locking. %title
     %STM Integration in C\# and the Roslyn Compiler. %title
   }{%
     Spring Semester 2015 %project period
@@ -26,6 +26,10 @@
   DK-9220 Aalborg Ø\\
   \href{http://www.cs.aau.dk}{http://www.cs.aau.dk}
 }{% the abstract
-
+% Our motivation
+% What have we done
+% How did we do it
+% Our contribution
+This master thesis investigates whether language integrated STM is a valid alternative to locking in C\# in terms of usability, and provides additional benefits compared to library-based STM. To do so, an extension of C\# called \stmname was implemented. \stmname provides integrated support for STM, including conditional synchronization using the retry and orelse constructs, and nesting of transactions. \stmname was implemented by extending the open source Roslyn C\# compiler. To power \stmname a library-based STM system, based on the TL\rom{2} algorithm, was implemented. The extended compiler transforms \stmname source code to regular C\# code which utilizes the STM library. For each concurrency approach: \stmname, library-based STM and locking in C\#, four different concurrency problems, representing different aspects of concurrency, were implemented. These implementations were analyzed according to a set of usability characteristics, facilitating a conclusion upon the usability of language integrated STM. Our evaluation concludes that \stmname is a valid alternative to locking, and provides better usability than library-based STM.
 }
 \end{titlingpage}

@@ -8,23 +8,29 @@ using STM.Implementation.Exceptions;
 
 namespace STM.Implementation.Lockbased 
 {
-    public class ReadSet : IEnumerable<BaseLockObject>
+    public class ReadSet : IEnumerable<KeyValuePair<BaseLockObject,int>>
     {
-        private readonly HashSet<BaseLockObject> _lockObjects;
+        private readonly Dictionary<BaseLockObject,int> _lockObjects;
 
         internal ReadSet()
         {
-            _lockObjects = new HashSet<BaseLockObject>();
+            _lockObjects = new Dictionary<BaseLockObject,int>();
         }
 
-        public void Add(BaseLockObject blo)
+        public void Add(BaseLockObject blo, int timeStamp)
         {
-            _lockObjects.Add(blo);
+            _lockObjects[blo] = timeStamp;
         }
 
-        public void Merge(ReadSet items)
+        public void Merge(ReadSet other)
         {
-            _lockObjects.UnionWith(items);
+            foreach (var kvpair in other)
+            {
+                if(!_lockObjects.ContainsKey(kvpair.Key))
+                {
+                    _lockObjects[kvpair.Key] = kvpair.Value;
+                }
+            }
         }
 
         public void Remove(BaseLockObject blo)
@@ -43,12 +49,12 @@ namespace STM.Implementation.Lockbased
 
         public bool Validate(Transaction transaction)
         {
-            return Validate(transaction, transaction.ReadStamp);
+            return this.All(kvpair => kvpair.Key.Validate(transaction, kvpair.Value));
         }
 
         public bool Validate(Transaction transaction, int readstamp)
         {
-            return this.All(lo => lo.Validate(transaction, readstamp));
+            return this.All(kvpair => kvpair.Key.Validate(transaction, readstamp));
         }
 
         #region Locking
@@ -56,9 +62,9 @@ namespace STM.Implementation.Lockbased
         public bool TryLock(int milisecs)
         {
             var objects = new List<BaseLockObject>(_lockObjects.Count);
-            foreach (var lo in _lockObjects)
+            foreach (var kvpair in _lockObjects)
             {
-                if (!lo.TryLock(milisecs))
+                if (!kvpair.Key.TryLock(milisecs))
                 {
                     foreach (var baseLockObject in objects)
                     {
@@ -67,7 +73,7 @@ namespace STM.Implementation.Lockbased
                     throw new STMAbortException("Abort due to being unable to aquire locks on all objects");
                 }
 
-                objects.Add(lo);
+                objects.Add(kvpair.Key);
             }
 
             return true;
@@ -75,9 +81,9 @@ namespace STM.Implementation.Lockbased
 
         public void Unlock()
         {
-            foreach (var lo in _lockObjects)
+            foreach (var kvpair in _lockObjects)
             {
-                lo.Unlock();
+                kvpair.Key.Unlock();
             }
         }
 
@@ -85,7 +91,7 @@ namespace STM.Implementation.Lockbased
 
         #region IEnumerable
 
-        public IEnumerator<BaseLockObject> GetEnumerator()
+        public IEnumerator<KeyValuePair<BaseLockObject,int>> GetEnumerator()
         {
             foreach (var baseLockObject in _lockObjects)
             {

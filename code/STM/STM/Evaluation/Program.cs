@@ -9,6 +9,8 @@ using Evaluation.Common;
 using Evaluation.Library;
 using Evaluation.Locking;
 using System.IO;
+using System.Diagnostics;
+using Evaluation.Library.Collections;
 
 namespace Evaluation
 {
@@ -23,42 +25,126 @@ namespace Evaluation
             //HashMapTest();
             //STMHashMapSequentialTest();
             //LockingHashMapSequentialTest();
+            
+            //TestQueue();
+            //TestLockingQueue();
 
-            int nrThreads = 8;
+            var nrThreads = 4;
             using(var s = new FileStream("output.txt",FileMode.Create))
             {
                 using(var sw = new StreamWriter(s))
                 {
-                    for (int i = 0; i < 10; i++)
-                    {
-                        LockingHashMapConcurrent(nrThreads, sw);
-                    }
-
-                    Console.WriteLine("Locking done");
-
-                    for (int i = 0; i < 10; i++)
-                    {
-                        NaiveLockingHashMapConcurrent(nrThreads, sw);
-                    }
-
-                    Console.WriteLine("Naive locking done");
-
+                    
                     for (int i = 0; i < 10; i++)
                     {
                         STMHashMapConcurrent(nrThreads, sw);
                     }
 
                     Console.WriteLine("STM done");
+
+                    for (int i = 0; i < 10; i++)
+                    {
+                        JVSTMHashMapConcurrent(nrThreads, sw);
+                    }
+
+                    Console.WriteLine("JVSTM done");
                 }
             }
-
+            
             Console.ReadKey();
+        }
+
+        public static void TestLockingQueue()
+        {
+            var queue = new Evaluation.Locking.Collections.Queue<int>();
+
+            var t1 = new Thread(() =>
+            {
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Enqueue(i);
+                }
+
+                for (var i = 0; i < 1000; i++)
+                {
+                    int x;
+                    var res = queue.Dequeue(out x);
+                    Debug.Assert(res);
+                }
+            });
+
+
+            var t2 = new Thread(() =>
+            {
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Enqueue(i);
+                }
+
+                for (var i = 0; i < 1000; i++)
+                {
+                    int x;
+                    var res = queue.Dequeue(out x);
+                    Debug.Assert(res);
+                }
+            });
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t2.Join();
+        }
+
+        public static void TestQueue()
+        {
+            var queue = new Evaluation.Library.Collections.Queue<int>();
+            
+            var t1 = new Thread(() =>
+            {
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Enqueue(i);
+                }
+
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Dequeue();
+                }
+            });
+
+
+            var t2 = new Thread(() =>
+            {
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Enqueue(i);
+                }
+
+                for (var i = 0; i < 1000; i++)
+                {
+                    queue.Dequeue();
+                }
+            });
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t2.Join();
         }
 
         public static void STMHashMapConcurrent(int nrThreads, StreamWriter writer)
         {
             writer.WriteLine("STM hashmap");
-            var map = new StmHashMap<int, int>();
+            var map = new STMHashMapInternalList<int, int>();
+            TestMapConcurrent(map, nrThreads, writer);
+        }
+
+        public static void JVSTMHashMapConcurrent(int nrThreads, StreamWriter writer)
+        {
+            writer.WriteLine("JVSTM hashmap");
+            var map = new JVSTMHashMapInternalList<int, int>();
             TestMapConcurrent(map, nrThreads, writer);
         }
 
@@ -86,8 +172,6 @@ namespace Evaluation
 
         private static void TestMapConcurrent(IMap<int, int> map, int nrThreads, StreamWriter writer)
         {
-
-
             var threads = new List<Thread>();
             var results = new List<ResultHolder>();
 
@@ -106,8 +190,6 @@ namespace Evaluation
                 });
 
                 threads.Add(thread);
-
-
             }
 
             foreach (var thread in threads)
@@ -249,7 +331,7 @@ namespace Evaluation
                 map.Add(i, i);
             }
             Console.WriteLine(map.Count);
-
+            
             for (var i = -50; i < 50; i++)
             {
                 map.AddIfAbsent(i, i);

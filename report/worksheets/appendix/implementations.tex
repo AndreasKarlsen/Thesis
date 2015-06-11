@@ -1,0 +1,2330 @@
+\chapter[]{Evaluation Implementations}
+This appendix presents the implementations of the selected problems, described in \bsref{sec:eval_approach}, on which the evaluation presented in \bsref{chap:evaluation} is based. Along with each implementation follows a brief description.
+\label{app:eval_implementations}
+
+\section{Lock-Based}\label{app:impl_lockbased}
+This sections presents the lock based implementations of the selected problems.
+
+\subsection{Dining Philosophers Problem}
+The lock based implementation of the dining philosophers problem requires the use of the \bscode{Monitor} class to acquire the second lock with a time out on line \ref{line:dining_lock_try}. As a result a \bscode{try/finally} block is used, on lines \ref{line:dining_lock_try_finally_start} to \ref{line:dining_lock_try_finally_end}, to ensured that the acquired lock is released in case an error occurs while the lock is held.
+\begin{lstlisting}[label=lst:impl_dining_lock,
+  caption={Lock Based Dining Philosophers Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, lock, object}]  % Start your code-block
+
+  public class LockingDiningPhilosophers
+  {
+  	public static void Start()
+  	{
+      var fork1 = new object();
+      var fork2 = new object();
+      var fork3 = new object();
+      var fork4 = new object();
+      var fork5 = new object();
+
+      var t1 = StartPhilosopher(fork1, fork2);
+      var t2 = StartPhilosopher(fork2, fork3);
+      var t3 = StartPhilosopher(fork3, fork4);
+      var t4 = StartPhilosopher(fork4, fork5);
+      var t5 = StartPhilosopher(fork5, fork1);
+
+      t1.Join();
+      t2.Join();
+      t3.Join();
+      t4.Join();
+      t5.Join();
+    }
+
+    private static Thread StartPhilosopher(object left, object right)
+    {
+      var t1 = new Thread(() =>
+      {
+        while (true)
+        {
+          lock (left)
+          {
+            var lockTaken = false;
+            try~\label{line:dining_lock_try_finally_start}~
+            {
+              Monitor.TryEnter(right, 100, ref lockTaken);~\label{line:dining_lock_try}~
+              if (lockTaken)
+              {
+                Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
+                Thread.Sleep(100);
+              }
+            }
+            finally
+            {
+              if (lockTaken)
+              {
+                Monitor.Exit(right);
+              }
+            }~\label{line:dining_lock_try_finally_end}~
+          }
+          Thread.Sleep(100);
+        }
+      });
+
+      t1.Start();
+      return t1;
+    }
+  }
+  
+\end{lstlisting}
+
+\subsection{Santa Claus Problem}
+As seen on line \ref{line:santa_lock_santa_sem}, the lock Based Santa Claus problem implementation uses a semaphore to allow the elfs and reindeer to wake Santa, given their respective conditions are true. When Santa is awoken he must check whether he was awoken by the elfs or by the reindeer, as shown on lines \ref{line:santa_lock_santa_check_start} to \ref{line:santa_lock_santa_check_end}. As the reindeer must take priority, as defined in \bsbilagref{app:santa}, their condition is checked in order to determine the action which Santa takes. Similarly, as shown on line \ref{line:santa_lock_elf_wait}, the elfs utilize a semaphore to ensure that only three elfs go to santa at a time. As shown on line \ref{line:santa_lock_elf_queue_start} to \ref{line:santa_lock_elf_queue_end} as well as \ref{line:santa_lock_reindeer_queue_start} to \ref{line:santa_lock_reindeer_queue_end}, both the elfs and the reindeer enqueue themselves and check their condition while holding a lock on their respective queues, ensuring that only a single thread observes the condition as true and notifies Santa.
+
+\begin{lstlisting}[label=lst:impl_santa_lock,
+  caption={Lock Based Santa Claus Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, lock}]  % Start your code-block
+
+  public class LockingSantaClausProblem
+  {
+    public static void Start()
+    {
+      var santaHandle = new SemaphoreSlim(0, 2); 
+      var sleigh = new SemaphoreSlim(0, SCStats.NR_REINDEER);
+      var warmingHut = new SemaphoreSlim(0, SCStats.NR_REINDEER);
+      var reindeerDone = new SemaphoreSlim(0, SCStats.NR_REINDEER);
+      var elfWaiting = new SemaphoreSlim(0, SCStats.MAX_ELFS);
+      var elfDone = new SemaphoreSlim(0, SCStats.MAX_ELFS);
+      var maxElfs = new SemaphoreSlim(SCStats.MAX_ELFS, SCStats.MAX_ELFS);
+      var rBuffer = new Queue<LockingReindeer>();
+      var eBuffer = new Queue<LockingElf>();
+      var santa = new LockingSanta(rBuffer, eBuffer, santaHandle, sleigh, warmingHut, reindeerDone, elfWaiting, elfDone);
+      santa.Start();
+
+      for (var i = 0; i < SCStats.NR_REINDEER; i++)
+      {
+        var reindeer = new LockingReindeer(i, rBuffer, santaHandle, sleigh, warmingHut, reindeerDone);
+        reindeer.Start();
+      }
+            
+      for (var i = 0; i < SCStats.NR_ELFS; i++)
+      {
+        var elf = new LockingElf(i, eBuffer, santaHandle, maxElfs, elfWaiting, elfDone);
+        elf.Start();
+      }
+    }
+  }
+  
+  public class LockingSanta : IStartable
+  {
+    private readonly Queue<LockingReindeer> _rBuffer;
+    private readonly Queue<LockingElf> _eBuffer;
+    private readonly SemaphoreSlim _santaHandle;
+    private readonly SemaphoreSlim _sleigh;
+    private readonly SemaphoreSlim _warmingHut;
+    private readonly SemaphoreSlim _reindeerDone;
+    private readonly SemaphoreSlim _elfsWaiting;
+    private readonly SemaphoreSlim _elfsDone;
+
+    public LockingSanta(Queue<LockingReindeer> rBuffer, Queue<LockingElf> eBuffer, SemaphoreSlim santaHandle,
+            SemaphoreSlim sleigh, SemaphoreSlim warmingHut, SemaphoreSlim reindeerDone, SemaphoreSlim elfsWaiting, SemaphoreSlim elfsDone)
+    {
+      _rBuffer = rBuffer;
+      _eBuffer = eBuffer;
+      _santaHandle = santaHandle;
+      _sleigh = sleigh;
+      _warmingHut = warmingHut;
+      _reindeerDone = reindeerDone;
+      _elfsWaiting = elfsWaiting;
+      _elfsDone = elfsDone;
+    }
+
+    public Task Start()
+    {
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          //Santa is resting
+          _santaHandle.Wait();~\label{line:santa_lock_santa_sem}~
+
+          var wakeState = WakeState.ElfsIncompetent;
+
+          lock (_rBuffer)~\label{line:santa_lock_santa_check_start}~
+          {
+            if (_rBuffer.Count == SCStats.NR_REINDEER)
+            {
+              wakeState = WakeState.ReindeerBack;    
+            }
+          }~\label{line:santa_lock_santa_check_end}~
+
+          switch (wakeState)
+          {
+            case WakeState.ReindeerBack:
+              Console.WriteLine("All reindeers are back!");
+
+              //Release reindeers from warming hut
+              _warmingHut.Release(SCStats.NR_REINDEER);
+
+              //Setup the sleigh
+              _sleigh.Release(SCStats.NR_REINDEER);
+
+              //Deliver presents
+              Console.WriteLine("Santa delivering presents");
+              Thread.Sleep(100);
+
+              //Release reindeer
+              _rBuffer.Clear();
+              _reindeerDone.Release(SCStats.NR_REINDEER);
+              Console.WriteLine("Reindeer released");
+              break;
+            case WakeState.ElfsIncompetent:
+              Console.WriteLine("3 elfs at the door!");
+
+              _elfsWaiting.Release(SCStats.MAX_ELFS);
+
+              //Answer questions
+              Thread.Sleep(100);
+
+              //Back to work incompetent elfs!
+              _eBuffer.Clear();
+              _elfsDone.Release(SCStats.MAX_ELFS);
+
+              Console.WriteLine("Elfs helped");
+              break;
+          }
+        }
+      });
+    }
+  }
+  
+  public class LockingElf : IStartable
+  {
+    private readonly Random _randomGen = new Random(Guid.NewGuid().GetHashCode());
+    public int ID { get; private set; }
+    private readonly Queue<LockingElf> _buffer;
+    private readonly SemaphoreSlim _maxElfs;
+    private readonly SemaphoreSlim _santaHandle;
+    private readonly SemaphoreSlim _waitingToAsk;
+    private readonly SemaphoreSlim _doneAsking;
+
+    public LockingElf(int id, Queue<LockingElf> buffer, SemaphoreSlim santaHandle, SemaphoreSlim maxElfs, SemaphoreSlim waitingToAsk, SemaphoreSlim doneWaiting)
+    {
+      _buffer = buffer;
+      ID = id;
+      _maxElfs = maxElfs;
+      _santaHandle = santaHandle;
+      _waitingToAsk = waitingToAsk;
+      _doneAsking = doneWaiting;
+    }
+
+    public Task Start()
+    {
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          Thread.Sleep(100 * _randomGen.Next(21));
+
+          //Only a fixed amount of elfs can go to santa at a time
+          _maxElfs.Wait();~\label{line:santa_lock_elf_wait}~
+
+          lock (_buffer)~\label{line:santa_lock_elf_queue_start}~
+          {
+            _buffer.Enqueue(this);
+            if (_buffer.Count == SCStats.MAX_ELFS)
+            {
+              _santaHandle.Release();
+            }
+          }~\label{line:santa_lock_elf_queue_end}~
+
+          Console.WriteLine("Elf {0} at the door", ID);
+
+          //Wait for santa to be ready
+          _waitingToAsk.Wait();
+
+          //Asking questions
+          _doneAsking.Wait();
+
+          //Allow a new elf to visit santa
+          _maxElfs.Release();
+        }
+      });
+    }
+
+    public void AskQuestion()
+    {
+      _waitingToAsk.Release();
+    }
+  }
+  
+  public class LockingReindeer : IStartable
+  {
+    private readonly Random _randomGen = new Random(Guid.NewGuid().GetHashCode());
+    public int ID { get; private set; }
+
+    private readonly Queue<LockingReindeer> _reindeerBuffer;
+    private readonly SemaphoreSlim _santaHandle;
+    private readonly SemaphoreSlim _sleigh;
+    private readonly SemaphoreSlim _doneDelivering;
+    private readonly SemaphoreSlim _warmingHut;
+
+    public LockingReindeer(int id, Queue<LockingReindeer> buffer, SemaphoreSlim santaHandle, SemaphoreSlim sleigh, SemaphoreSlim warmingHut, SemaphoreSlim doneDelivering)
+    {
+      ID = id;
+      _reindeerBuffer = buffer;
+      _santaHandle = santaHandle;
+      _sleigh = sleigh;
+      _warmingHut = warmingHut;
+      _doneDelivering = doneDelivering;
+    }
+
+    public Task Start()
+    {     
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          //Tan on the beaches in the Pacific until Chistmas is close
+          Thread.Sleep(100 * _randomGen.Next(10));
+
+          lock (_reindeerBuffer)~\label{line:santa_lock_reindeer_queue_start}~
+          {
+            _reindeerBuffer.Enqueue(this);
+            if (_reindeerBuffer.Count == SCStats.NR_REINDEER)
+            {
+              _santaHandle.Release();
+            }
+          }~\label{line:santa_lock_reindeer_queue_end}~
+
+          //Console.WriteLine("Reindeer {0} is back",ID);
+
+          //Block early arrivals
+          _warmingHut.Wait();
+
+          //Wait for santa to be ready
+          _sleigh.Wait();
+
+          //Delivering presents
+
+          //Wait for delivery to be done
+          _doneDelivering.Wait();
+          //Head back to Pacific islands
+        }
+      });
+    }
+  }
+  
+\end{lstlisting}
+
+\subsection{Concurrent Queue}
+The lock based queue implementation is based on Michael L Scott's lock-based queue algorithm described in \cite{michael1996simple}. The implementation uses two locks, as seen on line \ref{line:queue_lock_taillock} and \ref{line:queue_lock_headlock}, to protect the tail and head of the queue respectively. The first node in the queue is a dummy node which allows the enqueue and dequeue operations to only operate on the tail and head respectively, thereby allowing enqueuing and dequeuing to occur concurrently. Only a single enqueue or dequeue operation can however execute at a time, due to the use of locking. The dummy node is created by the queue's constructor on line \ref{line:queue_lock_dummynode}.
+
+\begin{lstlisting}[label=lst:impl_queue_lock,
+  caption={Lock Based Concurrent Queue Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, lock, object, bool}]  % Start your code-block
+
+  public class Queue<T> : IQueue<T>
+  {
+    protected readonly object HeadLock = new object();
+    protected readonly object TailLock = new object();
+    private Node _head;
+    private Node _tail;
+
+    public Queue()
+    {
+      _head = new Node(default(T));~\label{line:queue_lock_dummynode}~
+      _tail = _head;
+    }
+
+    public void Enqueue(T item)
+    {
+      var node = new Node(item);
+      lock (TailLock)~\label{line:queue_lock_taillock}~
+      {
+        _tail.Next = node;
+        _tail = node;
+      }
+    }
+
+    public bool Dequeue(out T item)
+    {
+      lock (HeadLock)~\label{line:queue_lock_headlock}~
+      {
+        var newHead = _head.Next;
+        if (newHead == null)
+        {
+          item = default(T);
+          return false;
+        }
+
+        _head = newHead;
+        item = newHead.Value;
+        return true;
+      }
+    }
+
+    private class Node
+    {
+      public Node Next { get; set; }
+      public T Value { get; private set; }
+
+      public Node(T value)
+      {
+        Value = value;
+      }
+    }
+  }
+
+\end{lstlisting}
+
+\subsection{Concurrent Hashmap}\label{app:lock_hashmap_description}
+The lock-based concurrent hashmap implementation is based on the concept of lock striping. Lock striping allows $L$ locks to protect $B$ buckets where $B \geq L$ and $B \bmod L = 0$ so that each lock $l$ protects each bucket $b$ where $indexof(b) = indexof(l) \bmod L$\cite[p. 304]{herlihy2012art}. When the number of buckets is doubled as a result of resizing the hashmap the same lock protects a particular bucket before and after the resize completes. The buckets protected by a particular lock are referred to as a stripe and multiple stripes can be accessed concurrently.
+
+Along with the backing array of buckets defined on line \ref{line:hashmap_lock_array} an array of objects representing the locks is defined on line \ref{line:hashmap_lock_locks}. Before a thread access a bucket it must acquire the lock on the stripe containing the bucket in question. As an example, the \bscode{Add} method defined on line \ref{line:hashmap_lock_add} calculates the index of the lock to acquire on line \ref{line:hashmap_lock_lockindex} before adding the item to the bucket. The \bscode{ResizeIfNeeded} method defined on line \ref{line:hashmap_lock_resize} acquires the lock on all stripes on line \ref{line:hashmap_lock_resize_lock} ensuring that no other threads are accessing the backing array while being resized. The condition for resizing is checked before all locks are acquired on line \ref{line:hashmap_lock_resize_cond_before} and again after all locks have been acquired on line \ref{line:hashmap_lock_resize_cond_after}, ensuring that only a single thread resizes the backing array for every instance where a resize is required. The object defined on line \ref{line:hashmap_lock_size_lock} protect the \bscode{\_size} variable defined on line \ref{line:hashmap_lock_size}. This is required as multiple threads can add or remove items to different stripes simultaneously requiring their access to the \bscode{\_size} variable to be synchronized.
+
+\begin{lstlisting}[label=lst:impl_hashmap_lock,
+  caption={Lock Based Concurrent Hashmap Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, region, endregion, foreach, lock, object, bool, internal}]  % Start your code-block
+
+  public abstract class BaseHashMap<K,V> : IMap<K,V>
+  {
+    protected const int DefaultNrBuckets = 16;
+    protected const double LoadFactor = 0.75D;
+
+    public abstract bool ContainsKey(K key);
+    public abstract V Get(K key);
+    public abstract void Add(K key, V value);
+    public abstract bool AddIfAbsent(K key, V value);
+    public abstract bool Remove(K k);
+    public abstract V this[K key] { get; set; }
+    public virtual int Count {  get; protected set; }
+
+    protected int CalculateThreshold(int nrBuckets)
+    {
+      return (int)(nrBuckets * LoadFactor);
+    }
+
+    protected int GetHashCode(K key)
+    {
+      var hashCode = key.GetHashCode();
+      return hashCode < 0 ? 0 - hashCode : hashCode;
+    }
+
+    protected int GetBucketIndex(int length, K key)
+    {
+      return GetBucketIndex(length, GetHashCode(key));
+    }
+
+    protected int GetBucketIndex(int length, int hashCode)
+    {
+      return hashCode % length;
+    }
+
+    public abstract IEnumerator<KeyValuePair<K, V>> GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+      return GetEnumerator();
+    }
+  }
+  
+  public class LockingHashMap<K,V> : BaseHashMap<K,V>
+  {
+    private const int DefaultNrLocks = DefaultNrBuckets;
+
+    private readonly object _sizeLock = new object();~\label{line:hashmap_lock_size_lock}~
+    private readonly object[] _locks;~\label{line:hashmap_lock_locks}~
+    private Node[] _buckets;~\label{line:hashmap_lock_array}~
+    private int _size;~\label{line:hashmap_lock_size}~
+    private int _threshold;
+
+    public LockingHashMap() : this(DefaultNrBuckets){}
+
+    public LockingHashMap(int size) : this(size, DefaultNrLocks){}
+
+    private LockingHashMap(int size, int nrLocks)
+    {
+      if (size % nrLocks != 0)
+      {
+        throw new Exception("The intital size % nrlocks must be equal to zero");
+      }
+      _buckets = MakeBuckets(size);
+      _locks = MakeLocks(nrLocks);
+      _threshold = CalculateThreshold(size);
+    }
+
+
+    private Node[] MakeBuckets(int nrBuckets)
+    {
+      return new Node[nrBuckets]; ;
+    }
+
+    private object[] MakeLocks(int nrLocks)
+    {
+      var temp = new object[nrLocks];
+      for (var i = 0; i < nrLocks; i++)
+      {
+        temp[i] = new object();
+      }
+
+      return temp;
+    }
+
+    #region Utility
+
+    private int GetLockIndex(int hashCode)
+    {
+      return hashCode % _locks.Length;
+    }
+
+    private Node CreateNode(K key, V value)
+    {
+      return new Node(key, value);
+    }
+
+    private int GetBucketIndex(int hashCode)
+    {
+      return GetBucketIndex(_buckets.Length, hashCode);
+    }
+
+    private Node FindNode(Node node, K key)
+    {
+      while (node != null && !key.Equals(node.Key))
+        node = node.Next;
+      return node;
+    }
+
+    private void LockAll()
+    {
+      foreach (var lo in _locks)
+      {
+        Monitor.Enter(lo);
+      }
+    }
+
+    private void UnlockAll()
+    {
+      foreach (var lo in _locks)
+      {
+        Monitor.Exit(lo);
+      }
+    }
+
+    private void InsertInBucket(Node[] buckets, Node node, int index)
+    {
+      InsertInBucket(buckets, node, buckets[index], index);
+    }
+
+    private void InsertInBucket(Node node, int index)
+    {
+      InsertInBucket(node, _buckets[index], index);
+    }
+
+    private void InsertInBucket(Node node, Node curNode, int index)
+    {
+      InsertInBucket(_buckets, node, curNode, index);
+    }
+
+    private void InsertInBucket(Node[] buckets, Node node, Node curNode, int index)
+    {
+      if (curNode != null)
+      {
+        node.Next = curNode;
+      }
+      buckets[index] = node;
+    }
+
+    #endregion Utility
+
+    public override int Count {
+      get {
+        lock (_sizeLock)
+        {
+          return _size;
+        }
+      }
+
+    protected set {
+        lock (_sizeLock)
+        {
+          _size = value;
+        }
+      } 
+    }
+
+    public override bool ContainsKey(K key)
+    {
+      var hashCode = GetHashCode(key);
+      lock (_locks[GetLockIndex(hashCode)])
+      {
+        var bucket = _buckets[GetBucketIndex(hashCode)];
+        return FindNode(bucket, key) != null;
+      }
+    }
+
+    public override V Get(K key)
+    {
+      var hashCode = GetHashCode(key);
+      lock (_locks[GetLockIndex(hashCode)])
+      {
+        var bucket = _buckets[GetBucketIndex(hashCode)];
+        var node = FindNode(bucket, key);
+
+        if (node == null)
+        {
+          //If node is null, key is not in map
+          throw new KeyNotFoundException("Key not found. Key: "+key);
+        }
+
+        return node.Value;
+      }
+    }
+
+    public override void Add(K key, V value)~\label{line:hashmap_lock_add}~
+    {
+      var hashCode = GetHashCode(key);
+      lock (_locks[GetLockIndex(hashCode)])~\label{line:hashmap_lock_lockindex}~
+      {
+        var index = GetBucketIndex(hashCode);
+        var bucket = _buckets[index];
+        var node = FindNode(bucket, key);
+
+        if (node != null)
+        {
+          //If node is not null, key exist in map. Update the value
+          node.Value = value;
+        }
+        else
+        {
+          //Else insert the node
+          InsertInBucket(CreateNode(key, value),bucket,index);
+          lock (_sizeLock)
+          {
+            _size++;
+          }
+        }
+      }
+
+      ResizeIfNeeded();
+    }
+    
+    public override bool AddIfAbsent(K key, V value)
+    {
+      var hashCode = GetHashCode(key);
+      lock (_locks[GetLockIndex(hashCode)])
+      {
+        var index = GetBucketIndex(hashCode);
+        var bucket = _buckets[index];
+        var node = FindNode(bucket, key);
+
+        if (node != null) return false;
+        //If node is not in map insert new node
+        InsertInBucket(CreateNode(key, value), bucket, index);
+        lock (_sizeLock)
+        {
+          _size++;
+        }
+        ResizeIfNeeded();
+        return true;
+      }
+    }
+
+    public override bool Remove(K key)
+    {
+        var hashCode = GetHashCode(key);
+        lock (_locks[GetLockIndex(hashCode)])
+        {
+          var index = GetBucketIndex(hashCode);
+          var bucket = _buckets[index];
+          return RemoveNode(key, bucket, index);
+        }
+    }
+
+    private bool RemoveNode(K key, Node node, int index)
+    {
+        if (node == null)
+        {
+          return false;
+        }
+            
+        if (node.Key.Equals(key))
+        {
+          lock (_sizeLock)
+          {
+            _size--;
+          }
+          buckets[index] = node.Next;
+          return true;
+        }
+
+
+        while (node.Next != null && !key.Equals(node.Next.Key))
+          node = node.Next;
+
+        //node.Next == null || node.Next.Key == key
+        if (node.Next == null) return false;
+
+        lock (_sizeLock)
+        {
+          _size--;
+        }
+        node.Next = node.Next.Next;
+        return true;
+    }
+
+    private void ResizeIfNeeded()~\label{line:hashmap_lock_resize}~
+    {
+      if (ResizeCondtion())~\label{line:hashmap_lock_resize_cond_before}~
+      {
+          LockAll();~\label{line:hashmap_lock_resize_lock}~
+          try
+          {
+            if (!ResizeCondtion())~\label{line:hashmap_lock_resize_cond_after}~
+            {
+              return;
+            }
+            //Construct new backing array
+            var newBucketSize = _buckets.Length * 2;
+            var newBuckets = MakeBuckets(newBucketSize);
+
+            //For each key in the map rehash
+            for (var i = 0; i < _buckets.Length; i++)
+            {
+              var node = _buckets[i];
+              while (node != null)
+              {
+                var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
+                InsertInBucket(newBuckets,CreateNode(node.Key,node.Value),bucketIndex);
+                node = node.Next;
+              }
+            }
+
+            //Calculate new resize threshold and assign the rehashed backing array
+            threshold = CalculateThreshold(newBucketSize);
+            _buckets = newBuckets;
+          }
+          finally
+          {
+            UnlockAll();
+          }
+      }
+    }
+
+    private bool ResizeCondtion()
+    {
+      lock (_sizeLock)
+      {
+        return _size >= _threshold;
+      }
+    }
+
+    public override V this[K key]
+    {
+      get { return Get(key); }
+      set { Add(key,value); }
+    }
+
+    public override IEnumerator<KeyValuePair<K, V>> GetEnumerator()
+    {
+      LockAll();
+      try
+      {
+        var list = new List<KeyValuePair<K,V>>(_size);
+        for (var i = 0; i < _buckets.Length; i++)
+        {
+          var node = _buckets[i];
+          while (node != null)
+          {
+            list.Add(new KeyValuePair<K, V>(node.Key, node.Value));
+            node = node.Next;
+          }
+        }
+
+        return list.GetEnumerator();
+      }
+      finally
+      {
+        UnlockAll();
+      }
+    }
+
+    private class Node
+    {
+      public K Key { get; private set; }
+      public V Value { get; internal set; }
+      public Node Next { get; internal set; }
+
+      public Node(K key, V value)
+      {
+        Key = key;
+        Value = value;
+      }
+    }
+  }
+\end{lstlisting}
+\section{STM Library}\label{app:impl_stm_lib}
+This section presents the library-based \ac{STM} implementations used for the evaluation.
+\subsection{Dining Philosophers Problem}
+The library based \ac{STM} uses five \ac{STM} objects of type \bscode{TMVar<bool>}, defined on lines \ref{line:dining_libstm_fork_start} to \ref{line:dining_libstm_fork_end}, to represent each of the forks on the table. The \bscode{StartPhilosopher} method on line \ref{line:dining_libstm_startphil} is called for each philosopher in order to start a thread with access to the correct forks. The transaction defined on line \ref{line:dining_libstm_t1} attempts to acquired both forks in order to begin eating. Implicit conversion is employed on line \ref{line:dining_libstm_t1_implicit} to read the state of the forks without having to access the \bscode{Value} property. The call to \bscode{STMSystem.Retry} on line \ref{line:dining_libstm_t1_retry} blocks the calling thread until the state of the forks change, if atleast one of the forks is unavailable. The transaction on line \ref{line:dining_libstm_t2} simply makes both forks available, after the philosopher has finished eating on lines \ref{line:dining_libstm_eatstart} to \ref{line:dining_libstm_eatend}.
+
+\begin{lstlisting}[label=lst:impl_dining_lib,
+  caption={STM Library Based Dining Philosophers Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, region, endregion, foreach, lock, bool}]  % Start your code-block
+
+  public class DiningPhilosophers
+  {
+    private const int MAX_EAT_COUNT = 1000;
+
+    public static void Start()
+    {
+      var eatCounter = new TMInt(0);
+      var fork1 = new TMVar<bool>(true);~\label{line:dining_libstm_fork_start}~
+      var fork2 = new TMVar<bool>(true);
+      var fork3 = new TMVar<bool>(true);
+      var fork4 = new TMVar<bool>(true);
+      var fork5 = new TMVar<bool>(true);~\label{line:dining_libstm_fork_end}~
+
+      var t1 = StartPhilosopher(eatCounter, fork1, fork2);
+      var t2 = StartPhilosopher(eatCounter, fork2, fork3);
+      var t3 = StartPhilosopher(eatCounter, fork3, fork4);
+      var t4 = StartPhilosopher(eatCounter, fork4, fork5);
+      var t5 = StartPhilosopher(eatCounter, fork5, fork1);
+
+      t1.Join();
+      t2.Join();
+      t3.Join();
+      t4.Join();
+      t5.Join();
+    }
+
+    private static Thread StartPhilosopher(TMInt eatCounter, TMVar<bool> left, TMVar<bool> right)~\label{line:dining_libstm_startphil}~
+    {
+      var t1 = new Thread(() =>
+      {
+        while (eatCounter < MAX_EAT_COUNT)
+        {
+          STMSystem.Atomic(() =>~\label{line:dining_libstm_t1}~
+          {
+            if (!left || !right)~\label{line:dining_libstm_t1_implicit}~
+            {
+              STMSystem.Retry();~\label{line:dining_libstm_t1_retry}~
+            }
+
+            left.Value = false;
+            right.Value = false;
+          });
+
+          Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");~\label{line:dining_libstm_eatstart}~
+          Thread.Sleep(100);
+          Console.WriteLine("Eat count: " + ++eatCounter);~\label{line:dining_libstm_eatend}~
+
+          STMSystem.Atomic(() =>~\label{line:dining_libstm_t2}~
+          {
+            left.Value = true;
+            right.Value = true;
+          });
+
+          Thread.Sleep(100);
+        }
+      });
+
+      t1.Start();
+
+      return t1;
+    }
+  }
+\end{lstlisting}
+
+\subsection{Santa Claus Problem}
+As shown on line \ref{line:santa_libstm_wake_transaction}, the library-based Santa Claus problem implementation uses a transaction with an associated orelse clause to wake Santa given either the reindeer or elf condition is true true. The calls to \bscode{STMSystem.Retry} on lines \ref{line:santa_libstm_wake_transaction_retry1} and \ref{line:santa_libstm_wake_transaction_retry2} causes Santa to block if the transaction is executed and non of the conditions are true. If one of the read variable change Santa automatically tests the conditions again. As a result the elfs and reindeer does not have to take an explicit action in order to wake Santa. In fact they need not to even know that Santa exists. A call to \bscode{STMSystem.Retry} is used on line \ref{line:santa_libstm_elf_retry} to ensure that only three elfs can go to Santa at the same time. Generally, transactions containing calls to \bscode{STMSystem.Retry} are used ensure that the elfs and reindeer do not progress to the next state before the required conditions e.g. having delivered the presents, are true. The queue utilized is a transactional queue implementation available through the \bscode{STM} library.
+\begin{lstlisting}[label=lst:impl_santa_lib,
+  caption={STM Library Based Santa Claus Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, region, endregion, foreach, lock, bool, object}]  % Start your code-block
+
+  public class SantaClausProblem
+  {
+    public static void Start()
+    {
+      var rBuffer = new Queue<Reindeer>();
+      var eBuffer = new Queue<Elf>();
+      var santa = new Santa(rBuffer,eBuffer);
+      santa.Start();
+
+      for (int i = 0; i < SCStats.NR_REINDEER ; i++)
+      {
+        var reindeer = new Reindeer(i, rBuffer);
+        reindeer.Start();
+      }
+      
+      for (int i = 0; i < SCStats.NR_ELFS; i++)
+      {
+        var elf = new Elf(i, eBuffer);
+        elf.Start();
+      }
+    }
+  }
+  
+  public class Santa : IStartable
+  {
+    private readonly Queue<Reindeer> _rBuffer;
+    private readonly Queue<Elf> _eBuffer;
+
+    public Santa(Queue<Reindeer> rBuffer, Queue<Elf> eBuffer)
+    {
+      _rBuffer = rBuffer;
+      _eBuffer = eBuffer;
+    }
+
+    public Task Start()
+    {
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          var wakestate = SleepUntilAwoken();
+
+          switch (wakestate)
+          {
+            case WakeState.ReindeerBack:
+              HandleReindeer();
+              break;
+            case WakeState.ElfsIncompetent:
+              HandleElfs();
+              break;
+          }
+        }
+      });
+    }
+
+    private void HandleElfs()
+    {
+      Console.WriteLine("3 elfs at the door!");
+      STMSystem.Atomic(() =>
+      {
+        foreach (var elf in _eBuffer)
+        {
+          elf.AskQuestion();
+        }
+      });
+
+      //Answer questions
+      Thread.Sleep(100);
+
+      //Back to work incompetent elfs!
+      STMSystem.Atomic(() =>
+      {
+        for (int i = 0; i < SCStats.MAX_ELFS; i++)
+        {
+          var elf = _eBuffer.Dequeue();
+          elf.BackToWork();
+        }
+      });
+
+      Console.WriteLine("Elfs helped");
+    }
+
+    private void HandleReindeer()
+    {
+      Console.WriteLine("All reindeer are back!");
+
+      //Call reindeer from the warming hut
+      STMSystem.Atomic(() =>
+      {
+        foreach (var reindeer in _rBuffer)
+        {
+          reindeer.CallToSleigh();
+        }
+      });
+
+      //Setup the sleigh
+      STMSystem.Atomic(() =>
+      {
+        foreach (var reindeer in _rBuffer)
+        {
+          reindeer.HelpDeliverPresents();
+        }
+      });
+
+      //Deliver presents
+      Console.WriteLine("Santa delivering presents");
+      Thread.Sleep(100);
+
+      //Release reindeer
+      STMSystem.Atomic(() =>
+      {
+        while (_rBuffer.Count != 0)
+        {
+          var reindeer = _rBuffer.Dequeue();
+          reindeer.ReleaseReindeer();
+        }
+      });
+
+      Console.WriteLine("Reindeer released");
+    }
+
+    private WakeState SleepUntilAwoken()
+    {
+      return STMSystem.Atomic(() =>~\label{line:santa_libstm_wake_transaction}~
+      {
+        if (_rBuffer.Count != SCStats.NR_REINDEER)
+        {
+          STMSystem.Retry();~\label{line:santa_libstm_wake_transaction_retry1}~
+        }
+
+        return WakeState.ReindeerBack;
+      },
+        () =>
+        {
+          if (_eBuffer.Count != SCStats.MAX_ELFS)
+          {
+            STMSystem.Retry();~\label{line:santa_libstm_wake_transaction_retry2}~
+          }
+
+          return WakeState.ElfsIncompetent;
+        });
+    }
+  }
+  
+  public class Elf : IStartable
+  {
+    private readonly Random _randomGen = new Random(Guid.NewGuid().GetHashCode());
+    public int ID { get; private set; }
+    private readonly Queue<Elf> _buffer;
+    private readonly TMVar<bool> _waitingToAsk = new TMVar<bool>(false);
+    private readonly TMVar<bool> _questionAsked = new TMVar<bool>(false);
+
+    public Elf(int id, Queue<Elf> buffer)
+    {
+      _buffer = buffer;
+      ID = id;
+    }
+
+    public Task Start()
+    {
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          Thread.Sleep(100 * _randomGen.Next(21));
+
+          STMSystem.Atomic(() =>
+          {
+            if (_buffer.Count == SCStats.MAX_ELFS)
+            {
+              STMSystem.Retry();~\label{line:santa_libstm_elf_retry}~
+            }
+
+            _buffer.Enqueue(this);
+            _waitingToAsk.Value = true;
+          });
+
+          Console.WriteLine("Elf {0} at the door",ID);
+          //Waiting on santa
+          STMSystem.Atomic(() =>
+          {
+            if (_waitingToAsk)
+            {
+              STMSystem.Retry();
+            }
+          });
+
+          //Asking question
+
+          //Done asking
+          STMSystem.Atomic(() =>
+          {
+            if (!_questionAsked)
+            {
+              STMSystem.Retry();
+            }
+
+            _questionAsked.Value = false;
+          });
+          
+        }
+      });
+    }
+
+    public void AskQuestion()
+    {
+      _waitingToAsk.Value = false;
+    }
+
+    public void BackToWork()
+    {
+      _questionAsked.Value = true;
+    }
+  }  
+  
+    public class Reindeer : IStartable
+  {
+    private readonly Random _randomGen = new Random(Guid.NewGuid().GetHashCode());
+    public int ID { get; private set; }
+
+    private readonly Queue<Reindeer> _reindeerBuffer;
+    private readonly TMVar<bool> _workingForSanta = new TMVar<bool>(false);
+    private readonly TMVar<bool> _waitingAtSleigh = new TMVar<bool>(false);
+    private readonly TMVar<bool> _waitingInHut = new TMVar<bool>(false);
+
+    public Reindeer(int id, Queue<Reindeer> buffer)
+    {
+      ID = id;
+      _reindeerBuffer = buffer;
+    }
+    
+    public Task Start()
+    {
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          Thread.Sleep(100 * _randomGen.Next(10));
+
+          STMSystem.Atomic(() =>
+          {
+            _reindeerBuffer.Enqueue(this);
+            _waitingInHut.Value = true;
+          });
+
+          Console.WriteLine("Reindeer {0} is back",ID);
+
+          //Waiting in the warming hut
+          STMSystem.Atomic(() =>
+          {
+            if (_waitingInHut)
+            {
+              STMSystem.Retry();
+            }
+          });
+
+          //Wait for santa to be ready
+          STMSystem.Atomic(() =>
+          {
+            if (_waitingAtSleigh)
+            {
+              STMSystem.Retry();
+            }
+          });
+
+          //Delivering presents
+
+          //Wait to be released by santa
+          STMSystem.Atomic(() =>
+          {
+            if (_workingForSanta)
+            {
+              STMSystem.Retry();
+            }
+          });   
+        }
+      });
+    }
+
+    public void CallToSleigh()
+    {
+      STMSystem.Atomic(() =>
+      {
+        _waitingInHut.Value = false;
+        _waitingAtSleigh.Value = true;
+      });
+    }
+
+    public void HelpDeliverPresents()
+    {
+      STMSystem.Atomic(() =>
+      {
+        _waitingAtSleigh.Value = false;
+        _workingForSanta.Value = true;
+      });
+    }
+
+    public void ReleaseReindeer()
+    {
+      _workingForSanta.Value = false;
+    }
+  }
+  
+\end{lstlisting}
+\subsection{Concurrent Queue}
+The \ac{STM} concurrent queue implementation is implemented as a linked list of nodes. As with the lock-based concurrent queue implementation, the library-based \ac{STM} concurrent queue implementation uses a dummy node, allowing the enqueue and dequeue operations to operate only on the tail and head respectively. The \bscode{\_head} and \bscode{\_tail}, defined on lines \ref{line:queue_libstm_head} and \ref{line:queue_libstm_tail}, are of type \bscode{TMVar<Node>} allowing the \ac{STM} system to track assignments to the encapsulated variables. Similarly the \bscode{Next} field of the \bscode{Node} class defined on line \ref{line:queue_stmlib_node} is of type \bscode{TMVar<Node>}. The \bscode{Dequeue} method defined in line \ref{line:queue_libstm_dequeue}, skips over the dummy item when reading the node to remove from the queue on line \ref{line:queue_libstm_dequeue_skip}. The call to \bscode{STMSystem.Retry} on line \ref{line:queue_libstm_dequeue_retry} causes a thread calling \bscode{Dequeue} on an empty queue to block until the queue is no longer empty. The assignment on line \ref{line:queue_libstm_dequeue_retry} sets the node representing the item to dequeue as the new dummy node, as it is no longer needed and already points to the next item in the queue. 
+
+\begin{lstlisting}[label=lst:impl_queue_lib,
+  caption={STM Library Based Concurrent Queue Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, region, endregion, foreach, lock}]  % Start your code-block
+
+  public class Queue<T>
+  {
+    private readonly TMVar<Node> _head = new TMVar<Node>(null);~\label{line:queue_libstm_head}~
+    private readonly TMVar<Node> _tail = new TMVar<Node>(null);~\label{line:queue_libstm_tail}~
+
+    public Queue()
+    {
+      var node = new Node(default(T));
+      _head.Value = node;
+      _tail.Value = node;
+    }
+
+    public void Enqueue(T value)
+    {
+      STMSystem.Atomic(() =>
+      {
+        var node = new Node(value);
+        var curTail = _tail.Value;
+        curTail.Next.Value = node;
+        _tail.Value = node;
+      });
+    }
+
+    public T Dequeue()~\label{line:queue_libstm_dequeue}~
+    {
+      return STMSystem.Atomic(() =>
+      {
+        var node = _head.Value.Next.Value;~\label{line:queue_libstm_dequeue_skip}~ 
+
+        if (node == null)
+        {
+          STMSystem.Retry();~\label{line:queue_libstm_dequeue_retry}~
+        }
+
+        _head.Value = node;~\label{line:queue_libstm_dequeue_new_dummy}~
+        return node.Value;
+      });
+    }
+
+    private class Node~\label{line:queue_stmlib_node}~
+    {
+      public readonly TMVar<Node> Next = new TMVar<Node>(null);
+      public readonly T Value;
+
+      public Node(T value)
+      {
+        Value = value;
+      }
+    }
+  }
+
+\end{lstlisting}
+\subsection{Concurrent Hashmap}
+The library-based \ac{STM} hashmap defines the collision list as a linked list of instances of the \bscode{Node} class defined on line \ref{line:hasmap_libstm_node_class}. The backing array, defined on line \ref{line:hashmap_libstm_backingarray}, of type \bscode{TMVar<TMVar<Node>[]>}, that is a transactional variable to an array of transactional variables to instances of the node \bscode{Node} class. This allows the \ac{STM} system to track the assignment of a new backing array as a result of resizing the hashmap as well as track the assignment of the first node in each bucket trough the \bscode{TMVars} in the backing array. As the \bscode{Next} property of the \bscode{Node} class, defined on line \ref{line:hasmap_libstm_node_next}, is type \bscode{TMVar<Node>} the \ac{STM} system is able to track changes to the collision list. As the \bscode{Add} method defined on line \ref{line:hashmap_libstm_add} updates the value of a node if the key to add is already present in the hashmap, the \bscode{Value} property of the \bscode{Node} class is of type \bscode{TMVar<V>} where \bscode{V} is the type parameter, defining the type of the values added to the hashmap. The \bscode{\_size} variable is of type \bscode{TMInt} and is increment and decremented using the supplied \bscode{++} and \bscode{--} overloads defined in the \ac{STM} library.
+\begin{lstlisting}[label=lst:impl_hashmap_lib, 
+  caption={STM Library Based Concurrent Hashmap Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, region, endregion, foreach, lock, bool, object}]  % Start your code-block
+
+  public class STMHashMap<K,V> : BaseHashMap<K,V>
+  {
+     //TMVar to (array of TMVars to Node )
+    private readonly TMVar<TMVar<Node>[]> _buckets = new TMVar<TMVar<Node>[]>();~\label{line:hashmap_libstm_backingarray}~
+    private readonly TMInt _threshold = new TMInt();
+    private TMInt _size = new TMInt();
+
+    public STMHashMap() : this(DefaultNrBuckets)
+    {
+      
+    }
+
+    public STMHashMap(int nrBuckets)
+    {
+      _buckets.Value = MakeBuckets(nrBuckets);
+      _threshold.Value = CalculateThreshold(nrBuckets);
+    }
+
+    /// <summary>
+    /// Creates and initializes the backing array
+    /// </summary>
+    /// <param name="nrBuckets"></param>
+    /// <returns></returns>
+    private TMVar<Node>[] MakeBuckets(int nrBuckets)
+    {
+      var temp = new TMVar<Node>[nrBuckets];
+      for (var i = 0; i < nrBuckets; i++)
+      {
+        temp[i] = new TMVar<Node>(); 
+      }
+
+      return temp;
+    }
+
+
+    #region Utility
+
+    private Node CreateNode(K key, V value)
+    {
+      return new Node(key,value);
+    }
+
+    private int GetBucketIndex(K key)
+    {
+      return GetBucketIndex(_buckets.Value.Length, key);
+    }
+
+    private Node FindNode(K key)
+    {
+      return FindNode(key, GetBucketIndex(key));
+    }
+
+    private Node FindNode(K key, int bucketIndex)
+    {
+      return FindNode(key, _buckets.Value[bucketIndex].Value);
+    }
+
+    private Node FindNode(K key, Node node)
+    {
+      while (node != null && !key.Equals(node.Key))
+        node = node.Next.Value;
+      return node;
+    }
+
+    private void InsertInBucket(TMVar<Node> bucketVar, Node node)
+    {
+      var curNode = bucketVar.Value;
+      if (curNode != null)
+      {
+        node.Next.Value = curNode;
+      }
+      bucketVar.Value = node;
+    }
+
+    #endregion Utility
+
+    public override bool ContainsKey(K key)
+    {
+      return STMSystem.Atomic(() => FindNode(key) != null);
+    }
+
+    public override V Get(K key)
+    {
+      return STMSystem.Atomic(() =>
+      {
+        var node = FindNode(key);
+        if (node == null)
+        {
+          //If node == null key is not present in dictionary
+          throw new KeyNotFoundException("Key not found. Key: " + key);
+        }
+
+        return node.Value.Value;
+      });
+    }
+
+    public override void Add(K key, V value)~\label{line:hashmap_libstm_add}~
+    {
+      STMSystem.Atomic(() =>
+      {
+        var bucketIndex = GetBucketIndex(key);
+        //TMVar wrapping the immutable chain list
+        var bucketVar = _buckets.Value[bucketIndex];
+        var node = FindNode(key, bucketVar.Value);
+        
+        if (node != null)
+        {
+          //If node is not null key exist in map. Update the value
+          node.Value.Value = value;
+        }
+        else
+        {
+          //Else insert the node
+          InsertInBucket(bucketVar, CreateNode(key,value));
+          _size++;
+          ResizeIfNeeded();
+        }
+      });
+    }
+
+    public override bool AddIfAbsent(K key, V value)
+    {
+      return STMSystem.Atomic(() =>
+      {
+        var bucketIndex = GetBucketIndex(key);
+        //TMVar wrapping the immutable chain list
+        var bucketVar = _buckets.Value[bucketIndex];
+        var node = FindNode(key, bucketVar.Value);
+
+        if (node == null)
+        {
+          //If node is not found key does not exist so insert
+          InsertInBucket(bucketVar, CreateNode(key,value));
+          _size++;
+          ResizeIfNeeded();
+          return true;
+        }
+
+        return false;
+      });
+    }
+
+    private void ResizeIfNeeded()
+    {
+      if (_size.Value >= _threshold.Value)
+      {
+        Resize();
+      }
+    }
+
+    private void Resize()
+    {
+      //Construct new backing array
+      var newBucketSize = _buckets.Value.Length * 2;
+      var newBuckets = MakeBuckets(newBucketSize);
+
+      //For each key in the map rehash
+      for (var i = 0; i < _buckets.Value.Length; i++)
+      {
+        var bucket = _buckets.Value[i];
+        var node = bucket.Value;
+        while (node != null)
+        {
+          var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
+          InsertInBucket(newBuckets[bucketIndex], CreateNode(node.Key, node.Value));
+          node = node.Next.Value;
+        }
+      }
+
+      //Calculate new resize threshold and assign the rehashed backing array
+      _threshold.Value = CalculateThreshold(newBucketSize);
+      _buckets.Value = newBuckets;
+    }
+
+    public override bool Remove(K key)
+    {
+      return STMSystem.Atomic(() =>
+      {
+        var bucketIndex = GetBucketIndex(key);
+        //TMVar wrapping the immutable chain list
+        var bucketVar = _buckets.Value[bucketIndex];
+        var firstNode = bucketVar.Value;
+
+        return RemoveNode(key, firstNode, bucketVar);
+      });
+    }
+
+    private bool RemoveNode(K key, Node node, TMVar<Node> bucketVar)
+    {
+      if (node == null)
+      {
+        return false;
+      }
+
+      if (node.Key.Equals(key))
+      {
+        _size--;
+        bucketVar.Value = node.Next;
+        return true;
+      }
+
+      while (node.Next != null && !key.Equals(node.Next.Value.Key))
+        node = node.Next.Value;
+
+      //node.Next == null || node.Next.Key == key
+      if (node.Next == null) return false;
+
+      _size--;
+      node.Next.Value = node.Next.Value.Next;
+      return true;
+    }
+
+    public override IEnumerator<KeyValuePair<K, V>> GetEnumerator()
+    {
+      return STMSystem.Atomic(() =>
+      {
+        var list = new List<KeyValuePair<K, V>>(_size.Value);
+        for (var i = 0; i < _buckets.Value.Length; i++)
+        {
+          var bucket = _buckets.Value[i];
+          var node = bucket.Value;
+          while (node != null)
+          {
+            list.Add(new KeyValuePair<K, V>(node.Key, node.Value));
+            node = node.Next.Value;
+          }
+        }
+        return list.GetEnumerator();
+      }); 
+    }
+
+    public override V this[K key]
+    {
+      get { return Get(key); }
+      set { Add(key, value); }
+    }
+
+    public override int Count
+    {
+      get { return _size.Value; }
+    }
+    
+    private class Node~\label{line:hasmap_libstm_node_class}~
+    {
+      public K Key { get; private set; }
+      public TMVar<V> Value { get; private set; }
+      public TMVar<Node> Next { get; private set; }~\label{line:hasmap_libstm_node_next}~
+
+      public Node(K key, V value)
+      {
+        Key = key;
+        Value = new TMVar<V>(value);
+        Next = new TMVar<Node>();
+      }
+    }
+  }
+
+\end{lstlisting}
+\section{\stmname}\label{app:impl_stm_lab}
+This section presents the \stmname implementations used for the evaluation. As the strategies employed for the \stmname implementations are similar to those of the library-based \ac{STM} implementations the descriptions focus on the differences between the implementations as well as how the abstractions provided by \stmname are utilized.
+
+\subsection{Dining Philosophers Problem}
+The \stmname dining philosophers implementation represents the forks as instances of the \bscode{Fork} class defined on line \ref{line:dining_stmlang_fork_class}. Five forks are created on lines \ref{line:dining_stmlib_fork1} to \ref{line:dining_stmlib_fork2} and passed to the \bscode{StartPhilosopher} method on lines \ref{line:dining_stmlib_fork_pass1} to \ref{line:dining_stmlib_fork_pass2}. The transaction defined in line \ref{line:dining_stmlib_t1} acquires both forks by calling the forks \bscode{AttemptToPickUp} which is itself defined using a transaction. If a fork is unavailable the calling thread will block until the state changes as a result of the retry statement on line \ref{line:dining_stmlang_fork_retry}. The transaction defined on line \ref{line:dining_stmlib_t2} puts down both forks after eating on lines \ref{line:dining_stmlib_eat1} to \ref{line:dining_stmlib_eat2} has finished.
+
+
+\begin{lstlisting}[label=lst:impl_dining_lang,
+  caption={\stmname Based Dining Philosophers Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, region, endregion, foreach, lock, bool}]  % Start your code-block
+
+  public class DiningPhilosopher
+  {
+    private static readonly int MAX_EAT_COUNT = 1000;
+    private static atomic int eatCounter = 0;
+
+    public void Start()
+    {
+      var fork1 = new Fork();~\label{line:dining_stmlib_fork1}~
+      var fork2 = new Fork();
+      var fork3 = new Fork();
+      var fork4 = new Fork();
+      var fork5 = new Fork();~\label{line:dining_stmlib_fork2}~
+
+      var t1 = StartPhilosopher(fork1, fork2);~\label{line:dining_stmlib_fork_pass1}~
+      var t2 = StartPhilosopher(fork2, fork3);
+      var t3 = StartPhilosopher(fork3, fork4);
+      var t4 = StartPhilosopher(fork4, fork5);
+      var t5 = StartPhilosopher(fork5, fork1);~\label{line:dining_stmlib_fork_pass2}~
+
+      t1.Join();
+      t2.Join();
+      t3.Join();
+      t4.Join();
+      t5.Join();
+    }
+
+    private Thread StartPhilosopher(Fork left, Fork right)
+    {
+      var t1 = new Thread(() =>
+      {
+        while (eatCounter < MAX_EAT_COUNT)
+        {
+          atomic~\label{line:dining_stmlib_t1}~
+          {
+            left.AttemptToPickUp();
+            right.AttemptToPickUp();
+          }
+
+          Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");~\label{line:dining_stmlib_eat1}~
+          Thread.Sleep(100);
+          Console.WriteLine("Eat count: " + ++eatCounter);~\label{line:dining_stmlib_eat2}~
+
+          atomic~\label{line:dining_stmlib_t2}~
+          {
+            left.PutDown();
+            right.PutDown();
+          }
+
+          Thread.Sleep(100);
+        }
+      });
+
+      t1.Start();
+
+      return t1;
+    }
+
+    public class Fork~\label{line:dining_stmlang_fork_class}~
+    {
+      private atomic 
+      private bool State { get; set; }
+
+      public Fork()
+      {
+        State = true;
+      }
+
+      public void AttemptToPickUp()
+      {
+        atomic
+        {
+          if (!State)
+          {
+            retry;~\label{line:dining_stmlang_fork_retry}~
+          }
+
+          State = false;
+        }
+      }
+
+      public void PutDown()
+      {
+        atomic
+        {
+          State = true;
+        }
+      }
+    }
+  }
+
+\end{lstlisting}
+\subsection{Santa Claus Problem}
+As with the library-based Santa Claus implementation \stmname uses an \bscode{atomic} block with an associated \bscode{orelse} block, defined on line \ref{line:santa_langstm_wake}, to wake Santa when either the reindeer or elf condition are true. On line \ref{line:santa_langstm_elf_retry} the \bscode{retry} statement is used to ensure that no more than three elfs can go to Santa at any given point. Similarly, transactions utilizing \bscode{retry} statement are us ensure that the elfs and reindeer do not proceeded to next state before the required condition is true throughout the implementation.
+
+\begin{lstlisting}[label=lst:impl_santa_lang,
+  caption={\stmname Based Santa Claus Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, region, endregion, foreach, lock, bool, object}]  % Start your code-block
+
+  public class SantaClausProblem
+  {
+    public const int NR_REINDEER = 9;
+    public const int NR_ELFS = 6;
+    public const int MAX_ELFS = 3;
+
+    public static void Main()
+    {
+      var rBuffer = new Queue<Reindeer>();
+      var eBuffer = new Queue<Elf>();
+      var santa = new Santa(rBuffer, eBuffer);
+      santa.Start();
+
+      for (int i = 0; i < SantaClausProblem.NR_REINDEER; i++)
+      {
+        var reindeer = new Reindeer(i, rBuffer);
+        reindeer.Start();
+      }
+
+      for (int i = 0; i < SantaClausProblem.NR_ELFS; i++)
+      {
+        var elf = new Elf(i, eBuffer);
+        elf.Start();
+      }
+
+      System.Console.WriteLine("Press any key to terminate...");
+      System.Console.ReadKey();
+    }
+  }
+  
+  public class Santa
+  {
+    private readonly Queue<Reindeer> _rBuffer;
+    private readonly Queue<Elf> _eBuffer;
+
+    public Santa(Queue<Reindeer> rBuffer, Queue<Elf> eBuffer)
+    {
+      _rBuffer = rBuffer;
+      _eBuffer = eBuffer;
+    }
+        
+        public Task Start()
+    {
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          var wakestate = SleepUntilAwoken();
+
+          switch (wakestate)
+          {
+            case WakeState.ReindeerBack:
+              HandleReindeer();
+              break;
+            case WakeState.ElfsIncompetent:
+              HandleElfs();
+              break;
+          }
+        }
+      });
+    }
+
+    private WakeState SleepUntilAwoken()
+    {
+      atomic~\label{line:santa_langstm_wake}~
+      {
+        if (_rBuffer.Count != SantaClausProblem.NR_REINDEER)
+        {
+          retry;
+        }
+
+        return WakeState.ReindeerBack;
+      }
+      orelse
+      {
+        if (_eBuffer.Count != SantaClausProblem.MAX_ELFS)
+        {
+          retry;
+        }
+
+        return WakeState.ElfsIncompetent;
+      }
+    }
+
+    private void HandleReindeer()
+    {
+      Console.WriteLine("All reindeer are back!");
+
+            //Call reindeer from the warming hut
+      atomic
+      {
+        foreach (var reindeer in _rBuffer)
+        {
+          reindeer.CallToSleigh();
+        }
+      }
+            
+      //Setup the sleigh
+      atomic
+      {
+        foreach (var reindeer in _rBuffer)
+        {
+          reindeer.HelpDeliverPresents();
+        }
+      }
+
+      //Deliver presents
+      Console.WriteLine("Santa delivering presents");
+      Thread.Sleep(100);
+
+      //Release reindeer
+      atomic
+      {
+        while (_rBuffer.Count != 0)
+        {
+          var reindeer = _rBuffer.Dequeue();
+          reindeer.ReleaseReindeer();
+        }
+      }
+
+      Console.WriteLine("Reindeer released");
+    }
+
+    private void HandleElfs()
+    {
+      Console.WriteLine("3 elfs at the door!");
+      atomic
+      {
+        foreach (var elf in _eBuffer)
+        {
+          elf.AskQuestion();
+        }
+      }
+
+      //Answer questions
+      Thread.Sleep(100);
+
+      //Back to work incompetent elfs!
+      atomic
+      {
+        for (int i = 0; i < SantaClausProblem.MAX_ELFS; i++)
+        {
+          var elf = _eBuffer.Dequeue();
+          elf.BackToWork();
+        }
+      }
+
+      Console.WriteLine("Elfs helped");
+    }
+  }
+
+  public class Elf
+  {
+    private Random randomGen = new Random(Guid.NewGuid().GetHashCode());
+    public int ID { get; private set; }
+    private Queue<Elf> _buffer;
+    private atomic bool _waitingToAsk = false;
+    private atomic bool _questionAsked = false;
+
+    public Elf(int id, Queue<Elf> buffer)
+    {
+      _buffer = buffer;
+      ID = id;
+    }
+
+    public Task Start()
+    {
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          Thread.Sleep(100 * randomGen.Next(21));
+
+          atomic
+          {
+            if (_buffer.Count == SantaClausProblem.MAX_ELFS)
+            {
+              retry;~\label{line:santa_langstm_elf_retry}~
+            }
+
+            _buffer.Enqueue(this);
+            _waitingToAsk = true;
+          }
+
+          Console.WriteLine("Elf {0} at the door", ID);
+          
+          //Waiting on santa
+          atomic
+          {
+            if (_waitingToAsk)
+            {
+              retry;
+            }
+          }
+
+          //Asking question
+
+          //Done asking
+          atomic
+          {
+            if (!_questionAsked)
+            {
+              retry;
+            }
+
+            _questionAsked = false;
+          }
+        }
+      });
+    }
+
+    public void AskQuestion()
+    {
+      _waitingToAsk = false;
+    }
+
+    public void BackToWork()
+    {
+      _questionAsked = true;
+    }
+  }
+
+  public class Reindeer
+  {
+    private readonly Random randomGen = new Random(Guid.NewGuid().GetHashCode());
+    public int ID { get; private set; }
+
+    private Queue<Reindeer> reindeerBuffer;
+    private atomic bool _workingForSanta = false;
+    private atomic bool _waitingAtSleigh = false;
+    private atomic bool _waitingInHut = false;
+
+    public Reindeer(int id, Queue<Reindeer> buffer)
+    {
+      ID = id;
+      reindeerBuffer = buffer;
+    }
+    
+    public Task Start()
+    {
+      return Task.Run(() =>
+      {
+        while (true)
+        {
+          Thread.Sleep(100 * randomGen.Next(10));
+
+          atomic
+          {
+            reindeerBuffer.Enqueue(this);
+            _waitingInHut = true;
+          }
+
+          Console.WriteLine("Reindeer {0} is back",ID);
+
+                    //Waiting in the warming hut
+          atomic
+          {
+            if (_waitingInHut)
+            {
+              retry;
+            }
+          }
+                    
+          //Wait for santa to be ready
+          atomic
+          {
+            if (_waitingAtSleigh)
+            {
+              retry;
+            }
+          }
+
+          //Delivering presents
+
+          //Wait to be released by santa
+          atomic
+          {
+            if (_workingForSanta)
+            {
+              retry;
+            }
+          } 
+        }
+      });
+    }
+
+        public void CallToSleigh()
+    {
+      atomic
+      {
+        _waitingInHut = false;
+        _waitingAtSleigh = true;
+      }
+    }
+        
+    public void HelpDeliverPresents()
+    {
+      atomic
+      {
+        _waitingAtSleigh = false;
+        _workingForSanta = true;
+      }
+       
+    }
+
+    public void ReleaseReindeer()
+    {
+      _workingForSanta = false;
+    }
+  }
+
+  public enum WakeState
+  {
+    ReindeerBack,
+    ElfsIncompetent
+  }
+
+\end{lstlisting}
+\subsection{Concurrent Queue}
+As with the lock and library-based implementations the \stmname implementation is implemented as a linked list of nodes and uses a dummy node. The head and tail nodes, defined on lines \ref{line:queue_langstm_head} and \ref{line:queue_langstm_tail}, are declared \bscode{atomic} along with the \bscode{Next} property of the \bscode{Node} class defined on \ref{line:queue_langstm_node}. The \bscode{retry} on line \ref{line:queue_langstm_retry} is used to block a thread calling \bscode{Dequeue} on an empty queue.
+
+\begin{lstlisting}[label=lst:impl_queue_lang,
+  caption={\stmname Based Concurrent Queue Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, region, endregion, foreach, lock}]  % Start your code-block
+
+  public class Queue<T>
+  {
+    private atomic Node _head;~\label{line:queue_langstm_head}~
+    private atomic Node _tail;~\label{line:queue_langstm_tail}~
+
+    public Queue()
+    {
+      var node = new Node(default(T));
+      _head = node;
+      _tail = node;
+    }
+
+    public void Enqueue(T value)
+    {
+      atomic
+      {
+        var node = new Node(value);
+        _tail.Next = node;
+        _tail = node;
+      }
+    }
+
+
+    public T Dequeue()
+    {
+      atomic
+      {
+        var node = _head.Next;
+
+        if (node == null)
+        {
+          retry;~\label{line:queue_langstm_retry}~
+        }
+
+        _head = node;
+        return node.Value;
+      }
+    }
+
+    private class Node~\label{line:queue_langstm_node}~
+    {
+      public atomic Node Next { get; set; }
+      public readonly T Value;
+
+      public Node(T value)
+      {
+        Value = value;
+      }
+    }
+  }
+
+\end{lstlisting}
+\subsection{Concurrent Hashmap}
+As with the other concurrent hashmap implementations, the \stmname concurrent hashmap implementation utilizes a linked list of nodes for the collision lists. The \bscode{Node} class is defined on line \ref{line:hashmap_langstm_node_class}. As seen on line \ref{line:hashmap_langstm_node_class_next} its next property is declared with the \bscode{atomic} modifier, allowing the \ac{STM} system to detect changes to the list. Similarly the \bscode{Node} class's \bscode{Value} property is declared with the \bscode{atomic} modifier, as a call to the \bscode{Add} method with a key already present in the hashmap causes the value of the node representing the key/value pair to be updated. The backing array, seen on line \ref{line:hasmmap_langstm_backingarray}, is of type \bscode{Bucket[]} and is declared with the atomic modifier. The \bscode{atomic} modifier allows the \ac{STM} system to track the assignment of a new backing array as a result of resizing the hashmap. The \bscode{Bucket} class is defined on line \ref{line:hashmap_langstm_bucket_class} and has an \bscode{atomic Value} property to which the first node in the buckets linked list is assigned, if such an item exists. Together with the \bscode{atomic Next} property of the \bscode{Node} class, this allows the \ac{STM} system to detect any changes to the collision list. 
+
+\begin{lstlisting}[label=lst:impl_hasmap_lib,
+  caption={\stmname Based Concurrent Hashmap Implementation},
+  language=Java,  
+  showspaces=false,
+  showtabs=false,
+  breaklines=true,
+  showstringspaces=false,
+  breakatwhitespace=true,
+  commentstyle=\color{greencomments},
+  keywordstyle=\color{bluekeywords},
+  stringstyle=\color{redstrings},
+  escapechar=~,
+  morekeywords={atomic, retry, orelse, var, get, set, ref, out, readonly, virtual, override, region, endregion, foreach, lock, bool}]  % Start your code-block
+
+  public class StmHashMap<K,V> : BaseHashMap<K,V>
+  {
+    private atomic Bucket[] _buckets;~\label{line:hasmmap_langstm_backingarray}~
+    private atomic int _threshold;
+    private atomic int _size;
+
+    public StmHashMap() : this(DefaultNrBuckets)
+    {
+
+    }
+
+    public StmHashMap(int nrBuckets)
+    {
+      _buckets = MakeBuckets(nrBuckets);
+      _threshold = CalculateThreshold(nrBuckets);
+    }
+
+    private Bucket[] MakeBuckets(int nrBuckets)
+    {
+      var temp = new Bucket[nrBuckets];
+      for (int i = 0; i < nrBuckets; i++)
+      {
+        temp[i] = new Bucket();
+      }
+      return temp;
+    }
+
+    #region Utility
+
+    private Node CreateNode(K key, V value)
+    {
+      return new Node(key, value);
+    }
+
+    private int GetBucketIndex(K key)
+    {
+      return GetBucketIndex(_buckets.Length, key);
+    }
+
+    private Node FindNode(K key)
+    {
+      return FindNode(key, GetBucketIndex(key));
+    }
+
+    private Node FindNode(K key, int bucketIndex)
+    {
+      return FindNode(key, _buckets[bucketIndex].Value);
+    }
+
+    private Node FindNode(K key, Node node)
+    {
+      while (node != null && !key.Equals(node.Key))
+        node = node.Next;
+      return node;
+    }
+
+    private void InsertInBucket(Bucket bucketVar, Node node)
+    {
+      var curNode = bucketVar.Value;
+      if (curNode != null)
+      {
+        node.Next = curNode;
+      }
+      bucketVar.Value = node;
+    }
+
+    #endregion Utility
+
+    public override bool ContainsKey(K key)
+    {
+      return FindNode(key) != null;
+    }
+
+    public override V Get(K key)
+    {
+      atomic
+      {
+        var node = FindNode(key);
+        if(node == null)
+        {
+          //If node == null key is not present in dictionary
+          throw new KeyNotFoundException("Key not found. Key: " + key);
+        }
+        return node.Value;
+      }
+    }
+
+    public override void Add(K key, V value)
+    {
+      atomic
+      {
+        var bucketIndex = GetBucketIndex(key);
+        //TMVar wrapping the immutable chain list
+        var bucketVar = _buckets[bucketIndex];
+        var node = FindNode(key, bucketVar.Value);
+         
+        if (node != null)
+        {
+          //If node is not null key exist in map. Update the value
+          node.Value = value;
+        }
+        else
+        {
+          //Else insert the node
+          InsertInBucket(bucketVar, CreateNode(key, value));
+          _size++;
+          ResizeIfNeeded();
+        }
+      }
+    }
+
+    public override bool AddIfAbsent(K key, V value)
+    {
+      atomic
+      {
+        var bucketIndex = GetBucketIndex(key);
+        //TMVar wrapping the immutable chain list
+        var bucketVar = _buckets[bucketIndex];
+        var node = FindNode(key, bucketVar.Value);
+
+        if (node == null)
+        {
+          //If node is not found key does not exist so insert
+          InsertInBucket(bucketVar, CreateNode(key, value));
+          _size++;
+          ResizeIfNeeded();
+          return true;
+        }
+
+        return false;
+      }
+    }
+    private void ResizeIfNeeded()
+    {
+      if (_size >= _threshold)
+      {
+        Resize();
+      }
+    }
+
+    private void Resize()
+    {
+      //Construct new backing array
+      var newBucketSize = _buckets.Length * 2;
+      var newBuckets = MakeBuckets(newBucketSize);
+
+      //For each key in the map rehash
+      for (var i = 0; i < _buckets.Length; i++)
+      {
+        var bucket = _buckets[i];
+        var node = bucket.Value;
+        while (node != null)
+        {
+          var bucketIndex = GetBucketIndex(newBucketSize, node.Key);
+          InsertInBucket(newBuckets[bucketIndex], CreateNode(node.Key, node.Value));
+          node = node.Next;
+        }
+      }
+
+      //Calculate new resize threshold and assign the rehashed backing array
+      _threshold = CalculateThreshold(newBucketSize);
+      _buckets = newBuckets;
+    }
+
+    public override bool Remove(K key)
+    {
+      atomic
+      {
+        var bucketIndex = GetBucketIndex(key);
+        //TMVar wrapping the immutable chain list
+        var bucketVar = _buckets[bucketIndex];
+        var firstNode = bucketVar.Value;
+
+        return RemoveNode(key, firstNode, bucketVar);
+      }
+    }
+
+    private bool RemoveNode(K key, Node node, Bucket bucketVar)
+    {
+      if (node == null)
+      {
+        return false;
+      }
+
+      if (node.Key.Equals(key))
+      {
+        _size--;
+        bucketVar.Value = node.Next;
+        return true;
+      }
+
+      while (node.Next != null && !key.Equals(node.Next.Key))
+        node = node.Next;
+
+      //node.Next == null || node.Next.Key == key
+      if (node.Next == null) return false;
+
+      _size--;
+      node.Next = node.Next.Next;
+      return true;
+    }
+
+    public override IEnumerator<KeyValuePair<K, V>> GetEnumerator()
+    {
+      atomic
+      {
+        var list = new List<KeyValuePair<K, V>>(_size);
+        for (var i = 0; i < _buckets.Length; i++)
+        {
+          var bucket = _buckets[i];
+          var node = bucket.Value;
+          while (node != null)
+          {
+            var keyValuePair = new KeyValuePair<K, V>(node.Key, node.Value);
+            list.Add(keyValuePair);
+            node = node.Next;
+          }
+        }
+        return list.GetEnumerator();
+      }
+    }
+
+    public override V this[K key]
+    {
+      get { return Get(key); }
+      set { Add(key, value); }
+    }
+
+    public override int Count
+    {
+      get { return _size; }
+    }
+
+    private class Bucket~\label{line:hashmap_langstm_bucket_class}~
+    {
+      public atomic Node Value { get; set; }
+    }
+
+    private class Node~\label{line:hashmap_langstm_node_class}~
+    {
+      public K Key { get; private set; }
+      public atomic V Value { get; set; }~\label{line:hashmap_langstm_node_class_value}~
+      public atomic Node Next { get; set; }~\label{line:hashmap_langstm_node_class_next}~
+
+      public Node(K key, V value)
+      {
+        Key = key;
+        Value = value;
+      }
+    }
+  }
+
+\end{lstlisting}

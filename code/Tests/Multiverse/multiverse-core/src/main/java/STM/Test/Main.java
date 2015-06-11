@@ -15,6 +15,14 @@ public class Main {
         Account a1 = new Account(1000);
         Account a2 = new Account(500);
         transfer(a1,a2,250);
+        final TxnInteger i = newTxnInteger(1);
+        atomic(new Runnable() {
+            @Override
+            public void run() {
+                if (i.get() == 1)
+                retry();
+            }
+        });
     }
 
     public static void transfer(final Account from, final Account to, final int amount){

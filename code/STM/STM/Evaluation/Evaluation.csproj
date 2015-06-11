@@ -53,6 +53,12 @@
     <Compile Include="Common\IMap.cs" />
     <Compile Include="Common\IStartable.cs" />
     <Compile Include="Common\SCStats.cs" />
+    <Compile Include="Library\Collections\JVSTMHashMapAtomic.cs" />
+    <Compile Include="Library\Collections\JVSTMHashMapInternalList.cs" />
+    <Compile Include="Library\Collections\Queue.cs" />
+    <Compile Include="Library\JVSTMHashMap.cs" />
+    <Compile Include="Library\STMHashMapInternalList.cs" />
+    <Compile Include="Library\STMHashmapLinkedList.cs" />
     <Compile Include="Library\StmHashMapRetry.cs" />
     <Compile Include="Library\DiningPhilosophers.cs" />
     <Compile Include="Library\SantaClausImpl\Elf.cs" />
@@ -60,6 +66,8 @@
     <Compile Include="Library\SantaClausImpl\Santa.cs" />
     <Compile Include="Library\SantaClausProblem.cs" />
     <Compile Include="Library\StmHashMap.cs" />
+    <Compile Include="Common\IQueue.cs" />
+    <Compile Include="Locking\Collections\Queue.cs" />
     <Compile Include="Locking\LockingDiningPhilosophers.cs" />
     <Compile Include="Locking\LockingHashMap.cs" />
     <Compile Include="Locking\NaiveLockingHashmap.cs" />

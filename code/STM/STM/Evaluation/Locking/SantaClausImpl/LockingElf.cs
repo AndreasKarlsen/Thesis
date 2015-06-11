@@ -10,15 +10,16 @@ namespace Evaluation.Locking.SantaClausImpl
 {
     public class LockingElf : IStartable
     {
-        private Random _randomGen = new Random(Guid.NewGuid().GetHashCode());
+        private readonly Random _randomGen = new Random(Guid.NewGuid().GetHashCode());
         public int ID { get; private set; }
-        private Queue<LockingElf> _buffer;
-        private Semaphore _maxElfs;
-        private Semaphore _santaHandle;
-        private Semaphore _waitingToAsk;
-        private Semaphore _doneAsking;
+        private readonly Queue<LockingElf> _buffer;
+        private readonly SemaphoreSlim _maxElfs;
+        private readonly SemaphoreSlim _santaHandle;
+        private readonly SemaphoreSlim _waitingToAsk;
+        private readonly SemaphoreSlim _doneAsking;
 
-        public LockingElf(int id, Queue<LockingElf> buffer, Semaphore santaHandle, Semaphore maxElfs, Semaphore waitingToAsk, Semaphore doneWaiting)
+        public LockingElf(int id, Queue<LockingElf> buffer, SemaphoreSlim santaHandle, SemaphoreSlim maxElfs,
+            SemaphoreSlim waitingToAsk, SemaphoreSlim doneWaiting)
         {
             _buffer = buffer;
             ID = id;
@@ -34,10 +35,10 @@ namespace Evaluation.Locking.SantaClausImpl
             {
                 while (true)
                 {
-                    Thread.Sleep(100 * _randomGen.Next(21));
+                    Thread.Sleep(100*_randomGen.Next(21));
 
                     //Only a fixed amount of elfs can go to santa at a time
-                    _maxElfs.WaitOne();
+                    _maxElfs.Wait();
 
                     lock (_buffer)
                     {
@@ -51,10 +52,10 @@ namespace Evaluation.Locking.SantaClausImpl
                     Console.WriteLine("Elf {0} at the door", ID);
 
                     //Wait for santa to be ready
-                    _waitingToAsk.WaitOne();
+                    _waitingToAsk.Wait();
 
                     //Asking questions
-                    _doneAsking.WaitOne();
+                    _doneAsking.Wait();
 
                     //Allow a new elf to visit santa
                     _maxElfs.Release();

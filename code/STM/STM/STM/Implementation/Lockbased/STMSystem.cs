@@ -7,6 +7,7 @@ using STM.Interfaces;
 using System.Threading;
 using STM.Implementation.Exceptions;
 using System.Diagnostics;
+using STM.Implementation.Common;
 
 namespace STM.Implementation.Lockbased
 {
@@ -82,7 +83,7 @@ namespace STM.Implementation.Lockbased
 
                 //Start new or nested transaction
                 var prevTransaction = Transaction.LocalTransaction;
-                var me = prevTransaction.Status == Transaction.TransactionStatus.Active ? 
+                var me = prevTransaction.Status == TransactionStatus.Active ? 
                     Transaction.StartNestedTransaction(prevTransaction) : 
                     Transaction.StartTransaction();
 
@@ -144,7 +145,7 @@ namespace STM.Implementation.Lockbased
         public static void Retry()
         {
             var transaction = Transaction.LocalTransaction;
-            if (transaction.Status == Transaction.TransactionStatus.Committed)
+            if (transaction.Status == TransactionStatus.Committed)
                 return;
 
             throw new STMRetryException();
@@ -196,7 +197,7 @@ namespace STM.Implementation.Lockbased
             var i = 0;
             foreach (var item in readSet)
             {
-                waiton[i] = item.RegisterWaitHandle();
+                waiton[i] = item.Key.RegisterWaitHandle();
                 i++;
             }
 
