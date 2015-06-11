@@ -10,9 +10,15 @@ namespace Evaluation.Library
 {
     public class DiningPhilosophers
     {
-        private const int MAX_EAT_COUNT = 1000;
+        private readonly int MAX_EAT_COUNT;
 
-        public static void Start()
+
+        public DiningPhilosophers(int maxEats)
+        {
+            MAX_EAT_COUNT = maxEats;
+        }
+
+        public void Start()
         {
             var eatCounter = new TMInt(0);
             var fork1 = new TMVar<bool>(true);
@@ -27,12 +33,16 @@ namespace Evaluation.Library
             var t4 = StartPhilosopher(eatCounter, fork4, fork5);
             var t5 = StartPhilosopher(eatCounter, fork5, fork1);
 
-            Task.WaitAll(t1, t2, t3, t4, t5);
+            t1.Join();
+            t2.Join();
+            t3.Join();
+            t4.Join();
+            t5.Join();
         }
 
-        private static Task StartPhilosopher(TMInt eatCounter, TMVar<bool> left, TMVar<bool> right)
+        private Thread StartPhilosopher(TMInt eatCounter, TMVar<bool> left, TMVar<bool> right)
         {
-            var t1 = new Task(() =>
+            var t1 = new Thread(() =>
             {
                 while (eatCounter < MAX_EAT_COUNT)
                 {
