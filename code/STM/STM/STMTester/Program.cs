@@ -38,16 +38,60 @@ namespace STMTester
             //OrElseNestingTest3();
             //var dining = new DiningPhilosopher();
             //dining.Start();
-            TestMSQueue();
+            //TestMSQueue();
 
-            JVSpeedTest();
-            JVSpeedTest();
-            var dinning = new JVDining();
-            dinning.Start();
+            //JVSpeedTest();
+            //JVSpeedTest();
+            
+            //var dinning = new JVDining();
+            //dinning.Start();
 
             //JVTest();
             //JVConcurrentTest();
+            for (int j = 0; j < 100; j++)
+            {
+                var result = new VBox<int>(0);
+
+                var t1 = new Thread(() =>
+                {
+                    for (int i = 0; i < 1000; i++)
+                    {
+                        JVSTMSystem.Atomic((transaction) =>
+                        {
+                            result.Put(transaction, result.Read(transaction) + 1);
+                        });
+                    }
+
+
+                });
+
+                var t2 = new Thread(() =>
+                {
+                    for (int i = 0; i < 1000; i++)
+                    {
+                        JVSTMSystem.Atomic((transaction) =>
+                        {
+                            result.Put(transaction, result.Read(transaction) + 1);
+                        });
+                    }
+
+                });
+
+                t1.Start();
+                t2.Start();
+
+                t1.Join();
+                t2.Join();
+
+                var res = JVSTMSystem.Atomic((transaction) => result.Read(transaction));
+                if (res != 2000)
+                {
+                    Console.WriteLine("Error: "+res);
+                }
+            }
             
+
+            Console.WriteLine("Done");
             Console.ReadKey();
         }
 

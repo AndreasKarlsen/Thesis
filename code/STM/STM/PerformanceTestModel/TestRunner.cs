@@ -11,7 +11,7 @@ namespace PerformanceTestModel
     {
         private const int NR_ITERATIONS = 7;
 
-        public static void RunTest(string testName, Testable test)
+        public static void RunTest(string testName, Testable test, ResultWriter writer)
         {
             var times = new long[NR_ITERATIONS];
             for (int n = 0; n < NR_ITERATIONS; n++)
@@ -53,7 +53,7 @@ namespace PerformanceTestModel
             var t1 = Math.Pow(4, 2);
             var mean = (double) finalTimes.Sum() / (double)finalTimes.Count;
             var stdv = Math.Sqrt(finalTimes.Sum(t => (t - mean)* (t-mean)) / (finalTimes.Count-1));
-            ResultWriter.WriteResult(mean, stdv, testName);
+            writer.WriteResult(mean, stdv, testName);
         }
     }
 

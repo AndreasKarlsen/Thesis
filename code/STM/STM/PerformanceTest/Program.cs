@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Evaluation.Library;
 using PerformanceTestModel;
+using Evaluation.Locking;
 
 namespace PerformanceTest
 {
@@ -12,8 +13,19 @@ namespace PerformanceTest
     {
         static void Main(string[] args)
         {
-            var dining = new DiningPhilosophers(10);
-            TestRunner.RunTest("STM dining", dining);
+            using (var resultWriter = new ResultWriter())
+            {
+                const int eatCount = 1000;
+                
+                var dining = new DiningPhilosophers(eatCount);
+                TestRunner.RunTest("STM dining", dining, resultWriter);
+
+                var lockDining = new LockingDiningPhilosophers(eatCount);
+                TestRunner.RunTest("Locking dining", lockDining, resultWriter);
+                
+                var jvDining = new JVDining(eatCount);
+                TestRunner.RunTest("JV dining", jvDining, resultWriter);
+            }
 
             Console.WriteLine("Done");
             Console.ReadKey();

@@ -7,18 +7,22 @@ using System.IO;
 
 namespace PerformanceTestModel
 {
-    public class ResultWriter
+    public class ResultWriter : IDisposable
     {
+        private readonly StreamWriter _sw = new StreamWriter("result.txt");
 
-        public static void WriteResult(double mean, double stdv, string testName)
+
+        public void WriteResult(double mean, double stdv, string testName)
         {
-            using (var sw = new StreamWriter("result.txt"))
-            {
-                sw.WriteLine(testName);
-                sw.WriteLine("Mean: " + mean);
-                sw.WriteLine("Stdv: " + stdv);
-                sw.WriteLine();
-            }
+            _sw.WriteLine(testName);
+            _sw.WriteLine("Mean: " + mean);
+            _sw.WriteLine("Stdv: " + stdv);
+            _sw.WriteLine();
+        }
+
+        public void Dispose()
+        {
+            _sw.Dispose();
         }
     }
 }

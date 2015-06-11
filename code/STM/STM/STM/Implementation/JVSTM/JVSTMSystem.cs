@@ -102,7 +102,7 @@ namespace STM.Implementation.JVSTM
                 catch (STMRetryException)
                 {
                     index = HandleRetry(stmActions, transaction, index, overAllReadSet);
-                }
+                }/*
                 catch (Exception ex) //Catch non stm related exceptions which occurs in transactions
                 {
                     //Throw exception of transaction can commit
@@ -111,7 +111,7 @@ namespace STM.Implementation.JVSTM
                     {
                         throw;
                     }
-                }
+                }*/
 
                 nrAttempts++;
                 //transaction.Abort();
@@ -191,6 +191,7 @@ namespace STM.Implementation.JVSTM
 #if DEBUG
             Console.WriteLine("AWOKEN: " + transaction.Number);
 #endif
+            transaction.Abort();
         }
 
 
