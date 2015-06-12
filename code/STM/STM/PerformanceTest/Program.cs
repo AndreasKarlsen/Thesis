@@ -43,7 +43,7 @@ namespace PerformanceTest
                 var lockingHashmap = new HashmapTester(
                     new LockingHashMap<int, int>(), nrOfThreads, updatePercent, amountOfMappings,
                     amountOfOperations);
-                TestRunner.RunTest("Locking hasmap", lockingHashmap, resultWriter);
+                TestRunner.RunTest("Locking hashmap", lockingHashmap, resultWriter);
             }
             
             Console.WriteLine("Done");

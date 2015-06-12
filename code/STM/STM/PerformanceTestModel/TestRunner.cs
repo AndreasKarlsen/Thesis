@@ -23,7 +23,6 @@ namespace PerformanceTestModel
                 test.Perform();
                 stopwatch.Stop();
                 times[n] = stopwatch.ElapsedMilliseconds;
-                Console.WriteLine("{0} iteration {1} end", testName, n);
             }
             Console.WriteLine("{0} end", testName);
 
