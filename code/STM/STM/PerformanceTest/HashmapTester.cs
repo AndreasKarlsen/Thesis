@@ -36,10 +36,12 @@ namespace PerformanceTest
             {
                 _threads.Add(new Thread(() =>
                 {
+                    var random = new Random(Guid.NewGuid().GetHashCode());
+
                     for (var j = 0; j < _amountOfOperations; j++)
                     {
-                        var readOrUpdate = _random.Next(0, 100);
-                        var keyToOperateOn = _random.Next(_amountOfMappings);
+                        var readOrUpdate = random.Next(0, 100);
+                        var keyToOperateOn = random.Next(_amountOfMappings);
                         if (readOrUpdate < _updatePercent)
                         {
                             _hashMap.Add(keyToOperateOn, readOrUpdate);
