@@ -18,7 +18,7 @@ namespace STMTester
     class Program
     {
         private const int MAX_EAT_COUNT = 1000;
-        
+
 
         static void Main(string[] args)
         {
@@ -42,7 +42,7 @@ namespace STMTester
 
             //JVSpeedTest();
             //JVSpeedTest();
-            
+
             //var dinning = new JVDining();
             //dinning.Start();
 
@@ -86,55 +86,12 @@ namespace STMTester
                 var res = JVSTMSystem.Atomic((transaction) => result.Read(transaction));
                 if (res != 2000)
                 {
-                    Console.WriteLine("Error: "+res);
+                    Console.WriteLine("Error: " + res);
                 }
             }
-            
 
             Console.WriteLine("Done");
             Console.ReadKey();
-        }
-
-        public static void TestMSQueue()
-        {
-            var queue = new STM.Collections.MSQueue<int>();;
-
-            var t1 = new Thread(() =>
-            {
-                for (var i = 0; i < 1000; i++)
-                {
-                    queue.Enqueue(i);
-                }
-
-                for (var i = 0; i < 1000; i++)
-                {
-                    int x;
-                    var res = queue.Dequeue(out x);
-                    Debug.Assert(res);
-                }
-            });
-
-
-            var t2 = new Thread(() =>
-            {
-                for (var i = 0; i < 1000; i++)
-                {
-                    queue.Enqueue(i);
-                }
-
-                for (var i = 0; i < 1000; i++)
-                {
-                    int x;
-                    var res = queue.Dequeue(out x);
-                    Debug.Assert(res);
-                }
-            });
-
-            t1.Start();
-            t2.Start();
-
-            t1.Join();
-            t2.Join();
         }
 
         private static void JVSpeedTest()
@@ -198,8 +155,6 @@ namespace STMTester
             sw.Stop();
 
             Console.WriteLine("TL2 time: " + sw.ElapsedMilliseconds);
-            
-            
         }
 
 

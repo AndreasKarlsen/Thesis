@@ -53,6 +53,7 @@
     <Compile Include="Common\IMap.cs" />
     <Compile Include="Common\IStartable.cs" />
     <Compile Include="Common\ISTMQueue.cs" />
+    <Compile Include="Common\MSQueue.cs" />
     <Compile Include="Common\SCStats.cs" />
     <Compile Include="Library\Collections\JVSTMHashMapAtomic.cs" />
     <Compile Include="Library\Collections\JVSTMHashMapInternalList.cs" />

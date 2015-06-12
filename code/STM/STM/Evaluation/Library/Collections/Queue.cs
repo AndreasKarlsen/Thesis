@@ -8,7 +8,7 @@ using Evaluation.Common;
 
 namespace Evaluation.Library.Collections
 {
-    public class Queue<T>
+    public class Queue<T> : ISTMQueue<T>
     {
 
         private readonly TMVar<Node> _head = new TMVar<Node>(null);

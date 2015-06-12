@@ -2,6 +2,9 @@
 using Evaluation.Library;
 using Evaluation.Locking;
 using PerformanceTestModel;
+using Evaluation.Library.Collections;
+using Evaluation.Library.Collections;
+using Evaluation.Common;
 
 namespace PerformanceTest
 {
@@ -24,7 +27,7 @@ namespace PerformanceTest
                 var jvDining = new JVDining(eatCount);
                 TestRunner.RunTest("JV dining", jvDining, resultWriter);
                 */
-
+                /*
                 const int nrOfThreads = 2;
                 const int updatePercent = 1;
                 const int amountOfMappings = 4096;
@@ -44,6 +47,28 @@ namespace PerformanceTest
                     new LockingHashMap<int, int>(), nrOfThreads, updatePercent, amountOfMappings,
                     amountOfOperations);
                 TestRunner.RunTest("Locking hashmap", lockingHashmap, resultWriter);
+                */
+
+                const int nrConsumers = 2;
+                const int nrProducers = 2;
+                const int nrItems = 100000;
+
+                var lockQueue = new IQueueTester(
+                    new Evaluation.Locking.Collections.Queue<int>(), nrItems,nrConsumers, 
+                    nrProducers);
+                TestRunner.RunTest("Locking queue", lockQueue, resultWriter);
+
+                var lockFreeQueue = new IQueueTester(
+                    new MSQueue<int>(), nrItems, nrConsumers,
+                    nrProducers);
+                TestRunner.RunTest("Lock-free queue", lockQueue, resultWriter);
+
+                var stmQueue = new STMQueueTester(
+                    new Evaluation.Library.Collections.Queue<int>(), nrItems, nrConsumers,
+                    nrProducers);
+                TestRunner.RunTest("STM queue", stmQueue, resultWriter);
+
+                
             }
             
             Console.WriteLine("Done");
