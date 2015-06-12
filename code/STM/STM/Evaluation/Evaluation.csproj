@@ -57,6 +57,8 @@
     <Compile Include="Common\SCStats.cs" />
     <Compile Include="Library\Collections\JVSTMHashMapAtomic.cs" />
     <Compile Include="Library\Collections\JVSTMHashMapInternalList.cs" />
+    <Compile Include="Library\Collections\JVSTMHashmapNonAtomic.cs" />
+    <Compile Include="Library\Collections\JVSTMQueue.cs" />
     <Compile Include="Library\Collections\Queue.cs" />
     <Compile Include="Library\JVDining.cs" />
     <Compile Include="Library\JVSTMHashMap.cs" />

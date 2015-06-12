@@ -23,9 +23,9 @@ namespace STM.Implementation.JVSTM
             set { Local.Value = value; }
         }
 
-        private static volatile int _lastCommitted = 0;
         private static readonly object CommitLock = new object();
 
+        internal static int _lastCommitted = 0;
         public int Number { get; private set; }
         internal JVTransaction Parent { get; private set; }
         internal ReadMap ReadMap { get; private set; }
@@ -49,6 +49,12 @@ namespace STM.Implementation.JVSTM
 
         private JVTransaction()
             : this(TransactionStatus.Active, ActiveTxnRecord.StartTransaction(), null, new ReadMap(), new WriteMap())
+        {
+
+        }
+
+        private JVTransaction(int number)
+            : this(TransactionStatus.Active, number, null, new ReadMap(), new WriteMap())
         {
 
         }
@@ -83,6 +89,7 @@ namespace STM.Implementation.JVSTM
         public static JVTransaction Start()
         {
             return new JVTransaction(ActiveTxnRecord.StartTransaction());
+            //return new JVTransaction(_lastCommitted);
         }
 
         public static JVTransaction StartNested(JVTransaction parent)
@@ -94,11 +101,10 @@ namespace STM.Implementation.JVSTM
         {
             return CommitLockFree();
 
-
             if (WriteMap.Count == 0)
             {
                 Status = TransactionStatus.Committed;
-                _txnRecord.FinishTransaction();
+                //_txnRecord.FinishTransaction();
                 return true;
             }
 
@@ -106,7 +112,7 @@ namespace STM.Implementation.JVSTM
             ActiveTxnRecord commitRecord = null;
             lock (CommitLock)
             {
-                var newNumber = _lastCommitted + 1;
+                var newNumber = ActiveTxnRecord.First.TxNumber + 1;
 
                 var valid = ReadMap.Validate();
                 if (!valid)
@@ -134,12 +140,11 @@ namespace STM.Implementation.JVSTM
                         ActiveTxnRecord.InsertNewRecord(commitRecord);
                     }
 
-                    _lastCommitted = newNumber;
                     Status = TransactionStatus.Committed;
                     result = true;
                 }
             }
-            
+            /*
             if (result && !IsNested)
             {
                 _txnRecord.FinishTransaction();
@@ -148,7 +153,7 @@ namespace STM.Implementation.JVSTM
                 {
                     Interlocked.Decrement(ref commitRecord.Running);
                 }
-            }
+            }*/
 
             return result;;
         }

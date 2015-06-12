@@ -24,8 +24,6 @@ namespace STM.Implementation.JVSTM
             _body = new VBoxBody<T>(value, 0);
         }
 
-
-
         public T Read(JVTransaction transaction)
         {
             if (transaction.WriteMap.ContainsKey(this))
