@@ -92,7 +92,7 @@ namespace STM.Implementation.JVSTM
 
         public bool Commit()
         {
-            return CommitLockFree();
+            //return CommitLockFree();
 
 
             if (WriteMap.Count == 0)
@@ -139,7 +139,7 @@ namespace STM.Implementation.JVSTM
                     result = true;
                 }
             }
-            /*
+            
             if (result && !IsNested)
             {
                 _txnRecord.FinishTransaction();
@@ -148,7 +148,7 @@ namespace STM.Implementation.JVSTM
                 {
                     Interlocked.Decrement(ref commitRecord.Running);
                 }
-            }*/
+            }
 
             return result;;
         }
