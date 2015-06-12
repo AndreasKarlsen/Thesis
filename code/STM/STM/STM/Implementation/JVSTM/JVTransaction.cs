@@ -92,7 +92,7 @@ namespace STM.Implementation.JVSTM
 
         public bool Commit()
         {
-            //return CommitLockFree();
+            return CommitLockFree();
 
 
             if (WriteMap.Count == 0)
@@ -158,7 +158,7 @@ namespace STM.Implementation.JVSTM
             if (WriteMap.Count == 0)
             {
                 Status = TransactionStatus.Committed;
-                _txnRecord.FinishTransaction();
+                //_txnRecord.FinishTransaction();
                 return true;
             }
 

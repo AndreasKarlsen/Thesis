@@ -28,7 +28,6 @@ namespace STM.Implementation.JVSTM
 
         public T Read(JVTransaction transaction)
         {
-
             if (transaction.WriteMap.ContainsKey(this))
             {
                 return (T) transaction.WriteMap[this];
