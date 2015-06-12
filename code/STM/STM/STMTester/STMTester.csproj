@@ -42,6 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DiningPhilisophers.cs" />
+    <Compile Include="InstrumentedDictionary.cs" />
     <Compile Include="JVDining.cs" />
     <Compile Include="LibraryExamples\TransactionExamples.cs" />
     <Compile Include="Program.cs" />
@@ -53,6 +54,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Evaluation\Evaluation.csproj">
+      <Project>{5A821C27-792A-44CF-B7CD-A6647BB65CC0}</Project>
+      <Name>Evaluation</Name>
+    </ProjectReference>
     <ProjectReference Include="..\STM\STM.csproj">
       <Project>{7f2c2267-8643-451a-b8c1-8552be152475}</Project>
       <Name>STM</Name>

@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using Evaluation.Library;
 using Evaluation.Locking;
 using PerformanceTestModel;
 using Evaluation.Library.Collections;
 using Evaluation.Library.Collections;
 using Evaluation.Common;
+using STMTester;
 
 namespace PerformanceTest
 {
@@ -28,8 +29,8 @@ namespace PerformanceTest
                 TestRunner.RunTest("JV dining", jvDining, resultWriter);
                 */
                 /*
-                const int nrOfThreads = 2;
-                const int updatePercent = 1;
+                const int nrOfThreads = 4;
+                const int updatePercent = 8;
                 const int amountOfMappings = 4096;
                 const int amountOfOperations = 100000;
 
@@ -69,6 +70,11 @@ namespace PerformanceTest
                 TestRunner.RunTest("STM queue", stmQueue, resultWriter);
 
                 
+
+                var lockingDictionary = new HashmapTester(
+                    new InstrumentedDictionary<int, int>(), nrOfThreads, updatePercent, amountOfMappings,
+                    amountOfOperations);
+                TestRunner.RunTest("Locking dictionary", lockingDictionary, resultWriter);
             }
             
             Console.WriteLine("Done");
