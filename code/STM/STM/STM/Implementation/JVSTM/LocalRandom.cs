@@ -9,7 +9,7 @@ namespace STM.Implementation.JVSTM
 {
     public class LocalRandom
     {
-        private static readonly ThreadLocal<Random> Local = new ThreadLocal<Random>(() => new Random((int)DateTime.Now.Ticks));
+        private static readonly ThreadLocal<Random> Local = new ThreadLocal<Random>(() => new Random(Guid.NewGuid().GetHashCode()));
 
         internal static Random Random
         {

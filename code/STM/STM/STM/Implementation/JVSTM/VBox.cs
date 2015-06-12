@@ -11,7 +11,7 @@ namespace STM.Implementation.JVSTM
 {
     public class VBox<T> : BaseVBox
     {
-        private volatile VBoxBody<T> _body;
+        private VBoxBody<T> _body;
         private ImmutableList<IRetryLatch> _listeners = ImmutableList<IRetryLatch>.Empty; 
 
         public VBox() : this(default(T))

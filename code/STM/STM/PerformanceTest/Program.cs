@@ -29,16 +29,17 @@ namespace PerformanceTest
                 TestRunner.RunTest("JV dining", jvDining, resultWriter);
                 */
                 
-                const int nrOfThreads = 4;
-                const int updatePercent = 8;
+                const int nrOfThreads = 16;
+                const int updatePercent = 4;
                 const int amountOfMappings = 4096;
-                const int amountOfOperations = 100000;
-                /*
+                const int amountOfOperations = 10000;
+                
+                
                 var hashMapInternalList = new HashmapTester(
                     new STMHashMapInternalList<int, int>(), nrOfThreads, updatePercent, amountOfMappings,
                     amountOfOperations);
                 TestRunner.RunTest("STM hashmap", hashMapInternalList, resultWriter);
-                */
+                
                 
                 var jvstmHashMap = new HashmapTester(
                     new JVSTMHashMapInternalList<int, int>(), nrOfThreads, updatePercent, amountOfMappings,

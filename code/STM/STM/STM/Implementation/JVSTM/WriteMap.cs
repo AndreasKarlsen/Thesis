@@ -5,13 +5,15 @@ using System.Text;
 using System.Threading.Tasks;
 using STM.Implementation.Exceptions;
 using STM.Implementation.Lockbased;
+using Spring.Threading.AtomicTypes;
 
 namespace STM.Implementation.JVSTM
 {
-    public class WriteMap : HashMap<BaseVBox, object>
+    public class WriteMap : Dictionary<BaseVBox,object>// HashMap<BaseVBox, object>
     {
-        protected AtomicBool[] _bucketsDone;
+        protected AtomicBoolean[] _bucketsDone;
         protected LinkedList<BaseVBoxBody>[] _commitedBodies;
+        protected List<KeyValuePair<BaseVBox, object>>[] _buckets;
 
         public WriteMap()
         {
@@ -46,16 +48,39 @@ namespace STM.Implementation.JVSTM
 
             return true;
         }
-
+        
         public void PrepareCommit()
         {
-            _bucketsDone = new AtomicBool[_buckets.Length];
+            if (Count < 5)
+            {
+                _buckets = new List<KeyValuePair<BaseVBox,object>>[1];
+                var list = new List<KeyValuePair<BaseVBox, object>>();
+                foreach (var item in this)
+	            {
+		            list.Add(item);
+	            }
+                _buckets[0] = list;
+            }else
+	        {
+                _buckets = new List<KeyValuePair<BaseVBox,object>>[5];
+                for (int i = 0; i < 5; i++)
+			    {
+			        _buckets[i] = new List<KeyValuePair<BaseVBox,object>>();
+			    }
+                int j = 0;
+                foreach (var item in this)
+	            {
+		            _buckets[j % 5].Add(item);
+                    j++;
+	            }
+                _commitedBodies = new LinkedList<BaseVBoxBody>[5];
+	        }
 
+            _bucketsDone = new AtomicBoolean[_buckets.Length];
             for (int i = 0; i < _bucketsDone.Length; i++)
             {
-                _bucketsDone[i] = new AtomicBool();
+                _bucketsDone[i] = new AtomicBoolean();
             }
-
             _commitedBodies = new LinkedList<BaseVBoxBody>[_buckets.Length];
         }
 
@@ -77,12 +102,19 @@ namespace STM.Implementation.JVSTM
         public LinkedList<BaseVBoxBody> WriteBackBucket(int bucket, int newTxNumber) {
             var newBodies = new LinkedList<BaseVBoxBody>();
             var node = _buckets[bucket];
+
+            foreach (var item in node)
+            {
+                var body = item.Key.Commit(item.Value, newTxNumber);
+                newBodies.AddFirst(body);
+            }
+            /*
             while (node != null)
 	        {
                 var body = node.Key.Commit(node.Value, newTxNumber);
                 newBodies.AddFirst(body);
                 node = node.Next;
-	        }
+	        }*/
 
             return newBodies;
         }

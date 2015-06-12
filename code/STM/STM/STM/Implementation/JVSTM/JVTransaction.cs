@@ -133,10 +133,12 @@ namespace STM.Implementation.JVSTM
                         foreach (var kvpair in WriteMap)
                         {
                             bodies[i] = kvpair.Key.Install(kvpair.Value, newNumber);
+                            //kvpair.Key.Install(kvpair.Value, newNumber);
                             i++;
                         }
 
                         commitRecord = new ActiveTxnRecord(newNumber, bodies);
+                        //commitRecord = new ActiveTxnRecord(newNumber);
                         ActiveTxnRecord.InsertNewRecord(commitRecord);
                     }
 
@@ -236,8 +238,9 @@ namespace STM.Implementation.JVSTM
 
         private void EnsureCommitStatus()
         {
+            
             ActiveTxnRecord recToCommit = ActiveTxnRecord.First.Next;
-            while (recToCommit != null && recToCommit.TxNumber <=  _commitTxnRecord.TxNumber)
+            while (recToCommit != null && recToCommit.TxNumber <= _commitTxnRecord.TxNumber)
             {
                 if (!recToCommit.IsCommited)
                 {
@@ -247,8 +250,18 @@ namespace STM.Implementation.JVSTM
                 }
                 recToCommit = recToCommit.Next;
             }
-        }
+            /*
+            while (ActiveTxnRecord.First.Next != _commitTxnRecord)
+            {
+                
+            }
 
+            foreach (var kvpair in WriteMap)
+            {
+                kvpair.Key.Install(kvpair.Value, _commitTxnRecord.TxNumber);
+            }
+            ActiveTxnRecord.FinishCommit(_commitTxnRecord);*/
+        }
 
         public void Abort()
         {
