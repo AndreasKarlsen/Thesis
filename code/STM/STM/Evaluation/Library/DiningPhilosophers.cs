@@ -9,7 +9,7 @@ using PerformanceTestModel;
 
 namespace Evaluation.Library
 {
-    public class DiningPhilosophers : Testable
+    public class DiningPhilosophers : ITestable
     {
         private readonly int MAX_EAT_COUNT;
         private Thread t1;
@@ -74,7 +74,7 @@ namespace Evaluation.Library
         }
 
         
-        public override void Setup()
+        public void Setup()
         {
  	        var eatCounter = new TMInt(0);
             var fork1 = new TMVar<bool>(true);
@@ -91,7 +91,7 @@ namespace Evaluation.Library
         }
 
     
-        public override double Perform()
+        public double Perform()
         {
             Start();
  	        return 0;

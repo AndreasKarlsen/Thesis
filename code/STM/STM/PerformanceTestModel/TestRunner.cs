@@ -11,17 +11,21 @@ namespace PerformanceTestModel
     {
         private const int NR_ITERATIONS = 7;
 
-        public static void RunTest(string testName, Testable test, ResultWriter writer)
+        public static void RunTest(string testName, ITestable test, ResultWriter writer)
         {
+            Console.WriteLine("{0} start", testName);
             var times = new long[NR_ITERATIONS];
             for (int n = 0; n < NR_ITERATIONS; n++)
             {
                 test.Setup();
+                Console.WriteLine("{0} iteration {1} start", testName, n);
                 var stopwatch = Stopwatch.StartNew();
                 test.Perform();
                 stopwatch.Stop();
                 times[n] = stopwatch.ElapsedMilliseconds;
+                Console.WriteLine("{0} iteration {1} end", testName, n);
             }
+            Console.WriteLine("{0} end", testName);
 
             long low = long.MaxValue, high = long.MinValue;
             int lowIndex = 0, highIndex = 0;
@@ -57,9 +61,9 @@ namespace PerformanceTestModel
         }
     }
 
-    public abstract class Testable
+    public interface ITestable
     {
-        public virtual void Setup() { }
-        public abstract double Perform();
+        void Setup();
+        double Perform();
     }
 }

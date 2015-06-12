@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using STM.Implementation.Lockbased;
 using Evaluation.Common;
@@ -14,6 +15,7 @@ namespace Evaluation.Library
         private readonly TMVar<TMVar<Node>[]> _buckets = new TMVar<TMVar<Node>[]>(); 
         private readonly TMInt _threshold = new TMInt();
         private TMInt _size = new TMInt();
+        private List<Thread> _threads; 
 
         public STMHashMapInternalList() : this(DefaultNrBuckets)
         {
@@ -24,6 +26,7 @@ namespace Evaluation.Library
         {
             _buckets.Value = MakeBuckets(nrBuckets);
             _threshold.Value = CalculateThreshold(nrBuckets);
+            _threads = new List<Thread>();
         }
 
         /// <summary>
@@ -238,7 +241,6 @@ namespace Evaluation.Library
                 return list.GetEnumerator();
             }); 
         }
-
 
         public override V this[K key]
         {

@@ -9,7 +9,7 @@ using PerformanceTestModel;
 
 namespace Evaluation.Library
 {
-    public class JVDining : Testable
+    public class JVDining : ITestable
     {
         private readonly int MAX_EAT_COUNT;
         private Thread t1;
@@ -100,7 +100,7 @@ namespace Evaluation.Library
             }
         }
 
-        public override void Setup()
+        public void Setup()
         {
             var eatCounter = new VBox<int>(0);
             var fork1 = new Fork();
@@ -116,7 +116,7 @@ namespace Evaluation.Library
             t5 = CreatePhilosopher(eatCounter, fork5, fork1);
         }
 
-        public override double Perform()
+        public double Perform()
         {
             Start();
             return 0;

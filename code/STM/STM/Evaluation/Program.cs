@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Evaluation.Common;
 using Evaluation.Library;
 using Evaluation.Locking;
 using System.IO;
-using System.Diagnostics;
 using Evaluation.Library.Collections;
 
 namespace Evaluation

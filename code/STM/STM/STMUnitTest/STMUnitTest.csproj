@@ -74,6 +74,10 @@
       <Project>{5a821c27-792a-44cf-b7cd-a6647bb65cc0}</Project>
       <Name>Evaluation</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PerformanceTestModel\PerformanceTestModel.csproj">
+      <Project>{ADA7F998-EEA6-41F6-BF88-F013597C7FF8}</Project>
+      <Name>PerformanceTestModel</Name>
+    </ProjectReference>
     <ProjectReference Include="..\STM\STM.csproj">
       <Project>{7f2c2267-8643-451a-b8c1-8552be152475}</Project>
       <Name>STM</Name>

@@ -8,7 +8,7 @@ using PerformanceTestModel;
 
 namespace Evaluation.Locking
 {
-    public class LockingDiningPhilosophers : Testable
+    public class LockingDiningPhilosophers : ITestable
     {
         private readonly int MAX_EAT_COUNT;
         private Thread t1;
@@ -110,7 +110,7 @@ namespace Evaluation.Locking
 
         }
 
-        public override void Setup()
+        public void Setup()
         {
             var eatCounter = new LockCounter();
             var fork1 = new object();
@@ -126,7 +126,7 @@ namespace Evaluation.Locking
             t5 = CreatePhilosopher(eatCounter, fork5, fork1);
         }
 
-        public override double Perform()
+        public double Perform()
         {
             Start();
             return 0;
