@@ -25,25 +25,25 @@ namespace PerformanceTest
                 TestRunner.RunTest("JV dining", jvDining, resultWriter);
                 */
 
-                const int nrOfThreads = 4;
+                const int nrOfThreads = 2;
                 const int updatePercent = 1;
                 const int amountOfMappings = 4096;
-                const int amountOfOperations = 1000000;
+                const int amountOfOperations = 100000;
 
                 var hashMapInternalList = new HashmapTester(
                     new STMHashMapInternalList<int, int>(), nrOfThreads, updatePercent, amountOfMappings,
                     amountOfOperations);
-                TestRunner.RunTest("STM internal", hashMapInternalList, resultWriter);
+                TestRunner.RunTest("STM hashmap", hashMapInternalList, resultWriter);
 
                 var jvstmHashMap = new HashmapTester(
                     new JVSTMHashMap<int, int>(), nrOfThreads, updatePercent, amountOfMappings,
                     amountOfOperations);
-                TestRunner.RunTest("JVSTM", jvstmHashMap, resultWriter);
+                TestRunner.RunTest("JVSTM hashmap", jvstmHashMap, resultWriter);
 
                 var lockingHashmap = new HashmapTester(
                     new LockingHashMap<int, int>(), nrOfThreads, updatePercent, amountOfMappings,
                     amountOfOperations);
-                TestRunner.RunTest("STM locking", lockingHashmap, resultWriter);
+                TestRunner.RunTest("Locking hasmap", lockingHashmap, resultWriter);
             }
             
             Console.WriteLine("Done");

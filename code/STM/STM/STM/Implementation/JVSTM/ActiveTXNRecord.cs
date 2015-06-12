@@ -61,7 +61,7 @@ namespace STM.Implementation.JVSTM
             var rec = First;
             while (true)
             {
-                Interlocked.Increment(ref rec.Running);
+                //Interlocked.Increment(ref rec.Running);
                 if (rec.Next == null || !rec.Next.IsCommited)
                 {
                     // if there is no next yet, then it’s because the rec
@@ -71,7 +71,7 @@ namespace STM.Implementation.JVSTM
                 else
                 {
                     // a more recent record exists, so backoff
-                    Interlocked.Decrement(ref rec.Running);
+                    //Interlocked.Decrement(ref rec.Running);
                     // and try again with the new one
                     rec = rec.Next;
                 }
