@@ -57,6 +57,10 @@
       <Project>{ada7f998-eea6-41f6-bf88-f013597c7ff8}</Project>
       <Name>PerformanceTestModel</Name>
     </ProjectReference>
+    <ProjectReference Include="..\STMTester\STMTester.csproj">
+      <Project>{940bdb8c-e36b-4f1f-9601-1050c1805e85}</Project>
+      <Name>STMTester</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
