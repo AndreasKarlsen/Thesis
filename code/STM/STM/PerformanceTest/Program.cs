@@ -25,10 +25,10 @@ namespace PerformanceTest
                 TestRunner.RunTest("JV dining", jvDining, resultWriter);
                 */
 
-                const int nrOfThreads = 4;
-                const int updatePercent = 1;
+                const int nrOfThreads = 8;
+                const int updatePercent = 16;
                 const int amountOfMappings = 4096;
-                const int amountOfOperations = 1000000;
+                const int amountOfOperations = 100000;
 
                 var hashMapInternalList = new HashmapTester(
                     new STMHashMapInternalList<int, int>(), nrOfThreads, updatePercent, amountOfMappings,
