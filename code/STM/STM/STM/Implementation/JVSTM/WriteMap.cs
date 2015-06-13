@@ -12,8 +12,8 @@ namespace STM.Implementation.JVSTM
     public class WriteMap : Dictionary<BaseVBox,object>// HashMap<BaseVBox, object>
     {
         protected AtomicBoolean[] _bucketsDone;
-        protected LinkedList<BaseVBoxBody>[] _commitedBodies;
-        protected List<KeyValuePair<BaseVBox, object>>[] _buckets;
+        protected BaseVBoxBody[] _commitedBodies;
+        protected KeyValuePair<BaseVBox, object>[] _buckets;
 
         public WriteMap()
         {
@@ -51,6 +51,14 @@ namespace STM.Implementation.JVSTM
         
         public void PrepareCommit()
         {
+            _buckets = new KeyValuePair<BaseVBox, object>[Count];
+            var j = 0;
+            foreach (var item in this)
+            {
+                _buckets[j] = item;
+                j++;
+            }
+            /*
             if (Count < 5)
             {
                 _buckets = new List<KeyValuePair<BaseVBox,object>>[1];
@@ -74,14 +82,14 @@ namespace STM.Implementation.JVSTM
                     j++;
 	            }
                 _commitedBodies = new LinkedList<BaseVBoxBody>[5];
-	        }
+	        }*/
 
             _bucketsDone = new AtomicBoolean[_buckets.Length];
             for (int i = 0; i < _bucketsDone.Length; i++)
             {
                 _bucketsDone[i] = new AtomicBoolean();
             }
-            _commitedBodies = new LinkedList<BaseVBoxBody>[_buckets.Length];
+            _commitedBodies = new BaseVBoxBody[_buckets.Length];
         }
 
         public void HelpWriteBack(int newTxNumber)
@@ -99,36 +107,34 @@ namespace STM.Implementation.JVSTM
             } while (currBucket != finalBucket);
         }
 
-        public LinkedList<BaseVBoxBody> WriteBackBucket(int bucket, int newTxNumber) {
-            var newBodies = new LinkedList<BaseVBoxBody>();
+        public BaseVBoxBody WriteBackBucket(int bucket, int newTxNumber) {
             var node = _buckets[bucket];
 
+            return node.Key.Commit(node.Value, newTxNumber);
+            /*
             foreach (var item in node)
             {
                 var body = item.Key.Commit(item.Value, newTxNumber);
                 newBodies.AddFirst(body);
-            }
+            }*/
             /*
             while (node != null)
 	        {
                 var body = node.Key.Commit(node.Value, newTxNumber);
                 newBodies.AddFirst(body);
                 node = node.Next;
-	        }*/
+	        }
 
             return newBodies;
+             * */
         }
 
         public void Clean()
         {
             for (int i = 0; i < _commitedBodies.Length; i++)
             {
-                var list = _commitedBodies[i];
-
-                foreach (var item in list)
-                {
-                    item.Clean();
-                }
+                var item = _commitedBodies[i];
+                item.Clean();
             }
         }
     }

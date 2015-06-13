@@ -13,6 +13,7 @@ namespace STM.Implementation.JVSTM
 {
     public static class JVSTMSystem
     {
+        internal static bool GC_Status = false;
 
         /// <summary>
         /// Max attempts. Set to same as Clojure
@@ -197,5 +198,107 @@ namespace STM.Implementation.JVSTM
 
         #endregion Retry
 
+
+
+        #region GC
+
+        public static void StartGC()
+        {
+            if (!GC_Status)
+            {
+                GC_Status = true;
+                var gc_thread = new Thread(() =>
+                {
+                    var lasCleanedTo = ActiveTxnRecord.First;
+                    while (GC_Status)
+                    {
+                        var rec = FindOldestRecordInUse();
+                        lasCleanedTo = CleanUpTo(rec, lasCleanedTo);
+                        Thread.Sleep(5);
+                    }
+                });
+
+                gc_thread.IsBackground = true;
+                gc_thread.Start();
+            }
+        }
+
+        internal static ActiveTxnRecord FindOldestRecordInUse()
+        {
+            var alreadyCommitted = ActiveTxnRecord.LastCommitted;
+
+            var minRequiredRec_1 = GetOldestRecord();
+            if (minRequiredRec_1 == null)
+            {
+                return alreadyCommitted;
+            }
+
+            var minRequiredRec_2 = GetOldestRecord();
+            return (minRequiredRec_2 != null) ? minRequiredRec_2 : minRequiredRec_1;
+        }
+
+        internal static ActiveTxnRecord GetOldestRecord()
+        {
+            return GetOldestRecord(null);
+        }
+
+        internal static ActiveTxnRecord GetOldestRecord(TxnContext upTo)
+        {
+            var context = TxnContext.Head;
+            ActiveTxnRecord oldestRecord = null;
+            TxnContext prevContext = null;
+            while (context != upTo)
+            {
+                var contextOldest = context.OldestRequiredRecord;
+                if (oldestRecord == null || (contextOldest != null && oldestRecord.TxNumber > contextOldest.TxNumber))
+                {
+                    oldestRecord = contextOldest;
+                }
+
+                if (!context.OwningThread.IsAlive && prevContext != null)
+                {
+                    prevContext.Next = context.Next;
+                }
+
+                prevContext = context;
+                context = context.Next;
+            }
+
+            return oldestRecord;
+        }
+
+        internal static ActiveTxnRecord CleanUpTo(ActiveTxnRecord cleanTo, ActiveTxnRecord lastCleanTo)
+        {
+            if (cleanTo.TxNumber < lastCleanTo.TxNumber)
+            {
+                return lastCleanTo;
+            }
+
+            var rec = lastCleanTo;
+            
+            while (rec != cleanTo)
+            {
+                
+                rec.Clean();
+                if (!rec.Next.IsCommited)
+                {
+                    break;
+                }
+
+                rec = rec.Next;
+            }
+
+
+            return rec;
+        }
+
+        public static void StopGC()
+        {
+            GC_Status = false;
+        }
+
+        #endregion GC
     }
+
+   
 }

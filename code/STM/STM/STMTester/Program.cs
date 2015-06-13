@@ -48,6 +48,7 @@ namespace STMTester
 
             //JVTest();
             //JVConcurrentTest();
+            /*
             for (int j = 0; j < 100; j++)
             {
                 var result = new VBox<int>(0);
@@ -88,8 +89,43 @@ namespace STMTester
                 {
                     Console.WriteLine("Error: " + res);
                 }
-            }
+            }*/
 
+            JVSTMSystem.StartGC();
+            var result = new VBox<int>(0);
+
+            var t1 = new Thread(() =>
+            {
+                for (int i = 0; i < 1000; i++)
+                {
+                    JVSTMSystem.Atomic((transaction) =>
+                    {
+                        result.Put(transaction, result.Read(transaction) + 1);
+                    });
+                }
+
+
+            });
+
+            var t2 = new Thread(() =>
+            {
+                for (int i = 0; i < 1000; i++)
+                {
+                    JVSTMSystem.Atomic((transaction) =>
+                    {
+                        result.Put(transaction, result.Read(transaction) + 1);
+                    });
+                }
+
+            });
+
+            t1.Start();
+            t2.Start();
+
+            t1.Join();
+            t2.Join();
+            Thread.Sleep(10);
+            Console.WriteLine(result.GetNrBodies());
             Console.WriteLine("Done");
             Console.ReadKey();
         }

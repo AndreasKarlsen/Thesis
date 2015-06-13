@@ -20,7 +20,8 @@ namespace STM.Implementation.JVSTM
         public BaseVBoxBody[] BodiesToClean;
         public int Running = 0;
         public volatile ActiveTxnRecord Next = null;
-        public static volatile ActiveTxnRecord First = new ActiveTxnRecord(0);
+        public static readonly ActiveTxnRecord First = new ActiveTxnRecord(0);
+        public static volatile ActiveTxnRecord LastCommitted = First;
         public WriteMap WriteMap;
         private volatile int _status;
 
@@ -33,7 +34,7 @@ namespace STM.Implementation.JVSTM
         internal ActiveTxnRecord(int txNumber)
         {
             TxNumber = txNumber;
-            BodiesToClean = null;
+            SetCommitted();
         }
 
         internal ActiveTxnRecord(int txNumber, BaseVBoxBody[] bodies)
@@ -52,18 +53,19 @@ namespace STM.Implementation.JVSTM
 
         internal static void InsertNewRecord(ActiveTxnRecord record)
         {
-            First.Next = record;
-            First = record;
+            LastCommitted.Next = record;
+            LastCommitted = record;
         }
 
         internal static ActiveTxnRecord StartTransaction()
         {
-            var rec = First;
+            var rec = LastCommitted;
             while (true)
             {
                 //Interlocked.Increment(ref rec.Running);
                 if (rec.Next == null || !rec.Next.IsCommited)
                 {
+                    TxnContext.LocalContext.OldestRequiredRecord = rec;
                     // if there is no next yet, then it’s because the rec
                     // is the most recent one and we may return its number
                     return rec;
@@ -110,23 +112,27 @@ namespace STM.Implementation.JVSTM
 
         internal bool Clean()
         {
-            var toClean = Interlocked.Exchange(ref BodiesToClean, null);
+            if (WriteMap != null)
+            {
+                WriteMap.Clean();
+            }
+
+            return true;
+            /*
+            var toClean = Interlocked.Exchange(ref WriteMap, null);
             // the toClean may be null because more
             // than one thread may race into this method
             // yet, because of the atomic getAndSet above,
             // only one will actually clean the bodies
             if (toClean != null)
             {
-                foreach (var body in toClean)
-                {
-                    body.Clean();
-                }
+                toClean.Clean();
                 return true;
             }
             else
             {
                 return false;
-            }
+            }*/
         }
 
         internal bool TrySetNext(ActiveTxnRecord record)
@@ -136,7 +142,7 @@ namespace STM.Implementation.JVSTM
 
         internal static void FinishCommit(ActiveTxnRecord recToCommit) {
             recToCommit.SetCommitted();
-            First = recToCommit;
+            LastCommitted = recToCommit;
         }
     }
 }

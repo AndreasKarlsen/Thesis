@@ -6,6 +6,7 @@ using Evaluation.Library.Collections;
 using Evaluation.Library.Collections;
 using Evaluation.Common;
 using STMTester;
+using STM.Implementation.JVSTM;
 
 namespace PerformanceTest
 {
@@ -39,12 +40,13 @@ namespace PerformanceTest
                     new STMHashMapInternalList<int, int>(), nrOfThreads, updatePercent, amountOfMappings,
                     amountOfOperations);
                 TestRunner.RunTest("STM hashmap", hashMapInternalList, resultWriter);
-                
-                
+
+                JVSTMSystem.StartGC();
                 var jvstmHashMap = new HashmapTester(
                     new JVSTMHashMapInternalList<int, int>(), nrOfThreads, updatePercent, amountOfMappings,
                     amountOfOperations);
                 TestRunner.RunTest("JVSTM hashmap", jvstmHashMap, resultWriter);
+                JVSTMSystem.StopGC();
                 /*
                 var jvstmNonHashMap = new HashmapTester(
                     new JVSTMHashmapNonAtomic<int, int>(), nrOfThreads, updatePercent, amountOfMappings,

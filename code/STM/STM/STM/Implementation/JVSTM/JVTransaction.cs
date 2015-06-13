@@ -112,7 +112,7 @@ namespace STM.Implementation.JVSTM
             ActiveTxnRecord commitRecord = null;
             lock (CommitLock)
             {
-                var newNumber = ActiveTxnRecord.First.TxNumber + 1;
+                var newNumber = ActiveTxnRecord.LastCommitted.TxNumber + 1;
 
                 var valid = ReadMap.Validate();
                 if (!valid)
@@ -165,6 +165,7 @@ namespace STM.Implementation.JVSTM
             if (WriteMap.Count == 0)
             {
                 Status = TransactionStatus.Committed;
+                TxnContext.LocalContext.OldestRequiredRecord = null;
                 //_txnRecord.FinishTransaction();
                 return true;
             }
@@ -183,6 +184,7 @@ namespace STM.Implementation.JVSTM
                 ValidateCommitAndEnqueue();
                 EnsureCommitStatus();
                 Status = TransactionStatus.Committed;
+                TxnContext.LocalContext.OldestRequiredRecord = null;
 
                 //_txnRecord.FinishTransaction();
                 //Interlocked.Decrement(ref _commitTxnRecord.Running);
@@ -239,7 +241,7 @@ namespace STM.Implementation.JVSTM
         private void EnsureCommitStatus()
         {
             
-            ActiveTxnRecord recToCommit = ActiveTxnRecord.First.Next;
+            ActiveTxnRecord recToCommit = ActiveTxnRecord.LastCommitted.Next;
             while (recToCommit != null && recToCommit.TxNumber <= _commitTxnRecord.TxNumber)
             {
                 if (!recToCommit.IsCommited)
@@ -268,6 +270,7 @@ namespace STM.Implementation.JVSTM
             Status = TransactionStatus.Aborted;
             if (_txnRecord != null)
             {
+                TxnContext.LocalContext.OldestRequiredRecord = null;
                 //Interlocked.Decrement(ref _txnRecord.Running);
             } 
         }

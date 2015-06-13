@@ -76,6 +76,7 @@
     <Compile Include="Implementation\JVSTM\JVTransaction.cs" />
     <Compile Include="Implementation\JVSTM\LocalRandom.cs" />
     <Compile Include="Implementation\JVSTM\ReadMap.cs" />
+    <Compile Include="Implementation\JVSTM\TxnContext.cs" />
     <Compile Include="Implementation\JVSTM\VBox.cs" />
     <Compile Include="Implementation\JVSTM\BaseVBox.cs" />
     <Compile Include="Implementation\JVSTM\VBoxBody.cs" />

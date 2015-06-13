@@ -11,6 +11,7 @@ namespace STMUnitTest
         [TestMethod]
         public void GarbageCollection()
         {
+            JVSTMSystem.StartGC();
             var box1 = new VBox<int>(0);
             for (var i = 0; i < 100; i++)
             {
@@ -29,6 +30,8 @@ namespace STMUnitTest
                 });
             }
 
+
+            Thread.Sleep(10);
             Assert.AreEqual(1, box1.GetNrBodies());
             Assert.AreEqual(1, box2.GetNrBodies());
         }
