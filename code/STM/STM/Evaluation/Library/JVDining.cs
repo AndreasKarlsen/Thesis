@@ -56,15 +56,12 @@ namespace Evaluation.Library
                         right.State.Put(t, false);
                     });
 
-                    Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
                     Thread.Sleep(100);
-                    var count = JVSTMSystem.Atomic((t) =>
+                    JVSTMSystem.Atomic((t) =>
                     {
                         eatCounter.Put(t, eatCounter.Read(t) + 1);
-                        return eatCounter.Read(t);
                     });
 
-                    Console.WriteLine("Eat count: " + count);
                     JVSTMSystem.Atomic((t) =>
                     {
                         left.State.Put(t, true);

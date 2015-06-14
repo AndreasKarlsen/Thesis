@@ -56,9 +56,8 @@ namespace Evaluation.Library
                         right.Value = false;
                     });
 
-                    Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
                     Thread.Sleep(100);
-                    Console.WriteLine("Eat count: " + ++eatCounter);
+                    ++eatCounter;
 
                     STMSystem.Atomic(() =>
                     {

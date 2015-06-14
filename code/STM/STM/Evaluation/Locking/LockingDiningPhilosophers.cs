@@ -51,9 +51,8 @@ namespace Evaluation.Locking
                             Monitor.TryEnter(right, 100, ref lockTaken);
                             if (lockTaken)
                             {
-                                Console.WriteLine("Thread: " + Thread.CurrentThread.ManagedThreadId + " eating.");
                                 Thread.Sleep(100);
-                                Console.WriteLine("Eat count: " + eatCounter.IncrementAndGet());
+                                eatCounter.IncrementAndGet();
                             }
                         }
                         finally
