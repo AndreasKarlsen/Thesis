@@ -1,0 +1,420 @@
+UpdatePercentage: 1
+NrThreads: 1
+STM hashmap
+Mean: 72,4
+Stdv: 0,547722557505166
+
+UpdatePercentage: 1
+NrThreads: 1
+JVSTM hashmap
+Mean: 41,4
+Stdv: 1,51657508881031
+
+UpdatePercentage: 1
+NrThreads: 1
+Locking hashmap
+Mean: 6
+Stdv: 0
+
+UpdatePercentage: 1
+NrThreads: 1
+Locking dictionary
+Mean: 4,2
+Stdv: 0,447213595499958
+
+UpdatePercentage: 8
+NrThreads: 1
+STM hashmap
+Mean: 73,2
+Stdv: 0,836660026534076
+
+UpdatePercentage: 8
+NrThreads: 1
+JVSTM hashmap
+Mean: 79,6
+Stdv: 5,17687164221791
+
+UpdatePercentage: 8
+NrThreads: 1
+Locking hashmap
+Mean: 6,8
+Stdv: 1,30384048104053
+
+UpdatePercentage: 8
+NrThreads: 1
+Locking dictionary
+Mean: 5
+Stdv: 0
+
+UpdatePercentage: 16
+NrThreads: 1
+STM hashmap
+Mean: 75,8
+Stdv: 0,836660026534076
+
+UpdatePercentage: 16
+NrThreads: 1
+JVSTM hashmap
+Mean: 89,6
+Stdv: 2,88097205817759
+
+UpdatePercentage: 16
+NrThreads: 1
+Locking hashmap
+Mean: 6,6
+Stdv: 0,547722557505166
+
+UpdatePercentage: 16
+NrThreads: 1
+Locking dictionary
+Mean: 5
+Stdv: 0
+
+UpdatePercentage: 1
+NrThreads: 2
+STM hashmap
+Mean: 92,2
+Stdv: 4,08656334834051
+
+UpdatePercentage: 1
+NrThreads: 2
+JVSTM hashmap
+Mean: 49,2
+Stdv: 0,836660026534076
+
+UpdatePercentage: 1
+NrThreads: 2
+Locking hashmap
+Mean: 11,8
+Stdv: 0,836660026534076
+
+UpdatePercentage: 1
+NrThreads: 2
+Locking dictionary
+Mean: 5
+Stdv: 0
+
+UpdatePercentage: 8
+NrThreads: 2
+STM hashmap
+Mean: 88,4
+Stdv: 0,894427190999916
+
+UpdatePercentage: 8
+NrThreads: 2
+JVSTM hashmap
+Mean: 119,4
+Stdv: 9,12688336728371
+
+UpdatePercentage: 8
+NrThreads: 2
+Locking hashmap
+Mean: 13,8
+Stdv: 1,09544511501033
+
+UpdatePercentage: 8
+NrThreads: 2
+Locking dictionary
+Mean: 5
+Stdv: 0
+
+UpdatePercentage: 16
+NrThreads: 2
+STM hashmap
+Mean: 95,4
+Stdv: 1,81659021245849
+
+UpdatePercentage: 16
+NrThreads: 2
+JVSTM hashmap
+Mean: 157,2
+Stdv: 12,2759928315391
+
+UpdatePercentage: 16
+NrThreads: 2
+Locking hashmap
+Mean: 15
+Stdv: 2,34520787991171
+
+UpdatePercentage: 16
+NrThreads: 2
+Locking dictionary
+Mean: 6
+Stdv: 0
+
+UpdatePercentage: 1
+NrThreads: 4
+STM hashmap
+Mean: 117,2
+Stdv: 1,09544511501033
+
+UpdatePercentage: 1
+NrThreads: 4
+JVSTM hashmap
+Mean: 75
+Stdv: 2,82842712474619
+
+UpdatePercentage: 1
+NrThreads: 4
+Locking hashmap
+Mean: 21,2
+Stdv: 1,92353840616713
+
+UpdatePercentage: 1
+NrThreads: 4
+Locking dictionary
+Mean: 7,4
+Stdv: 1,34164078649987
+
+UpdatePercentage: 8
+NrThreads: 4
+STM hashmap
+Mean: 124,6
+Stdv: 1,67332005306815
+
+UpdatePercentage: 8
+NrThreads: 4
+JVSTM hashmap
+Mean: 192,6
+Stdv: 3,286335345031
+
+UpdatePercentage: 8
+NrThreads: 4
+Locking hashmap
+Mean: 26,6
+Stdv: 2,70185121722126
+
+UpdatePercentage: 8
+NrThreads: 4
+Locking dictionary
+Mean: 8
+Stdv: 0
+
+UpdatePercentage: 16
+NrThreads: 4
+STM hashmap
+Mean: 128,6
+Stdv: 4,39317652729776
+
+UpdatePercentage: 16
+NrThreads: 4
+JVSTM hashmap
+Mean: 291
+Stdv: 44,3846820423443
+
+UpdatePercentage: 16
+NrThreads: 4
+Locking hashmap
+Mean: 23,4
+Stdv: 2,60768096208106
+
+UpdatePercentage: 16
+NrThreads: 4
+Locking dictionary
+Mean: 9
+Stdv: 0
+
+UpdatePercentage: 1
+NrThreads: 8
+STM hashmap
+Mean: 323,4
+Stdv: 5,94138031100518
+
+UpdatePercentage: 1
+NrThreads: 8
+JVSTM hashmap
+Mean: 145,8
+Stdv: 4,49444101084885
+
+UpdatePercentage: 1
+NrThreads: 8
+Locking hashmap
+Mean: 33,4
+Stdv: 0,547722557505166
+
+UpdatePercentage: 1
+NrThreads: 8
+Locking dictionary
+Mean: 13
+Stdv: 0
+
+UpdatePercentage: 8
+NrThreads: 8
+STM hashmap
+Mean: 318
+Stdv: 18,7882942280559
+
+UpdatePercentage: 8
+NrThreads: 8
+JVSTM hashmap
+Mean: 400
+Stdv: 5,78791845139511
+
+UpdatePercentage: 8
+NrThreads: 8
+Locking hashmap
+Mean: 38,8
+Stdv: 5,35723809439155
+
+UpdatePercentage: 8
+NrThreads: 8
+Locking dictionary
+Mean: 12,8
+Stdv: 1,6431676725155
+
+UpdatePercentage: 16
+NrThreads: 8
+STM hashmap
+Mean: 315,4
+Stdv: 6,308724118235
+
+UpdatePercentage: 16
+NrThreads: 8
+JVSTM hashmap
+Mean: 577,2
+Stdv: 4,02492235949962
+
+UpdatePercentage: 16
+NrThreads: 8
+Locking hashmap
+Mean: 59,8
+Stdv: 9,39148550549912
+
+UpdatePercentage: 16
+NrThreads: 8
+Locking dictionary
+Mean: 14,4
+Stdv: 0,547722557505166
+
+UpdatePercentage: 1
+NrThreads: 16
+STM hashmap
+Mean: 942,2
+Stdv: 69,0268063870842
+
+UpdatePercentage: 1
+NrThreads: 16
+JVSTM hashmap
+Mean: 329,2
+Stdv: 5,80517010948
+
+UpdatePercentage: 1
+NrThreads: 16
+Locking hashmap
+Mean: 66,8
+Stdv: 4,32434966208793
+
+UpdatePercentage: 1
+NrThreads: 16
+Locking dictionary
+Mean: 24,4
+Stdv: 2,50998007960223
+
+UpdatePercentage: 8
+NrThreads: 16
+STM hashmap
+Mean: 939,2
+Stdv: 88,9140033965404
+
+UpdatePercentage: 8
+NrThreads: 16
+JVSTM hashmap
+Mean: 821
+Stdv: 24,6069095987286
+
+UpdatePercentage: 8
+NrThreads: 16
+Locking hashmap
+Mean: 71,6
+Stdv: 3,36154726279432
+
+UpdatePercentage: 8
+NrThreads: 16
+Locking dictionary
+Mean: 27
+Stdv: 0
+
+UpdatePercentage: 16
+NrThreads: 16
+STM hashmap
+Mean: 1003,4
+Stdv: 85,183918670134
+
+UpdatePercentage: 16
+NrThreads: 16
+JVSTM hashmap
+Mean: 1109,6
+Stdv: 65,7556081258473
+
+UpdatePercentage: 16
+NrThreads: 16
+Locking hashmap
+Mean: 132,8
+Stdv: 21,2061311888803
+
+UpdatePercentage: 16
+NrThreads: 16
+Locking dictionary
+Mean: 32,8
+Stdv: 0,447213595499958
+
+NrThreads: 1
+Locking queue
+Mean: 12,8
+Stdv: 7,94984276574072
+
+NrThreads: 1
+Lock-free queue
+Mean: 9,8
+Stdv: 9,1214034007931
+
+NrThreads: 1
+STM queue
+Mean: 234,8
+Stdv: 50,7119315348962
+
+NrThreads: 2
+Locking queue
+Mean: 14,2
+Stdv: 8,43800924389159
+
+NrThreads: 2
+Lock-free queue
+Mean: 28,4
+Stdv: 12,1573023323433
+
+NrThreads: 2
+STM queue
+Mean: 505
+Stdv: 19,8494332412792
+
+NrThreads: 4
+Locking queue
+Mean: 37,6
+Stdv: 4,15932686861708
+
+NrThreads: 4
+Lock-free queue
+Mean: 68,8
+Stdv: 5,58569601750758
+
+NrThreads: 4
+STM queue
+Mean: 816
+Stdv: 52,5023808983936
+
+NrThreads: 8
+Locking queue
+Mean: 91,4
+Stdv: 8,87693640846886
+
+NrThreads: 8
+Lock-free queue
+Mean: 203,2
+Stdv: 26,3286915740224
+
+NrThreads: 8
+STM queue
+Mean: 3336
+Stdv: 369,937156825318
+
