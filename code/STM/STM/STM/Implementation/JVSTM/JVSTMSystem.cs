@@ -14,6 +14,7 @@ namespace STM.Implementation.JVSTM
     public static class JVSTMSystem
     {
         internal static bool GC_Status = false;
+        private static ActiveTxnRecord lasCleanedTo = ActiveTxnRecord.First;
 
         /// <summary>
         /// Max attempts. Set to same as Clojure
@@ -215,12 +216,12 @@ namespace STM.Implementation.JVSTM
                 GC_Status = true;
                 var gc_thread = new Thread(() =>
                 {
-                    var lasCleanedTo = ActiveTxnRecord.First;
                     while (GC_Status)
                     {
                         var rec = FindOldestRecordInUse();
                         lasCleanedTo = CleanUpTo(rec, lasCleanedTo);
-                        Thread.Sleep(5);
+                        ActiveTxnRecord.First = null;
+                        Thread.Sleep(2);
                     }
                 });
 

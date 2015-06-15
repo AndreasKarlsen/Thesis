@@ -134,7 +134,6 @@ namespace STM.Implementation.Lockbased
                 {
                     throw new STMMaxAttemptException("Fatal error: max attempts reached");
                 }
-                
             }
         }
 

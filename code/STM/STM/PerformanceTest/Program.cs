@@ -24,7 +24,7 @@ namespace PerformanceTest
 
                 var lockDining = new LockingDiningPhilosophers(eatCount);
                 TestRunner.RunTest("Locking dining", lockDining, resultWriter);
-                */
+                
                 JVSTMSystem.StartGC();
                 var jvDining = new JVDining(eatCount);
                 TestRunner.RunTest("JV dining", jvDining, resultWriter);
@@ -74,17 +74,18 @@ namespace PerformanceTest
                             new InstrumentedDictionary<int, int>(), nrOfThreads, updatePercent, amountOfMappings,
                             amountOfOperations);
                         TestRunner.RunTest("Locking dictionary", lockingDictionary, resultWriter);
-                        
+
+                        resultWriter.Flush();
+                        GC.Collect();
                     }
-                }
-                
+                }*/
                 
                 const int nrItems = 100000;
-
+                JVSTMSystem.StartGC();
                 for (int i = 1; i <= 8; i = i * 2)
                 {
                     var nrOfThreads = i;
-
+                    /*
                     resultWriter.WriteNrThreads(nrOfThreads);
                     var lockQueue = new IQueueTester(
                     new Evaluation.Locking.Collections.Queue<int>(), nrItems, nrOfThreads,
@@ -102,16 +103,18 @@ namespace PerformanceTest
                         new Evaluation.Library.Collections.Queue<int>(), nrItems, nrOfThreads,
                         nrOfThreads);
                     TestRunner.RunTest("STM queue", stmQueue, resultWriter);
-
+                    */
                     resultWriter.WriteNrThreads(nrOfThreads);
-                    JVSTMSystem.StartGC();
+                    
                     var jvstmQueue = new STMQueueTester(
                         new Evaluation.Library.Collections.JVSTMQueue<int>(), nrItems, nrOfThreads,
                         nrOfThreads);
                     TestRunner.RunTest("JVSTM queue", jvstmQueue, resultWriter);
-                    JVSTMSystem.StopGC();
                     
+                    resultWriter.Flush();
                 }
+
+                JVSTMSystem.StopGC();
                 
             }
             

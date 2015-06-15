@@ -11,7 +11,6 @@ namespace STM.Implementation.JVSTM
         public readonly T Value;
         public readonly int Version;
         public VBoxBody<T> Next;
-        public VBoxBody<T> Previous;
 
         internal VBoxBody(T value, int version)
         {
@@ -23,7 +22,6 @@ namespace STM.Implementation.JVSTM
             : this(value, version)
         {
             Next = next;
-            next.Previous = this;
         }
 
         internal override void Clean()

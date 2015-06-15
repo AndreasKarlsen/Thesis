@@ -128,17 +128,17 @@ namespace STM.Implementation.JVSTM
                     }
                     else
                     {
-                        var bodies = new BaseVBoxBody[WriteMap.Count];
+                        //var bodies = new BaseVBoxBody[WriteMap.Count];
                         var i = 0;
                         foreach (var kvpair in WriteMap)
                         {
-                            bodies[i] = kvpair.Key.Install(kvpair.Value, newNumber);
-                            //kvpair.Key.Install(kvpair.Value, newNumber);
+                            //bodies[i] = kvpair.Key.Install(kvpair.Value, newNumber);
+                            kvpair.Key.Install(kvpair.Value, newNumber);
                             i++;
                         }
 
-                        commitRecord = new ActiveTxnRecord(newNumber, bodies);
-                        //commitRecord = new ActiveTxnRecord(newNumber);
+                        //commitRecord = new ActiveTxnRecord(newNumber, bodies);
+                        commitRecord = new ActiveTxnRecord(newNumber);
                         ActiveTxnRecord.InsertNewRecord(commitRecord);
                     }
 
@@ -232,7 +232,7 @@ namespace STM.Implementation.JVSTM
             var next = record.Next;
             if (next != null)
             {
-                return Validate(next);
+                return ValidateInternal(next);
             }
 
             return record;

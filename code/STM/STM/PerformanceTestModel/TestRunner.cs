@@ -23,6 +23,7 @@ namespace PerformanceTestModel
                 test.Perform();
                 stopwatch.Stop();
                 times[n] = stopwatch.ElapsedMilliseconds;
+                GC.Collect();
             }
             Console.WriteLine("{0} end", testName);
 

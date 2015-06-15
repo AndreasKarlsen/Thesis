@@ -20,7 +20,7 @@ namespace STM.Implementation.JVSTM
         public BaseVBoxBody[] BodiesToClean;
         public int Running = 0;
         public volatile ActiveTxnRecord Next = null;
-        public static readonly ActiveTxnRecord First = new ActiveTxnRecord(0);
+        public static ActiveTxnRecord First = new ActiveTxnRecord(0);
         public static volatile ActiveTxnRecord LastCommitted = First;
         public WriteMap WriteMap;
         private volatile int _status;
@@ -115,6 +115,7 @@ namespace STM.Implementation.JVSTM
             if (WriteMap != null)
             {
                 WriteMap.Clean();
+                WriteMap = null;
             }
 
             return true;
