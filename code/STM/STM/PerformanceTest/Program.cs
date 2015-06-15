@@ -18,13 +18,13 @@ namespace PerformanceTest
             {
                           
                 const int eatCount = 2000;
-
+                /*
                 var dining = new DiningPhilosophers(eatCount);
                 TestRunner.RunTest("STM dining", dining, resultWriter);
 
                 var lockDining = new LockingDiningPhilosophers(eatCount);
                 TestRunner.RunTest("Locking dining", lockDining, resultWriter);
-
+                */
                 JVSTMSystem.StartGC();
                 var jvDining = new JVDining(eatCount);
                 TestRunner.RunTest("JV dining", jvDining, resultWriter);

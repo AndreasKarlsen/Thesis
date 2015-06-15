@@ -184,6 +184,12 @@ namespace STM.Implementation.JVSTM
                 kvpair.Key.RegisterRetryLatch(transaction.RetryLatch, kvpair.Value, expectedEra);
             }
 
+            if (!transaction.ReadMap.Validate())
+            {
+                transaction.Abort();
+                return;
+            }
+
 #if DEBUG
             Console.WriteLine("WAIT ON RETRY: " + transaction.Number);
 #endif
